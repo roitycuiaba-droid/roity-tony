@@ -190,8 +190,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .sched-strip{background:var(--danger-bg);border:1px solid var(--danger-b);border-radius:8px;padding:6px 9px;font-size:11px;color:var(--danger2);display:flex;align-items:center;gap:6px;font-weight:600;}
 
 /* LEGEND */
-.legend{background:rgba(5,7,15,0.6);backdrop-filter:blur(10px);border-top:1px solid var(--glass-b);padding:.6rem 1.25rem;display:flex;gap:14px;flex-wrap:wrap;}
+.legend{background:rgba(5,7,15,0.6);backdrop-filter:blur(10px);border-top:1px solid var(--glass-b);padding:.6rem 1.25rem;display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
 .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);}
+.legend-version{margin-left:auto;font-size:10px;color:var(--text3);letter-spacing:.5px;}
+.update-log{border-top:1px solid var(--glass-b);padding-top:7px;margin-top:2px;display:flex;flex-direction:column;gap:4px;}
+.update-log-row{display:flex;align-items:flex-start;gap:5px;font-size:10px;color:var(--text3);line-height:1.4;}
+.update-log-row i{font-size:11px;flex-shrink:0;margin-top:1px;color:var(--gold-dim);}
+.update-log-row b{color:var(--text2);}
 
 /* POPUP OVERLAY */
 .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:100;display:none;align-items:center;justify-content:center;padding:1.5rem;}
@@ -277,6 +282,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="topbar-right">
       <div class="sync-pill"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Sincronizado</span></div>
       <div class="user-pill"><i class="ti ti-user"></i><span id="user-label"></span></div>
+      <button class="logout-btn" onclick="refreshData()" title="Atualizar dados"><i class="ti ti-refresh"></i></button>
       <button class="logout-btn" onclick="logout()"><i class="ti ti-logout"></i> Sair</button>
     </div>
   </div>
@@ -314,6 +320,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
+      <div class="legend-version">v1.2 · Roity © 2026</div>
     </div>
   </div>
 </div>
@@ -406,6 +413,7 @@ function doLogin(){
   if(!USERS[user]||USERS[user].pass!==pass){err.style.display='block';return;}
   err.style.display='none';
   currentUser={id:user,...USERS[user]};
+  sessionStorage.setItem('roity_user', JSON.stringify({id:user, pass:USERS[user].pass}));
   startApp();
 }
 
@@ -428,17 +436,39 @@ async function startApp(){
   }
 
   updateScheduleBanner();
-  showWelcomePopup();
+  // Mostrar boas-vindas só 1x por dia
+  const todayStr = dateKey(new Date());
+  const lastWelcome = localStorage.getItem('roity_welcome_'+currentUser.id);
+  if(lastWelcome !== todayStr){
+    localStorage.setItem('roity_welcome_'+currentUser.id, todayStr);
+    showWelcomePopup();
+  }
   if(currentUser.role==='editor') showEditorPopup();
-  // Realtime: escuta mudanças de outros dispositivos
+  subscribeRealtime();
+}
+
+async function refreshData(){
+  setSyncing(true);
+  const btn = document.querySelector('[onclick="refreshData()"]');
+  if(btn) btn.style.opacity='0.5';
+  await loadWeek(currentWeekStart);
+  await loadExtraForDash();
+  updateScheduleBanner();
+  if(currentUser.role==='admin'){renderDashboard();renderKanban();}
+  else renderKanban();
+  setSyncing(false);
+  if(btn){btn.style.opacity='1';}
+}
+
+function subscribeRealtime(){
   sb.channel('dashboard-changes')
     .on('postgres_changes',{event:'*',schema:'public',table:'tony_dashboard'},
       async (payload)=>{
         const row=payload.new||payload.old;
         if(row&&row.day_key){cache[row.day_key]=row;}
         updateScheduleBanner();
-        if(currentUser.role==='admin'){renderDashboard();renderKanban();}
-        else renderKanban();
+        if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
+        else if(currentUser) renderKanban();
       })
     .subscribe();
 }
@@ -479,6 +509,8 @@ function closeEditorPopup(){document.getElementById('editor-popup').classList.re
 
 function logout(){
   currentUser=null;cache={};
+  sessionStorage.removeItem('roity_user');
+  sessionStorage.removeItem('roity_tab');
   document.getElementById('app').style.display='none';
   document.getElementById('inp-user').value='';document.getElementById('inp-pass').value='';
   document.getElementById('login-screen').style.display='flex';
@@ -499,19 +531,44 @@ async function loadExtraForDash(){
   if(data)data.forEach(r=>{cache[r.day_key]=r;});
 }
 
+function fmtTimestamp(iso){
+  if(!iso) return null;
+  const d = new Date(iso);
+  // Converter para Brasília
+  const brt = new Date(d.getTime() - 3*60*60*1000);
+  return brt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' às ' +
+         brt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
 function getDay(key){
   if(!cache[key])cache[key]={day_key:key,long_link:'',viral_link:'',long_obs:'',viral_obs:'',platforms:{}};
   return cache[key];
 }
 
-async function upsertDay(key){
+async function upsertDay(key, changedField){
   setSyncing(true);
   const d=getDay(key);
-  await sb.from('tony_dashboard').upsert({
+  const now = new Date().toISOString();
+  const upsertData = {
     day_key:key,long_link:d.long_link||'',viral_link:d.viral_link||'',
     long_obs:d.long_obs||'',viral_obs:d.viral_obs||'',
-    platforms:d.platforms||{},updated_at:new Date().toISOString()
-  },{onConflict:'day_key'});
+    platforms:d.platforms||{},updated_at:now
+  };
+  // Registrar quem e quando subiu cada link
+  if(changedField==='long_link' && d.long_link){
+    upsertData.long_updated_at = now;
+    upsertData.long_updated_by = currentUser.name;
+  }
+  if(changedField==='viral_link' && d.viral_link){
+    upsertData.viral_updated_at = now;
+    upsertData.viral_updated_by = currentUser.name;
+  }
+  // Preservar timestamps existentes se não estiver alterando
+  if(d.long_updated_at && changedField!=='long_link') upsertData.long_updated_at = d.long_updated_at;
+  if(d.viral_updated_at && changedField!=='viral_link') upsertData.viral_updated_at = d.viral_updated_at;
+  if(d.long_updated_by && changedField!=='long_link') upsertData.long_updated_by = d.long_updated_by;
+  if(d.viral_updated_by && changedField!=='viral_link') upsertData.viral_updated_by = d.viral_updated_by;
+  await sb.from('tony_dashboard').upsert(upsertData,{onConflict:'day_key'});
   setSyncing(false);
   updateScheduleBanner();
   if(currentUser.role==='admin'){
@@ -520,11 +577,11 @@ async function upsertDay(key){
   }
 }
 
-function scheduleSave(key){
+function scheduleSave(key, field){
   if(saveTimers[key])clearTimeout(saveTimers[key]);
-  saveTimers[key]=setTimeout(()=>upsertDay(key),900);
+  saveTimers[key]=setTimeout(()=>upsertDay(key, field),900);
 }
-function saveField(key,field,val){getDay(key)[field]=val;scheduleSave(key);}
+function saveField(key,field,val){getDay(key)[field]=val;scheduleSave(key,field);}
 
 function isDayComplete(key){
   const d=cache[key];
@@ -567,6 +624,7 @@ function switchTab(tab){
   document.getElementById('tab-kanban').classList.toggle('active',tab==='kanban');
   document.getElementById('view-dashboard').classList.toggle('active',tab==='dashboard');
   document.getElementById('view-kanban').classList.toggle('active',tab==='kanban');
+  sessionStorage.setItem('roity_tab', tab);
   if(tab==='dashboard')renderDashboard();
   if(tab==='kanban')renderKanban();
 }
@@ -802,12 +860,43 @@ function renderKanban(){
         </div>
         ${complete?'<div class="complete-strip"><i class="ti ti-circle-check"></i>Dia completo — links + postagens ok</div>':''}
         ${schedAlert?'<div class="sched-strip"><i class="ti ti-alert-triangle"></i>Agendar postagens de amanhã!</div>':''}
+        ${(d.long_updated_at||d.viral_updated_at)?`<div class="update-log">
+          ${d.long_updated_at?`<div class="update-log-row"><i class="ti ti-clock"></i><span><b>${d.long_updated_by||'Editor'}</b> subiu os longos em ${fmtTimestamp(d.long_updated_at)}</span></div>`:''}
+          ${d.viral_updated_at?`<div class="update-log-row"><i class="ti ti-clock"></i><span><b>${d.viral_updated_by||'Editor'}</b> subiu os virais em ${fmtTimestamp(d.viral_updated_at)}</span></div>`:''}
+        </div>`:''}
       </div>`;
     grid.appendChild(card);
   }
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded',async()=>{
+  // Tentar restaurar sessão
+  const savedUser = sessionStorage.getItem('roity_user');
+  const savedTab  = sessionStorage.getItem('roity_tab') || 'dashboard';
+  if(savedUser){
+    try{
+      const u = JSON.parse(savedUser);
+      if(USERS[u.id] && USERS[u.id].pass === u.pass){
+        currentUser = {id:u.id, ...USERS[u.id]};
+        document.getElementById('user-label').textContent = currentUser.name+(currentUser.role==='admin'?' (Admin)':'');
+        currentWeekStart = getWeekStart(new Date());
+        await loadWeek(currentWeekStart);
+        await loadExtraForDash();
+        document.getElementById('loading').style.display='none';
+        document.getElementById('app').style.display='flex';
+        if(currentUser.role==='admin'){
+          document.getElementById('nav-tabs').style.display='flex';
+          switchTab(savedTab);
+        } else {
+          document.getElementById('nav-tabs').style.display='none';
+          switchTab('kanban');
+        }
+        updateScheduleBanner();
+        subscribeRealtime();
+        return;
+      }
+    }catch(e){}
+  }
   document.getElementById('loading').style.display='none';
   document.getElementById('login-screen').style.display='flex';
 });
