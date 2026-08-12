@@ -383,8 +383,8 @@ const HISTORY={
 let currentUser=null,currentWeekStart=null,cache={},saveTimers={};
 
 function dateKey(d){
-  // Usa horário de Brasília (UTC-3)
-  const brt=new Date(d.getTime()-3*60*60*1000);
+  // Usa horário de Brasília (UTC-4)
+  const brt=new Date(d.getTime()-4*60*60*1000);
   return brt.toISOString().slice(0,10);
 }
 function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
@@ -535,7 +535,7 @@ function fmtTimestamp(iso){
   if(!iso) return null;
   const d = new Date(iso);
   // Converter para Brasília
-  const brt = new Date(d.getTime() - 3*60*60*1000);
+  const brt = new Date(d.getTime() - 4*60*60*1000);
   return brt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' às ' +
          brt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
