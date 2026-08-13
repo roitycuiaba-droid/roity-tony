@@ -197,6 +197,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .update-log-row{display:flex;align-items:flex-start;gap:5px;font-size:10px;color:var(--text3);line-height:1.4;}
 .update-log-row i{font-size:11px;flex-shrink:0;margin-top:1px;color:var(--gold-dim);}
 .update-log-row b{color:var(--text2);}
+.admin-notes-block{border-top:1px solid rgba(201,169,110,0.15);padding-top:8px;margin-top:4px;}
+.admin-notes-label{font-size:10px;font-weight:700;color:var(--gold-dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.admin-notes-label i{font-size:12px;color:var(--gold-dim);}
+.admin-notes-area{width:100%;font-size:12px;padding:8px 10px;border:1px solid rgba(201,169,110,0.18);border-radius:8px;background:rgba(201,169,110,0.05);color:var(--text);resize:vertical;font-family:inherit;transition:border-color .15s;min-height:70px;line-height:1.6;}
+.admin-notes-area:focus{outline:none;border-color:var(--gold);}
+.admin-notes-area::placeholder{color:var(--text3);}
 
 /* POPUP OVERLAY */
 .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:100;display:none;align-items:center;justify-content:center;padding:1.5rem;}
@@ -320,7 +326,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v1.3 · Roity © 2026</div>
+      <div class="legend-version">v1.4 · Roity © 2026</div>
     </div>
   </div>
 </div>
@@ -460,17 +466,42 @@ async function refreshData(){
   if(btn){btn.style.opacity='1';}
 }
 
+function isUserTyping(){
+  const active = document.activeElement;
+  return active && (active.tagName==='INPUT'||active.tagName==='TEXTAREA');
+}
+
 function subscribeRealtime(){
   sb.channel('dashboard-changes')
     .on('postgres_changes',{event:'*',schema:'public',table:'tony_dashboard'},
       async (payload)=>{
         const row=payload.new||payload.old;
-        if(row&&row.day_key){cache[row.day_key]=row;}
+        if(!row||!row.day_key) return;
+        // Atualiza cache sempre
+        cache[row.day_key]=row;
         updateScheduleBanner();
+        // Só re-renderiza se o usuário NÃO estiver digitando
+        if(isUserTyping()){
+          // Agenda re-render para quando sair do campo
+          if(!window._pendingRender) window._pendingRender = true;
+          return;
+        }
         if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
         else if(currentUser) renderKanban();
       })
     .subscribe();
+  // Quando sair de qualquer campo, re-renderiza se havia pendência
+  document.addEventListener('focusout', ()=>{
+    if(window._pendingRender){
+      window._pendingRender = false;
+      setTimeout(()=>{
+        if(!isUserTyping()){
+          if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
+          else if(currentUser) renderKanban();
+        }
+      }, 200);
+    }
+  });
 }
 
 function showWelcomePopup(){
@@ -552,22 +583,38 @@ async function upsertDay(key, changedField){
   const upsertData = {
     day_key:key,long_link:d.long_link||'',viral_link:d.viral_link||'',
     long_obs:d.long_obs||'',viral_obs:d.viral_obs||'',
+    admin_notes:d.admin_notes||'',
     platforms:d.platforms||{},updated_at:now
   };
-  // Registrar quem e quando subiu cada link
-  if(changedField==='long_link' && d.long_link){
-    upsertData.long_updated_at = now;
-    upsertData.long_updated_by = currentUser.name;
+  // Registrar quem e quando subiu cada link (qualquer usuário)
+  if(changedField==='long_link'){
+    if(d.long_link){
+      upsertData.long_updated_at = now;
+      upsertData.long_updated_by = currentUser.name;
+      d.long_updated_at = now;
+      d.long_updated_by = currentUser.name;
+    } else {
+      upsertData.long_updated_at = null;
+      upsertData.long_updated_by = null;
+    }
+  } else {
+    if(d.long_updated_at) upsertData.long_updated_at = d.long_updated_at;
+    if(d.long_updated_by) upsertData.long_updated_by = d.long_updated_by;
   }
-  if(changedField==='viral_link' && d.viral_link){
-    upsertData.viral_updated_at = now;
-    upsertData.viral_updated_by = currentUser.name;
+  if(changedField==='viral_link'){
+    if(d.viral_link){
+      upsertData.viral_updated_at = now;
+      upsertData.viral_updated_by = currentUser.name;
+      d.viral_updated_at = now;
+      d.viral_updated_by = currentUser.name;
+    } else {
+      upsertData.viral_updated_at = null;
+      upsertData.viral_updated_by = null;
+    }
+  } else {
+    if(d.viral_updated_at) upsertData.viral_updated_at = d.viral_updated_at;
+    if(d.viral_updated_by) upsertData.viral_updated_by = d.viral_updated_by;
   }
-  // Preservar timestamps existentes se não estiver alterando
-  if(d.long_updated_at && changedField!=='long_link') upsertData.long_updated_at = d.long_updated_at;
-  if(d.viral_updated_at && changedField!=='viral_link') upsertData.viral_updated_at = d.viral_updated_at;
-  if(d.long_updated_by && changedField!=='long_link') upsertData.long_updated_by = d.long_updated_by;
-  if(d.viral_updated_by && changedField!=='viral_link') upsertData.viral_updated_by = d.viral_updated_by;
   await sb.from('tony_dashboard').upsert(upsertData,{onConflict:'day_key'});
   setSyncing(false);
   updateScheduleBanner();
@@ -879,6 +926,11 @@ function renderKanban(){
         ${(d.long_updated_at||d.viral_updated_at)?`<div class="update-log">
           ${d.long_updated_at?`<div class="update-log-row"><i class="ti ti-clock"></i><span><b>${d.long_updated_by||'Editor'}</b> subiu os longos em ${fmtTimestamp(d.long_updated_at)}</span></div>`:''}
           ${d.viral_updated_at?`<div class="update-log-row"><i class="ti ti-clock"></i><span><b>${d.viral_updated_by||'Editor'}</b> subiu os virais em ${fmtTimestamp(d.viral_updated_at)}</span></div>`:''}
+        </div>`:''}
+        ${isAdmin?`<div class="admin-notes-block">
+          <div class="admin-notes-label"><i class="ti ti-lock"></i> Notas internas — visível só para você</div>
+          <textarea class="admin-notes-area" placeholder="Vídeos postados, plataformas, observações do dia..."
+            oninput="saveField('${key}','admin_notes',this.value)">${d.admin_notes||''}</textarea>
         </div>`:''}
       </div>`;
     grid.appendChild(card);
