@@ -205,10 +205,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .toast-time{font-size:10px;color:var(--text3);margin-top:3px;}
 .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);}
 .legend-version{margin-left:auto;font-size:10px;color:var(--text3);letter-spacing:.5px;}
-.update-log{border-top:1px solid var(--glass-b);padding-top:7px;margin-top:2px;display:flex;flex-direction:column;gap:4px;}
-.update-log-row{display:flex;align-items:flex-start;gap:5px;font-size:10px;color:var(--text3);line-height:1.4;}
-.update-log-row i{font-size:11px;flex-shrink:0;margin-top:1px;color:var(--gold-dim);}
-.update-log-row b{color:var(--text2);}
+.update-log{border-top:1px solid rgba(231,76,60,0.2);padding-top:7px;margin-top:4px;display:flex;flex-direction:column;gap:4px;background:rgba(231,76,60,0.04);border-radius:0 0 8px 8px;padding:6px 8px;margin:-2px -2px 0;}
+.update-log-row{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:#e88;line-height:1.5;}
+.update-log-row i{font-size:12px;flex-shrink:0;margin-top:1px;color:#e74c3c;}
+.update-log-row b{color:#ff6b6b;font-weight:700;}
 .admin-notes-block{border-top:1px solid rgba(201,169,110,0.15);padding-top:8px;margin-top:4px;}
 .admin-notes-label{font-size:10px;font-weight:700;color:var(--gold-dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
 .admin-notes-label i{font-size:12px;color:var(--gold-dim);}
@@ -339,7 +339,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v1.6 · Roity © 2026</div>
+      <div class="legend-version">v1.7 · Roity © 2026</div>
     </div>
   </div>
 </div>
@@ -593,8 +593,7 @@ function showToast(icon, title, msg){
   const t = document.createElement('div');
   t.className = 'toast';
   const now = new Date();
-  const brt = new Date(now.getTime() - 4*60*60*1000);
-  const timeStr = brt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const timeStr = now.toLocaleTimeString('pt-BR',{timeZone:'America/Cuiaba',hour:'2-digit',minute:'2-digit'});
   t.innerHTML = `
     <div class="toast-icon"><i class="ti ${icon}"></i></div>
     <div class="toast-body">
@@ -613,10 +612,9 @@ function showToast(icon, title, msg){
 function fmtTimestamp(iso){
   if(!iso) return null;
   const d = new Date(iso);
-  // Converter para Brasília
-  const brt = new Date(d.getTime() - 4*60*60*1000);
-  return brt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' às ' +
-         brt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const date = d.toLocaleDateString('pt-BR',{timeZone:'America/Cuiaba',day:'2-digit',month:'2-digit'});
+  const time = d.toLocaleTimeString('pt-BR',{timeZone:'America/Cuiaba',hour:'2-digit',minute:'2-digit'});
+  return date + ' às ' + time;
 }
 
 function getDay(key){
