@@ -191,6 +191,18 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 /* LEGEND */
 .legend{background:rgba(5,7,15,0.6);backdrop-filter:blur(10px);border-top:1px solid var(--glass-b);padding:.6rem 1.25rem;display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+
+/* TOAST */
+#toast-container{position:fixed;bottom:1.25rem;right:1.25rem;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:rgba(9,13,28,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-gold-b);border-radius:14px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;min-width:260px;max-width:320px;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:toast-in .3s cubic-bezier(.34,1.56,.64,1);}
+@keyframes toast-in{from{opacity:0;transform:translateX(20px) scale(.95);}to{opacity:1;transform:translateX(0) scale(1);}}
+.toast.hiding{animation:toast-out .25s ease forwards;}
+@keyframes toast-out{to{opacity:0;transform:translateX(20px) scale(.95);}}
+.toast-icon{width:32px;height:32px;border-radius:9px;background:var(--glass-gold);border:1px solid var(--glass-gold-b);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:var(--gold);}
+.toast-body{}
+.toast-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.toast-msg{font-size:11px;color:var(--text2);line-height:1.5;}
+.toast-time{font-size:10px;color:var(--text3);margin-top:3px;}
 .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);}
 .legend-version{margin-left:auto;font-size:10px;color:var(--text3);letter-spacing:.5px;}
 .update-log{border-top:1px solid var(--glass-b);padding-top:7px;margin-top:2px;display:flex;flex-direction:column;gap:4px;}
@@ -320,13 +332,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <button class="nav-btn" onclick="changeWeek(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
     <div class="days-grid" id="days-grid"></div>
-    <div class="legend">
+    <div id="toast-container"></div>
+  <div class="legend">
       <div class="leg"><span class="sdot sdot-g"></span> Postado</div>
       <div class="leg"><span class="sdot sdot-r"></span> Não postado</div>
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v1.4 · Roity © 2026</div>
+      <div class="legend-version">v1.6 · Roity © 2026</div>
     </div>
   </div>
 </div>
@@ -478,8 +491,20 @@ function subscribeRealtime(){
         const row=payload.new||payload.old;
         if(!row||!row.day_key) return;
         // Atualiza cache sempre
-        cache[row.day_key]=row;
+        const prev = cache[row.day_key] || {};
+        cache[row.day_key] = row;
         updateScheduleBanner();
+
+        // Notificar admin quando editor sobe link
+        if(currentUser && currentUser.role==='admin'){
+          const dayFmt = new Date(row.day_key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+          if(row.long_updated_at && row.long_updated_at !== prev.long_updated_at){
+            showToast('ti-video', `${row.long_updated_by||'Editor'} subiu os longos`, `Dia ${dayFmt} — link do Drive disponível`);
+          }
+          if(row.viral_updated_at && row.viral_updated_at !== prev.viral_updated_at){
+            showToast('ti-scissors', `${row.viral_updated_by||'Editor'} subiu os virais`, `Dia ${dayFmt} — link do Drive disponível`);
+          }
+        }
         // Só re-renderiza se o usuário NÃO estiver digitando
         if(isUserTyping()){
           // Agenda re-render para quando sair do campo
@@ -562,6 +587,29 @@ async function loadExtraForDash(){
   if(data)data.forEach(r=>{cache[r.day_key]=r;});
 }
 
+function showToast(icon, title, msg){
+  const container = document.getElementById('toast-container');
+  if(!container) return;
+  const t = document.createElement('div');
+  t.className = 'toast';
+  const now = new Date();
+  const brt = new Date(now.getTime() - 4*60*60*1000);
+  const timeStr = brt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  t.innerHTML = `
+    <div class="toast-icon"><i class="ti ${icon}"></i></div>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      <div class="toast-msg">${msg}</div>
+      <div class="toast-time">${timeStr}</div>
+    </div>`;
+  container.appendChild(t);
+  playDing();
+  setTimeout(()=>{
+    t.classList.add('hiding');
+    setTimeout(()=>t.remove(), 300);
+  }, 5000);
+}
+
 function fmtTimestamp(iso){
   if(!iso) return null;
   const d = new Date(iso);
@@ -628,12 +676,29 @@ function scheduleSave(key, field){
   if(saveTimers[key])clearTimeout(saveTimers[key]);
   saveTimers[key]=setTimeout(()=>{
     const d = getDay(key);
-    // Som de ding quando editor sobe link (campo link com valor)
     if((field==='long_link'||field==='viral_link') && d[field] && d[field].length > 5){
       playDing();
     }
-    upsertDay(key, field);
-  },900);
+    // Notas internas e observações: salva silenciosamente sem re-renderizar
+    if(field==='admin_notes'||field==='long_obs'||field==='viral_obs'){
+      upsertSilent(key, field);
+    } else {
+      upsertDay(key, field);
+    }
+  },1200);
+}
+
+async function upsertSilent(key, field){
+  // Salva só o campo alterado sem re-renderizar o DOM
+  setSyncing(true);
+  const d = getDay(key);
+  const update = { updated_at: new Date().toISOString() };
+  update[field] = d[field] || '';
+  await sb.from('tony_dashboard').upsert(
+    { day_key: key, ...update },
+    { onConflict: 'day_key', ignoreDuplicates: false }
+  );
+  setSyncing(false);
 }
 function saveField(key,field,val){
   getDay(key)[field]=val;
