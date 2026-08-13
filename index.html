@@ -192,6 +192,42 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 /* LEGEND */
 .legend{background:rgba(5,7,15,0.6);backdrop-filter:blur(10px);border-top:1px solid var(--glass-b);padding:.6rem 1.25rem;display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
 
+/* META SEMANAL */
+.meta-bar-wrap{background:rgba(9,13,28,0.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-b);padding:.85rem 1.25rem;display:flex;flex-direction:column;gap:.6rem;}
+.meta-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.2rem;}
+.meta-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px;}
+.meta-title i{color:var(--gold);font-size:14px;}
+.meta-week{font-size:10px;color:var(--text3);}
+.meta-rows{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:640px){.meta-rows{grid-template-columns:1fr;}}
+.meta-item{background:rgba(255,255,255,0.025);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px;}
+.meta-item.total{border-color:var(--glass-gold-b);background:rgba(201,169,110,0.05);}
+.meta-item-label{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.meta-item-label i{font-size:12px;}
+.meta-item-nums{display:flex;align-items:baseline;gap:4px;margin-bottom:6px;}
+.meta-item-current{font-size:20px;font-weight:800;color:var(--text);}
+.meta-item-current.gold{color:var(--gold);}
+.meta-item-sep{font-size:13px;color:var(--text3);}
+.meta-item-total{font-size:13px;color:var(--text3);}
+.meta-item-pct{font-size:10px;color:var(--text3);margin-left:auto;}
+.meta-progress{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;}
+.meta-progress-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+.fill-blue{background:linear-gradient(90deg,#3498db,#5dade2);}
+.fill-purple{background:linear-gradient(90deg,#8e44ad,#a569bd);}
+.fill-gold{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+
+/* CAMPOS DE PRODUÇÃO NO CARD */
+.prod-block{background:rgba(255,255,255,0.022);border:1px solid var(--glass-b);border-radius:10px;padding:8px 11px;margin-top:2px;}
+.prod-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.prod-label i{font-size:12px;color:var(--gold-dim);}
+.prod-fields{display:flex;gap:8px;}
+.prod-field{flex:1;display:flex;flex-direction:column;gap:4px;}
+.prod-field label{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;}
+.prod-field label i{font-size:11px;}
+.prod-input{background:rgba(255,255,255,0.05);border:1px solid var(--glass-b);border-radius:7px;padding:5px 8px;font-size:13px;font-weight:700;color:var(--text);font-family:inherit;text-align:center;width:100%;transition:border-color .15s;}
+.prod-input:focus{outline:none;border-color:var(--gold);}
+.prod-input::-webkit-inner-spin-button,.prod-input::-webkit-outer-spin-button{opacity:1;}
+
 /* TOAST */
 #toast-container{position:fixed;bottom:1.25rem;right:1.25rem;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
 .toast{background:rgba(9,13,28,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-gold-b);border-radius:14px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;min-width:260px;max-width:320px;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:toast-in .3s cubic-bezier(.34,1.56,.64,1);}
@@ -331,7 +367,45 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="week-label" id="week-label"></div>
       <button class="nav-btn" onclick="changeWeek(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
-    <div class="days-grid" id="days-grid"></div>
+    <div class="meta-bar-wrap" id="meta-bar-wrap">
+    <div class="meta-header">
+      <div class="meta-title"><i class="ti ti-target"></i>Meta semanal de produção</div>
+      <div class="meta-week" id="meta-week-label"></div>
+    </div>
+    <div class="meta-rows">
+      <div class="meta-item">
+        <div class="meta-item-label"><i class="ti ti-video" style="color:#5dade2;"></i>Vídeos Longos</div>
+        <div class="meta-item-nums">
+          <span class="meta-item-current" id="meta-long-cur">0</span>
+          <span class="meta-item-sep">/</span>
+          <span class="meta-item-total">49</span>
+          <span class="meta-item-pct" id="meta-long-pct">0%</span>
+        </div>
+        <div class="meta-progress"><div class="meta-progress-fill fill-blue" id="meta-long-bar" style="width:0%"></div></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-item-label"><i class="ti ti-scissors" style="color:#a569bd;"></i>Cortes Virais</div>
+        <div class="meta-item-nums">
+          <span class="meta-item-current" id="meta-viral-cur">0</span>
+          <span class="meta-item-sep">/</span>
+          <span class="meta-item-total">35</span>
+          <span class="meta-item-pct" id="meta-viral-pct">0%</span>
+        </div>
+        <div class="meta-progress"><div class="meta-progress-fill fill-purple" id="meta-viral-bar" style="width:0%"></div></div>
+      </div>
+      <div class="meta-item total">
+        <div class="meta-item-label"><i class="ti ti-chart-bar" style="color:var(--gold);"></i>Total Semanal</div>
+        <div class="meta-item-nums">
+          <span class="meta-item-current gold" id="meta-total-cur">0</span>
+          <span class="meta-item-sep">/</span>
+          <span class="meta-item-total">84</span>
+          <span class="meta-item-pct" id="meta-total-pct">0%</span>
+        </div>
+        <div class="meta-progress"><div class="meta-progress-fill fill-gold" id="meta-total-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="days-grid" id="days-grid"></div>
     <div id="toast-container"></div>
   <div class="legend">
       <div class="leg"><span class="sdot sdot-g"></span> Postado</div>
@@ -339,7 +413,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v1.9 · Roity © 2026</div>
+      <div class="legend-version">v2.0 · Roity © 2026</div>
     </div>
   </div>
 </div>
@@ -698,6 +772,22 @@ async function upsertSilent(key, field){
   );
   setSyncing(false);
 }
+function saveProd(key, field, val){
+  const num = parseInt(val) || 0;
+  getDay(key)[field] = num;
+  if(saveTimers['prod_'+key]) clearTimeout(saveTimers['prod_'+key]);
+  saveTimers['prod_'+key] = setTimeout(async()=>{
+    setSyncing(true);
+    await sb.from('tony_dashboard').upsert(
+      { day_key: key, [field]: num, updated_at: new Date().toISOString() },
+      { onConflict: 'day_key' }
+    );
+    setSyncing(false);
+    updateMeta();
+    playConfirm();
+  }, 600);
+}
+
 function saveField(key,field,val){
   getDay(key)[field]=val;
   // Som de confirmação ao salvar observação (admin)
@@ -750,6 +840,8 @@ function switchTab(tab){
   document.getElementById('tab-kanban').classList.toggle('active',tab==='kanban');
   document.getElementById('view-dashboard').classList.toggle('active',tab==='dashboard');
   document.getElementById('view-kanban').classList.toggle('active',tab==='kanban');
+  const metaBar = document.getElementById('meta-bar-wrap');
+  if(metaBar) metaBar.style.display = tab==='kanban' ? 'flex' : 'none';
   sessionStorage.setItem('roity_tab', tab);
   if(tab==='dashboard')renderDashboard();
   if(tab==='kanban')renderKanban();
@@ -902,6 +994,40 @@ async function changeWeek(dir){
   renderKanban();
 }
 
+function updateMeta(){
+  const ws = currentWeekStart;
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+  let totalLong = 0, totalViral = 0;
+  for(let i=0;i<7;i++){
+    const day = addDays(ws,i);
+    if(day < PROJECT_START) continue;
+    const key = dateKey(day);
+    const d = cache[key];
+    if(!d) continue;
+    // Se tem link subido, usa prod_longos/prod_virais (default 7/5)
+    if(d.long_link) totalLong += (d.prod_longos !== undefined && d.prod_longos !== null) ? Number(d.prod_longos) : 7;
+    if(d.viral_link) totalViral += (d.prod_virais !== undefined && d.prod_virais !== null) ? Number(d.prod_virais) : 5;
+  }
+  const totalAll = totalLong + totalViral;
+  const pctLong = Math.min(Math.round((totalLong/49)*100),100);
+  const pctViral = Math.min(Math.round((totalViral/35)*100),100);
+  const pctTotal = Math.min(Math.round((totalAll/84)*100),100);
+
+  document.getElementById('meta-long-cur').textContent = totalLong;
+  document.getElementById('meta-viral-cur').textContent = totalViral;
+  document.getElementById('meta-total-cur').textContent = totalAll;
+  document.getElementById('meta-long-pct').textContent = pctLong+'%';
+  document.getElementById('meta-viral-pct').textContent = pctViral+'%';
+  document.getElementById('meta-total-pct').textContent = pctTotal+'%';
+  document.getElementById('meta-long-bar').style.width = pctLong+'%';
+  document.getElementById('meta-viral-bar').style.width = pctViral+'%';
+  document.getElementById('meta-total-bar').style.width = pctTotal+'%';
+
+  const ws2 = currentWeekStart, we = addDays(ws2,6);
+  const lbl = document.getElementById('meta-week-label');
+  if(lbl) lbl.textContent = ws2.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+' – '+we.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+}
+
 function renderKanban(){
   const todayStr=dateKey(new Date());
   const ws=currentWeekStart,we=addDays(ws,6);
@@ -990,7 +1116,26 @@ function renderKanban(){
           ${d.long_updated_at?`<div class="update-log-row"><i class="ti ti-clock"></i><span><b>${d.long_updated_by||'Editor'}</b> subiu os longos em ${fmtTimestamp(d.long_updated_at)}</span></div>`:''}
           ${d.viral_updated_at?`<div class="update-log-row"><i class="ti ti-clock"></i><span><b>${d.viral_updated_by||'Editor'}</b> subiu os virais em ${fmtTimestamp(d.viral_updated_at)}</span></div>`:''}
         </div>`:''}
-        ${isAdmin?`<div class="admin-notes-block">
+        ${isAdmin?`<div class="prod-block">
+          <div class="prod-label"><i class="ti ti-adjustments"></i>Produção do dia — ajuste se necessário</div>
+          <div class="prod-fields">
+            <div class="prod-field">
+              <label><i class="ti ti-video" style="color:#5dade2;"></i>Longos</label>
+              <input class="prod-input" type="number" min="0" max="7"
+                value="${d.long_link ? ((d.prod_longos!==undefined&&d.prod_longos!==null)?d.prod_longos:7) : 0}"
+                ${!d.long_link?'disabled':''}
+                onchange="saveProd('${key}','prod_longos',this.value)" />
+            </div>
+            <div class="prod-field">
+              <label><i class="ti ti-scissors" style="color:#a569bd;"></i>Virais</label>
+              <input class="prod-input" type="number" min="0" max="5"
+                value="${d.long_link ? ((d.prod_virais!==undefined&&d.prod_virais!==null)?d.prod_virais:5) : 0}"
+                ${!d.viral_link?'disabled':''}
+                onchange="saveProd('${key}','prod_virais',this.value)" />
+            </div>
+          </div>
+        </div>
+        <div class="admin-notes-block">
           <div class="admin-notes-label"><i class="ti ti-lock"></i> Notas internas — visível só para você</div>
           <textarea class="admin-notes-area" placeholder="Vídeos postados, plataformas, observações do dia..."
             oninput="saveField('${key}','admin_notes',this.value)">${d.admin_notes||''}</textarea>
@@ -998,6 +1143,7 @@ function renderKanban(){
       </div>`;
     grid.appendChild(card);
   }
+  updateMeta();
 }
 
 
