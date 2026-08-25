@@ -415,13 +415,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="saldo-bar" id="saldo-bar" style="display:none;">
     <div class="saldo-card gold">
       <div class="saldo-lbl"><i class="ti ti-target" style="color:var(--gold);font-size:12px;"></i>Meta total</div>
-      <div class="saldo-val gold">434</div>
-      <div class="saldo-sub">217 longos + 217 virais</div>
+      <div class="saldo-val gold">372</div>
+      <div class="saldo-sub">217 longos + 155 virais</div>
     </div>
     <div class="saldo-card" id="sc-produzidos">
       <div class="saldo-lbl"><i class="ti ti-video" style="color:#5dade2;font-size:12px;"></i>Produzidos</div>
       <div class="saldo-val" id="sc-prod-val">—</div>
-      <div class="saldo-sub" id="sc-prod-sub">de 434</div>
+      <div class="saldo-sub" id="sc-prod-sub">de 372</div>
     </div>
     <div class="saldo-card" id="sc-devedor">
       <div class="saldo-lbl"><i class="ti ti-alert-triangle" style="color:var(--danger2);font-size:12px;"></i>Saldo devedor</div>
@@ -482,7 +482,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div class="meta-item-nums">
           <span class="meta-item-current" id="meta-viral-cur">0</span>
           <span class="meta-item-sep">/</span>
-          <span class="meta-item-total">35</span>
+          <span class="meta-item-total">155</span>
           <span class="meta-item-pct" id="meta-viral-pct">0%</span>
         </div>
         <div class="meta-progress"><div class="meta-progress-fill fill-purple" id="meta-viral-bar" style="width:0%"></div></div>
@@ -492,7 +492,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <div class="meta-item-nums">
           <span class="meta-item-current gold" id="meta-total-cur">0</span>
           <span class="meta-item-sep">/</span>
-          <span class="meta-item-total">84</span>
+          <span class="meta-item-total">372</span>
           <span class="meta-item-pct" id="meta-total-pct">0%</span>
         </div>
         <div class="meta-progress"><div class="meta-progress-fill fill-gold" id="meta-total-bar" style="width:0%"></div></div>
@@ -502,7 +502,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="days-grid" id="days-grid"></div>
     <div id="toast-container"></div>
   <!-- VIEW REPOSIÇÕES -->
-  <div id="view-reposicoes" style="display:none;padding:1rem;flex-direction:column;gap:.875rem;">
+  <div id="view-reposicoes" style="display:none;padding:1rem;flex-direction:column;gap:.875rem;min-height:200px;">
 
     <!-- ADMIN: Adicionar débito -->
     <div id="admin-rep-form" style="display:none;">
@@ -536,7 +536,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v2.3 · Roity © 2026</div>
+      <div class="legend-version">v2.6 · Roity © 2026</div>
     </div>
   </div>
 </div>
@@ -644,12 +644,17 @@ async function startApp(){
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='flex';
 
+  // Todos veem as tabs (kanban + reposições), admin vê também dashboard
   document.getElementById('nav-tabs').style.display='flex';
-  if(currentUser.role==='admin'){
-    switchTab('dashboard');
-  } else {
-    switchTab('kanban');
-  }
+
+  // Esconder tab de dashboard para editores
+  const tabDash=document.getElementById('tab-dash');
+  if(tabDash) tabDash.style.display=currentUser.role==='admin'?'flex':'none';
+
+  // Restaurar aba salva ou padrão
+  const savedTab=sessionStorage.getItem('roity_tab')||'kanban';
+  const startTab=(currentUser.role==='editor'&&savedTab==='dashboard')?'kanban':savedTab;
+  switchTab(startTab);
 
   updateScheduleBanner();
   // Mostrar boas-vindas só 1x por dia
@@ -962,22 +967,34 @@ function updateScheduleBanner(){
 }
 
 function switchTab(tab){
-  ['dashboard','kanban','reposicoes'].forEach(t=>{
-    const tabEl=document.getElementById('tab-'+t.replace('reposicoes','rep'));
-    if(tabEl)tabEl.classList.toggle('active',tab===t);
+  // Tabs
+  ['tab-dash','tab-kanban','tab-rep'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('active');
   });
-  document.getElementById('view-dashboard').classList.toggle('active',tab==='dashboard');
-  document.getElementById('view-kanban').classList.toggle('active',tab==='kanban');
-  const repView=document.getElementById('view-reposicoes');
-  if(repView)repView.style.display=tab==='reposicoes'?'flex':'none';
+  const activeTab=document.getElementById(
+    tab==='dashboard'?'tab-dash':tab==='kanban'?'tab-kanban':'tab-rep'
+  );
+  if(activeTab) activeTab.classList.add('active');
+
+  // Views
+  const vDash=document.getElementById('view-dashboard');
+  const vKanban=document.getElementById('view-kanban');
+  const vRep=document.getElementById('view-reposicoes');
+  if(vDash) vDash.style.display=tab==='dashboard'?'block':'none';
+  if(vKanban) vKanban.style.display=tab==='kanban'?'block':'none';
+  if(vRep) vRep.style.display=tab==='reposicoes'?'flex':'none';
+
+  // Elementos opcionais
   const metaBar=document.getElementById('meta-bar-wrap');
-  if(metaBar)metaBar.style.display=tab==='kanban'?'flex':'none';
+  if(metaBar) metaBar.style.display=tab==='kanban'?'flex':'none';
   const schedBanner=document.getElementById('schedule-banner');
-  if(schedBanner)schedBanner.style.display=tab==='kanban'?'flex':'none';
+  if(schedBanner) schedBanner.style.display=tab==='kanban'?'flex':'none';
+
   sessionStorage.setItem('roity_tab',tab);
-  if(tab==='dashboard'){renderDashboard();updateSaldoBar();}
-  if(tab==='kanban')renderKanban();
-  if(tab==='reposicoes')renderReposicoes();
+  if(tab==='dashboard'){try{renderDashboard();}catch(e){} try{updateSaldoBar();}catch(e){}}
+  if(tab==='kanban'){try{renderKanban();}catch(e){}}
+  if(tab==='reposicoes'){try{renderReposicoes();}catch(e){}}
 }
 
 function renderDashboard(){
@@ -1374,11 +1391,12 @@ function updateSaldoBar(){
   const pv=document.getElementById('sc-prod-val');
   const ps=document.getElementById('sc-prod-sub');
   if(pv)pv.textContent=prod;
-  if(ps)ps.textContent='de 434 ('+Math.round(prod/434*100)+'%)';
+  if(ps)ps.textContent='de 372 ('+Math.round(prod/372*100)+'%)';
 }
 
 function renderReposicoes(){
-  const isAdmin=currentUser&&currentUser.role==='admin';
+  if(!currentUser)return;
+  const isAdmin=currentUser.role==='admin';
   const adminForm=document.getElementById('admin-rep-form');
   if(adminForm)adminForm.style.display=isAdmin?'block':'none';
   const list=document.getElementById('rep-list');
@@ -1480,15 +1498,20 @@ window.addEventListener('DOMContentLoaded',async()=>{
         currentWeekStart = getWeekStart(new Date());
         await loadWeek(currentWeekStart);
         await loadExtraForDash();
+        await loadReposicoes();
         document.getElementById('loading').style.display='none';
         document.getElementById('app').style.display='flex';
-        if(currentUser.role==='admin'){
-          document.getElementById('nav-tabs').style.display='flex';
-          switchTab(savedTab);
-        } else {
-          document.getElementById('nav-tabs').style.display='none';
-          switchTab('kanban');
-        }
+
+        // Mostrar tabs para todos
+        document.getElementById('nav-tabs').style.display='flex';
+
+        // Esconder dashboard tab para editores
+        const tabDash=document.getElementById('tab-dash');
+        if(tabDash) tabDash.style.display=currentUser.role==='admin'?'flex':'none';
+
+        // Definir aba inicial
+        const startTab=(currentUser.role==='editor'&&savedTab==='dashboard')?'kanban':savedTab;
+        switchTab(startTab);
         updateScheduleBanner();
         subscribeRealtime();
         return;
