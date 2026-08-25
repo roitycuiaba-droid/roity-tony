@@ -85,6 +85,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 /* VIEWS */
 .view{display:none;flex:1;}
 .view.active{display:block;}
+#view-reposicoes{flex-direction:column;}
 
 /* ── DASHBOARD VIEW ── */
 #view-dashboard{padding:1.25rem;}
@@ -502,7 +503,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="days-grid" id="days-grid"></div>
     <div id="toast-container"></div>
   <!-- VIEW REPOSIÇÕES -->
-  <div id="view-reposicoes" style="display:none;padding:1rem;flex-direction:column;gap:.875rem;min-height:200px;">
+  <div id="view-reposicoes" style="display:none;padding:1rem;gap:.875rem;min-height:200px;">
 
     <!-- ADMIN: Adicionar débito -->
     <div id="admin-rep-form" style="display:none;">
@@ -536,7 +537,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v2.6 · Roity © 2026</div>
+      <div class="legend-version">v2.7 · Roity © 2026</div>
     </div>
   </div>
 </div>
@@ -983,7 +984,7 @@ function switchTab(tab){
   const vRep=document.getElementById('view-reposicoes');
   if(vDash) vDash.style.display=tab==='dashboard'?'block':'none';
   if(vKanban) vKanban.style.display=tab==='kanban'?'block':'none';
-  if(vRep) vRep.style.display=tab==='reposicoes'?'flex':'none';
+  if(vRep) vRep.style.display=tab==='reposicoes'?'block':'none';
 
   // Elementos opcionais
   const metaBar=document.getElementById('meta-bar-wrap');
@@ -994,7 +995,9 @@ function switchTab(tab){
   sessionStorage.setItem('roity_tab',tab);
   if(tab==='dashboard'){try{renderDashboard();}catch(e){} try{updateSaldoBar();}catch(e){}}
   if(tab==='kanban'){try{renderKanban();}catch(e){}}
-  if(tab==='reposicoes'){try{renderReposicoes();}catch(e){}}
+  if(tab==='reposicoes'){
+    setTimeout(()=>{try{renderReposicoes();}catch(e){console.error('rep render:',e);}},50);
+  }
 }
 
 function renderDashboard(){
@@ -1514,6 +1517,8 @@ window.addEventListener('DOMContentLoaded',async()=>{
         switchTab(startTab);
         updateScheduleBanner();
         subscribeRealtime();
+        // Forçar render da aba ativa
+        if(startTab==='reposicoes') setTimeout(()=>renderReposicoes(),100);
         return;
       }
     }catch(e){}
