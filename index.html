@@ -438,7 +438,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
   <div id="schedule-banner">
     <i class="ti ti-alert-triangle" id="banner-icon"></i>
-    <span id="banner-text"></span>
+    <span id="banner-text" style="flex:1;"></span>
+    <button onclick="document.getElementById('schedule-banner').style.display='none'" style="background:none;border:none;color:inherit;cursor:pointer;font-size:16px;padding:2px 6px;opacity:.7;flex-shrink:0;" title="Fechar"><i class="ti ti-x"></i></button>
   </div>
 
   <!-- NAV TABS (admin only) -->
@@ -502,45 +503,46 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   </div>
   <div class="days-grid" id="days-grid"></div>
     <div id="toast-container"></div>
-  <!-- VIEW REPOSIÇÕES -->
-  <div id="view-reposicoes" style="display:none;padding:1rem;gap:.875rem;min-height:200px;">
-
-    <!-- ADMIN: Adicionar débito -->
-    <div id="admin-rep-form" style="display:none;">
-      <div class="rep-form-card">
-        <div class="rep-form-title"><i class="ti ti-plus"></i>Registrar débito</div>
-        <div class="rep-form-grid" style="margin-bottom:8px;">
-          <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
-          <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
-          <div class="ff-rep"><label>Longos devidos</label><input type="number" id="rf-longos" placeholder="0" min="0" max="7"/></div>
-          <div class="ff-rep"><label>Virais devidos</label><input type="number" id="rf-virais" placeholder="0" min="0" max="5"/></div>
-        </div>
-        <div class="ff-rep" style="margin-bottom:8px;"><label>Observação</label><textarea id="rf-obs" placeholder="O que aconteceu nesse dia..."></textarea></div>
-        <button class="add-rep-btn" onclick="addReposicao()"><i class="ti ti-plus"></i> Registrar débito</button>
-      </div>
-    </div>
-
-    <!-- LISTA DE REPOSIÇÕES -->
-    <div id="rep-list"></div>
-
-    <!-- EMPTY STATE -->
-    <div id="rep-empty" style="display:none;text-align:center;padding:2rem;color:var(--text3);">
-      <i class="ti ti-circle-check" style="font-size:32px;color:var(--success2);display:block;margin-bottom:8px;"></i>
-      <div style="font-size:14px;font-weight:600;color:var(--success2);">Nenhum débito pendente!</div>
-      <div style="font-size:12px;margin-top:4px;">Todos os vídeos estão em dia.</div>
-    </div>
-  </div>
-
   <div class="legend">
       <div class="leg"><span class="sdot sdot-g"></span> Postado</div>
       <div class="leg"><span class="sdot sdot-r"></span> Não postado</div>
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v2.7 · Roity © 2026</div>
+      <div class="legend-version">v2.9 · Roity © 2026</div>
     </div>
   </div>
 </div>
+
+<!-- VIEW REPOSIÇÕES -->
+<div id="view-reposicoes" style="display:none;padding:1rem;flex-direction:column;gap:.875rem;min-height:200px;">
+
+  <!-- ADMIN: Adicionar débito -->
+  <div id="admin-rep-form" style="display:none;">
+    <div class="rep-form-card">
+      <div class="rep-form-title"><i class="ti ti-plus"></i>Registrar débito</div>
+      <div class="rep-form-grid" style="margin-bottom:8px;">
+        <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
+        <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
+        <div class="ff-rep"><label>Longos devidos</label><input type="number" id="rf-longos" placeholder="0" min="0" max="7"/></div>
+        <div class="ff-rep"><label>Virais devidos</label><input type="number" id="rf-virais" placeholder="0" min="0" max="5"/></div>
+      </div>
+      <div class="ff-rep" style="margin-bottom:8px;"><label>Observação</label><textarea id="rf-obs" placeholder="O que aconteceu nesse dia..."></textarea></div>
+      <button class="add-rep-btn" onclick="addReposicao()"><i class="ti ti-plus"></i> Registrar débito</button>
+    </div>
+  </div>
+
+  <!-- LISTA -->
+  <div id="rep-list"></div>
+
+  <!-- EMPTY STATE -->
+  <div id="rep-empty" style="display:none;text-align:center;padding:2rem;color:var(--text3);">
+    <i class="ti ti-circle-check" style="font-size:32px;color:var(--success2);display:block;margin-bottom:8px;"></i>
+    <div style="font-size:14px;font-weight:600;color:var(--success2);">Nenhum débito pendente!</div>
+    <div style="font-size:12px;margin-top:4px;">Todos os vídeos estão em dia.</div>
+  </div>
+</div>
+
 
 <!-- WELCOME POPUP -->
 <div class="popup-overlay" id="welcome-popup">
@@ -893,7 +895,6 @@ function scheduleSave(key, field){
 }
 
 async function upsertSilent(key, field){
-  // Salva só o campo alterado sem re-renderizar o DOM
   setSyncing(true);
   const d = getDay(key);
   const update = { updated_at: new Date().toISOString() };
@@ -916,6 +917,7 @@ function saveProd(key, field, val){
     );
     setSyncing(false);
     updateMeta();
+    updateSaldoBar();
     playConfirm();
   }, 600);
 }
@@ -996,7 +998,16 @@ function switchTab(tab){
   if(tab==='dashboard'){try{renderDashboard();}catch(e){} try{updateSaldoBar();}catch(e){}}
   if(tab==='kanban'){try{renderKanban();}catch(e){}}
   if(tab==='reposicoes'){
-    setTimeout(()=>{try{renderReposicoes();}catch(e){console.error('rep render:',e);}},50);
+    // Garantir que o elemento está visível antes de renderizar
+    const repEl=document.getElementById('view-reposicoes');
+    if(repEl){
+      repEl.style.display='block';
+      repEl.style.minHeight='200px';
+    }
+    setTimeout(()=>{
+      try{renderReposicoes();}
+      catch(e){console.error('rep render error:',e);}
+    },100);
   }
 }
 
@@ -1404,8 +1415,12 @@ function renderReposicoes(){
   if(adminForm)adminForm.style.display=isAdmin?'block':'none';
   const list=document.getElementById('rep-list');
   const empty=document.getElementById('rep-empty');
-  if(!list)return;
-  if(reposicoes.length===0){list.innerHTML='';if(empty)empty.style.display='block';return;}
+  if(!list){console.error('rep-list not found');return;}
+  if(reposicoes.length===0){
+    list.innerHTML='';
+    if(empty)empty.style.display='block';
+    return;
+  }
   if(empty)empty.style.display='none';
   const tsFmt=(ts)=>ts?new Date(ts).toLocaleString('pt-BR',{timeZone:'America/Cuiaba',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
   list.innerHTML=reposicoes.map(r=>{
