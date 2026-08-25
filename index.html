@@ -509,18 +509,27 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v2.9 · Roity © 2026</div>
+      <div class="legend-version">v3.0 · Roity © 2026</div>
     </div>
   </div>
 </div>
 
 <!-- VIEW REPOSIÇÕES -->
-<div id="view-reposicoes" style="display:none;padding:1rem;flex-direction:column;gap:.875rem;min-height:200px;">
+<div id="view-reposicoes" style="display:none;">
+  <!-- LISTA DE DÉBITOS (estilo kanban) -->
+  <div id="rep-list" style="padding:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;"></div>
 
-  <!-- ADMIN: Adicionar débito -->
-  <div id="admin-rep-form" style="display:none;">
+  <!-- EMPTY STATE -->
+  <div id="rep-empty" style="display:none;text-align:center;padding:3rem 1rem;color:var(--text3);">
+    <i class="ti ti-circle-check" style="font-size:40px;color:var(--success2);display:block;margin-bottom:10px;"></i>
+    <div style="font-size:15px;font-weight:700;color:var(--success2);">Nenhum débito pendente!</div>
+    <div style="font-size:12px;margin-top:5px;">Todos os vídeos estão em dia.</div>
+  </div>
+
+  <!-- ADMIN: Registrar débito (abaixo da lista) -->
+  <div id="admin-rep-form" style="display:none;padding:0 1rem 1rem;">
     <div class="rep-form-card">
-      <div class="rep-form-title"><i class="ti ti-plus"></i>Registrar débito</div>
+      <div class="rep-form-title"><i class="ti ti-plus"></i>Registrar novo débito</div>
       <div class="rep-form-grid" style="margin-bottom:8px;">
         <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
         <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
@@ -530,16 +539,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="ff-rep" style="margin-bottom:8px;"><label>Observação</label><textarea id="rf-obs" placeholder="O que aconteceu nesse dia..."></textarea></div>
       <button class="add-rep-btn" onclick="addReposicao()"><i class="ti ti-plus"></i> Registrar débito</button>
     </div>
-  </div>
-
-  <!-- LISTA -->
-  <div id="rep-list"></div>
-
-  <!-- EMPTY STATE -->
-  <div id="rep-empty" style="display:none;text-align:center;padding:2rem;color:var(--text3);">
-    <i class="ti ti-circle-check" style="font-size:32px;color:var(--success2);display:block;margin-bottom:8px;"></i>
-    <div style="font-size:14px;font-weight:600;color:var(--success2);">Nenhum débito pendente!</div>
-    <div style="font-size:12px;margin-top:4px;">Todos os vídeos estão em dia.</div>
   </div>
 </div>
 
@@ -1409,53 +1408,70 @@ function updateSaldoBar(){
 }
 
 function renderReposicoes(){
-  if(!currentUser)return;
-  const isAdmin=currentUser.role==='admin';
-  const adminForm=document.getElementById('admin-rep-form');
-  if(adminForm)adminForm.style.display=isAdmin?'block':'none';
-  const list=document.getElementById('rep-list');
-  const empty=document.getElementById('rep-empty');
-  if(!list){console.error('rep-list not found');return;}
-  if(reposicoes.length===0){
+  if(!currentUser) return;
+  const isAdmin = currentUser.role==='admin';
+  const adminForm = document.getElementById('admin-rep-form');
+  const list = document.getElementById('rep-list');
+  const empty = document.getElementById('rep-empty');
+  if(!list||!empty) return;
+
+  if(adminForm) adminForm.style.display = isAdmin ? 'block' : 'none';
+
+  if(!reposicoes||reposicoes.length===0){
     list.innerHTML='';
-    if(empty)empty.style.display='block';
+    list.style.display='none';
+    empty.style.display='block';
     return;
   }
-  if(empty)empty.style.display='none';
-  const tsFmt=(ts)=>ts?new Date(ts).toLocaleString('pt-BR',{timeZone:'America/Cuiaba',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-  list.innerHTML=reposicoes.map(r=>{
-    const pendente=!r.rudney_entregue||!r.teixeira_entregue;
-    const dia=new Date(r.dia_falha+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
-    const rudneyOk=r.rudney_entregue;
-    const teixeiraOk=r.teixeira_entregue;
-    return `<div class="rep-card ${pendente?'pendente':'entregue'}">
-      <div class="rep-header ${pendente?'pendente':'entregue'}">
-        <div class="rep-title"><i class="ti ti-calendar-x" style="color:${pendente?'var(--danger2)':'var(--success2)'}"></i>${dia} — ${r.semana_ref}</div>
-        <div class="rep-status ${pendente?'p':'e'}">${pendente?'<i class="ti ti-alert-triangle"></i> Pendente':'<i class="ti ti-circle-check"></i> Entregue'}</div>
+
+  empty.style.display='none';
+  list.style.display='grid';
+
+  const tsFmt = ts => ts ? new Date(ts).toLocaleString('pt-BR',{timeZone:'America/Cuiaba',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+
+  list.innerHTML = reposicoes.map(r => {
+    const pendente = !r.rudney_entregue || !r.teixeira_entregue;
+    const dia = new Date(r.dia_falha+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
+    const rOk = r.rudney_entregue;
+    const tOk = r.teixeira_entregue;
+    const allOk = rOk && tOk;
+
+    return `<div class="day-card${pendente?' sched-alert-card':''}" style="border-color:${allOk?'var(--success-b)':'var(--danger-b)'};${pendente?'animation:pulse-danger 2s infinite;':''}">
+      <div class="day-header" style="background:${allOk?'rgba(26,122,64,0.15)':'rgba(192,57,43,0.12)'};">
+        <div class="day-title" style="display:flex;align-items:center;gap:6px;">
+          <i class="ti ${allOk?'ti-circle-check':'ti-alert-triangle'}" style="color:${allOk?'var(--success2)':'var(--danger2)'};font-size:13px;"></i>
+          ${dia}
+        </div>
+        <div class="day-badges">
+          <span style="font-size:10px;font-weight:700;color:${allOk?'var(--success2)':'var(--danger2)'};">
+            ${allOk?'Entregue':'Pendente'}
+          </span>
+        </div>
       </div>
-      <div class="rep-body">
-        <div class="rep-debts">
-          ${r.longos_devidos>0?`<div class="rep-debt ${rudneyOk?'zero':''}"><i class="ti ti-video"></i>${r.longos_devidos} longos ${rudneyOk?'✓':''}</div>`:''}
-          ${r.virais_devidos>0?`<div class="rep-debt ${teixeiraOk?'zero':''}"><i class="ti ti-scissors"></i>${r.virais_devidos} virais ${teixeiraOk?'✓':''}</div>`:''}
+      <div class="day-body">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">${r.semana_ref}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+          ${r.longos_devidos>0?`<div class="rep-debt${rOk?' zero':''}"><i class="ti ti-video"></i>${r.longos_devidos} longos${rOk?' ✓':''}</div>`:''}
+          ${r.virais_devidos>0?`<div class="rep-debt${tOk?' zero':''}"><i class="ti ti-scissors"></i>${r.virais_devidos} virais${tOk?' ✓':''}</div>`:''}
         </div>
         ${r.observacao?`<div class="rep-obs"><i class="ti ti-message"></i> ${r.observacao}</div>`:''}
-        ${r.longos_devidos>0?`<div class="rep-editor">
-          <div class="rep-editor-lbl"><i class="ti ti-video"></i>Rudney — reposição dos longos</div>
-          <div class="rep-link-row">
-            <input class="rep-link-input" type="text" placeholder="Cole o link do Drive com os longos..." value="${r.rudney_link||''}" ${!isAdmin&&rudneyOk?'readonly':''} oninput="saveRepField('${r.id}','rudney_link',this.value)"/>
-            ${r.rudney_link?`<button class="rep-open-btn" onclick="window.open('${r.rudney_link}','_blank')"><i class="ti ti-external-link"></i></button>`:''}
-            ${isAdmin&&!rudneyOk?`<button class="rep-check-btn" onclick="marcarEntregue('${r.id}','rudney')" ${!r.rudney_link?'disabled':''}>✓ Ok</button>`:''}
+        ${r.longos_devidos>0?`<div class="editor-block" style="margin-top:4px;">
+          <div class="editor-label"><i class="ti ti-video"></i>Rudney — longos</div>
+          <div class="link-row">
+            <input class="link-input" type="text" placeholder="Link do Drive (reposição longos)..." value="${r.rudney_link||''}" ${!isAdmin&&rOk?'readonly':''} oninput="saveRepField('${r.id}','rudney_link',this.value)"/>
+            ${r.rudney_link?`<button class="open-btn" onclick="window.open('${r.rudney_link}','_blank')"><i class="ti ti-external-link"></i></button>`:''}
           </div>
-          ${rudneyOk?`<div class="rep-entregue-info"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.rudney_entregue_at)}</div>`:''}
+          ${isAdmin&&!rOk?`<button class="rep-check-btn" style="margin-top:5px;width:100%;" onclick="marcarEntregue('${r.id}','rudney')" ${!r.rudney_link?'disabled':''}><i class="ti ti-check"></i> Confirmar entrega</button>`:''}
+          ${rOk?`<div class="rep-entregue-info"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.rudney_entregue_at)}</div>`:''}
         </div>`:''}
-        ${r.virais_devidos>0?`<div class="rep-editor">
-          <div class="rep-editor-lbl"><i class="ti ti-scissors"></i>Teixeira — reposição dos virais</div>
-          <div class="rep-link-row">
-            <input class="rep-link-input" type="text" placeholder="Cole o link do Drive com os virais..." value="${r.teixeira_link||''}" ${!isAdmin&&teixeiraOk?'readonly':''} oninput="saveRepField('${r.id}','teixeira_link',this.value)"/>
-            ${r.teixeira_link?`<button class="rep-open-btn" onclick="window.open('${r.teixeira_link}','_blank')"><i class="ti ti-external-link"></i></button>`:''}
-            ${isAdmin&&!teixeiraOk?`<button class="rep-check-btn" onclick="marcarEntregue('${r.id}','teixeira')" ${!r.teixeira_link?'disabled':''}>✓ Ok</button>`:''}
+        ${r.virais_devidos>0?`<div class="editor-block" style="margin-top:4px;">
+          <div class="editor-label"><i class="ti ti-scissors"></i>Teixeira — virais</div>
+          <div class="link-row">
+            <input class="link-input" type="text" placeholder="Link do Drive (reposição virais)..." value="${r.teixeira_link||''}" ${!isAdmin&&tOk?'readonly':''} oninput="saveRepField('${r.id}','teixeira_link',this.value)"/>
+            ${r.teixeira_link?`<button class="open-btn" onclick="window.open('${r.teixeira_link}','_blank')"><i class="ti ti-external-link"></i></button>`:''}
           </div>
-          ${teixeiraOk?`<div class="rep-entregue-info"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.teixeira_entregue_at)}</div>`:''}
+          ${isAdmin&&!tOk?`<button class="rep-check-btn" style="margin-top:5px;width:100%;" onclick="marcarEntregue('${r.id}','teixeira')" ${!r.teixeira_link?'disabled':''}><i class="ti ti-check"></i> Confirmar entrega</button>`:''}
+          ${tOk?`<div class="rep-entregue-info"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.teixeira_entregue_at)}</div>`:''}
         </div>`:''}
       </div>
     </div>`;
