@@ -508,7 +508,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v3.5 · Roity © 2026</div>
+      <div class="legend-version">v3.6 · Roity © 2026</div>
     </div>
 
     <!-- SEÇÃO DE DÉBITOS — visível para todos abaixo das semanas -->
@@ -532,8 +532,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           </div>
           <input type="hidden" id="rf-id" value=""/>
           <div class="rep-form-grid" style="margin-bottom:8px;">
-            <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
-            <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
+            <div class="ff-rep"><label>Dia que falhou</label>
+              <select id="rf-dia" style="background:rgba(255,255,255,0.04);border:1px solid var(--glass-b);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--text);font-family:inherit;width:100%;-webkit-appearance:none;">
+                <option value="">Selecione o dia...</option>
+              </select>
+            </div>
+            <div class="ff-rep"><label>Semana</label><input type="text" id="rf-semana" readonly style="background:rgba(255,255,255,0.02);border:1px solid var(--glass-b);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--text2);font-family:inherit;width:100%;"/></div>
             <div class="ff-rep"><label>Longos devidos</label><input type="number" id="rf-longos" placeholder="0" min="0" max="7"/></div>
             <div class="ff-rep"><label>Virais devidos</label><input type="number" id="rf-virais" placeholder="0" min="0" max="5"/></div>
           </div>
@@ -1376,6 +1380,36 @@ function renderKanban(){
     grid.appendChild(card);
   }
   updateMeta();
+  renderReposicoes();
+  populateDiaSelect();
+}
+
+function populateDiaSelect(){
+  const sel = document.getElementById('rf-dia');
+  if(!sel) return;
+  const ws = currentWeekStart;
+  const dias = diasProjeto(ws);
+  const current = sel.value;
+  const weekLabel = dias.length > 0 ?
+    ws.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' a ' +
+    dias[dias.length-1].toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+
+  sel.innerHTML = '<option value="">Selecione o dia...</option>';
+  dias.forEach(d => {
+    const key = dateKey(d);
+    const label = d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+    if(key === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Auto-preencher semana ao selecionar dia
+  sel.onchange = function(){
+    const rfSemana = document.getElementById('rf-semana');
+    if(rfSemana && this.value) rfSemana.value = weekLabel;
+  };
 }
 
 
@@ -1475,11 +1509,29 @@ function updateSaldoBar(){
 function renderReposicoes(){
   if(!currentUser) return;
   const isAdmin = currentUser.role==='admin';
+  const isRudney = currentUser.id==='rudney';
+  const isTeixeira = currentUser.id==='teixeira';
   const list = document.getElementById('rep-list');
   const empty = document.getElementById('rep-empty');
   if(!list||!empty) return;
 
-  if(!reposicoes||reposicoes.length===0){
+  // Filtrar por semana atual
+  const ws = currentWeekStart;
+  const we = addDays(ws, 6);
+  const wsKey = dateKey(ws);
+  const weKey = dateKey(we);
+
+  let filtradas = (reposicoes||[]).filter(r => {
+    // Débito pertence à semana se o dia_falha está dentro dela
+    if(!r.dia_falha) return false;
+    return r.dia_falha >= wsKey && r.dia_falha <= weKey;
+  });
+
+  // Filtrar por editor
+  if(isRudney)   filtradas = filtradas.filter(r => r.longos_devidos > 0);
+  if(isTeixeira) filtradas = filtradas.filter(r => r.virais_devidos > 0);
+
+  if(filtradas.length===0){
     list.innerHTML='';
     list.style.display='none';
     empty.style.display='block';
@@ -1491,7 +1543,7 @@ function renderReposicoes(){
 
   const tsFmt = ts => ts ? new Date(ts).toLocaleString('pt-BR',{timeZone:'America/Cuiaba',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
 
-  list.innerHTML = reposicoes.map(r => {
+  list.innerHTML = filtradas.map(r => {
     const pendente = !r.rudney_entregue || !r.teixeira_entregue;
     const dia = new Date(r.dia_falha+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
     const rOk = r.rudney_entregue;
@@ -1552,14 +1604,19 @@ function editRep(id){
   const r = reposicoes.find(x=>x.id===id);
   if(!r) return;
   document.getElementById('rf-id').value = r.id;
+  // Garantir que o select tem a opção do dia
+  populateDiaSelect();
   document.getElementById('rf-dia').value = r.dia_falha||'';
   document.getElementById('rf-semana').value = r.semana_ref||'';
   document.getElementById('rf-longos').value = r.longos_devidos||0;
   document.getElementById('rf-virais').value = r.virais_devidos||0;
   document.getElementById('rf-obs').value = r.observacao||'';
-  document.getElementById('rep-form-title-txt').textContent = 'Editar débito';
-  document.getElementById('rep-submit-txt').textContent = 'Salvar alterações';
-  document.getElementById('rep-cancel-btn').style.display = 'block';
+  const titleTxt = document.getElementById('rep-form-title-txt');
+  const submitTxt = document.getElementById('rep-submit-txt');
+  const cancelBtn = document.getElementById('rep-cancel-btn');
+  if(titleTxt) titleTxt.textContent = 'Editar débito';
+  if(submitTxt) submitTxt.textContent = 'Salvar alterações';
+  if(cancelBtn) cancelBtn.style.display = 'block';
   const form = document.getElementById('kanban-rep-form');
   if(form) form.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -1569,16 +1626,19 @@ function cancelEditRep(){
   ['rf-dia','rf-semana','rf-longos','rf-virais','rf-obs'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
-  document.getElementById('rep-form-title-txt').textContent = 'Registrar novo débito';
-  document.getElementById('rep-submit-txt').textContent = 'Registrar débito';
-  document.getElementById('rep-cancel-btn').style.display = 'none';
+  const titleTxt = document.getElementById('rep-form-title-txt');
+  const submitTxt = document.getElementById('rep-submit-txt');
+  const cancelBtn = document.getElementById('rep-cancel-btn');
+  if(titleTxt) titleTxt.textContent = 'Registrar débito';
+  if(submitTxt) submitTxt.textContent = 'Registrar débito';
+  if(cancelBtn) cancelBtn.style.display = 'none';
 }
 
 async function submitReposicao(){
   const id = document.getElementById('rf-id').value;
   const dia = document.getElementById('rf-dia').value;
   const semana = document.getElementById('rf-semana').value;
-  if(!dia||!semana){alert('Preencha o dia e a semana!');return;}
+  if(!dia){alert('Selecione o dia!');return;}
   const payload = {
     dia_falha:dia, semana_ref:semana,
     longos_devidos:parseInt(document.getElementById('rf-longos').value)||0,
