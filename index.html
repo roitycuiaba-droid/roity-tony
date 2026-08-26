@@ -446,7 +446,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="app-tabs" id="nav-tabs" style="display:none;">
     <button class="app-tab active" id="tab-dash" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
     <button class="app-tab" id="tab-kanban" onclick="switchTab('kanban')"><i class="ti ti-calendar-week"></i> Semana</button>
-    <button class="app-tab" id="tab-rep" onclick="switchTab('reposicoes')"><i class="ti ti-refresh-alert"></i> Reposições<span class="rep-badge" id="rep-badge" style="display:none;">0</span></button>
   </div>
 
   <!-- DASHBOARD VIEW -->
@@ -509,63 +508,42 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v3.4 · Roity © 2026</div>
+      <div class="legend-version">v3.5 · Roity © 2026</div>
     </div>
 
-    <!-- FORMULÁRIO DE DÉBITOS — visível só para admin, abaixo das semanas -->
-    <div id="kanban-rep-form" style="display:none;padding:1rem;">
-      <div class="rep-form-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div class="rep-form-title" style="margin:0;"><i class="ti ti-plus"></i><span id="rep-form-title-txt">Registrar débito</span></div>
-          <button id="rep-cancel-btn" onclick="cancelEditRep()" style="display:none;background:none;border:1px solid var(--glass-b);border-radius:7px;color:var(--text3);font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;">Cancelar</button>
+    <!-- SEÇÃO DE DÉBITOS — visível para todos abaixo das semanas -->
+    <div id="debitos-section" style="padding:1rem;">
+
+      <!-- LISTA DE CARDS DE DÉBITOS (editores colam links aqui) -->
+      <div id="rep-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1rem;"></div>
+
+      <!-- EMPTY STATE -->
+      <div id="rep-empty" style="display:none;text-align:center;padding:1.5rem;color:var(--text3);background:var(--bg2);border:1px solid var(--glass-b);border-radius:14px;margin-bottom:1rem;">
+        <i class="ti ti-circle-check" style="font-size:32px;color:var(--success2);display:block;margin-bottom:8px;"></i>
+        <div style="font-size:13px;font-weight:700;color:var(--success2);">Nenhum débito pendente!</div>
+      </div>
+
+      <!-- FORMULÁRIO ADMIN: registrar/editar débito -->
+      <div id="kanban-rep-form" style="display:none;">
+        <div class="rep-form-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
+            <div class="rep-form-title" style="margin:0;"><i class="ti ti-plus"></i><span id="rep-form-title-txt">Registrar débito</span></div>
+            <button id="rep-cancel-btn" onclick="cancelEditRep()" style="display:none;background:none;border:1px solid var(--glass-b);border-radius:7px;color:var(--text3);font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;">Cancelar</button>
+          </div>
+          <input type="hidden" id="rf-id" value=""/>
+          <div class="rep-form-grid" style="margin-bottom:8px;">
+            <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
+            <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
+            <div class="ff-rep"><label>Longos devidos</label><input type="number" id="rf-longos" placeholder="0" min="0" max="7"/></div>
+            <div class="ff-rep"><label>Virais devidos</label><input type="number" id="rf-virais" placeholder="0" min="0" max="5"/></div>
+          </div>
+          <div class="ff-rep" style="margin-bottom:8px;"><label>Observação</label><textarea id="rf-obs" placeholder="O que aconteceu nesse dia..."></textarea></div>
+          <button class="add-rep-btn" onclick="submitReposicao()"><i class="ti ti-plus"></i> <span id="rep-submit-txt">Registrar débito</span></button>
         </div>
-        <input type="hidden" id="rf-id" value=""/>
-        <div class="rep-form-grid" style="margin-bottom:8px;">
-          <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
-          <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
-          <div class="ff-rep"><label>Longos devidos</label><input type="number" id="rf-longos" placeholder="0" min="0" max="7"/></div>
-          <div class="ff-rep"><label>Virais devidos</label><input type="number" id="rf-virais" placeholder="0" min="0" max="5"/></div>
-        </div>
-        <div class="ff-rep" style="margin-bottom:8px;"><label>Observação</label><textarea id="rf-obs" placeholder="O que aconteceu nesse dia..."></textarea></div>
-        <button class="add-rep-btn" onclick="submitReposicao()"><i class="ti ti-plus"></i> <span id="rep-submit-txt">Registrar débito</span></button>
       </div>
     </div>
   </div>
 </div>
-
-<!-- VIEW REPOSIÇÕES -->
-<div id="view-reposicoes" style="display:none;padding:1rem;box-sizing:border-box;overflow-y:auto;">
-
-  <!-- EMPTY STATE -->
-  <div id="rep-empty" style="display:none;text-align:center;padding:2rem;color:var(--text3);">
-    <i class="ti ti-circle-check" style="font-size:40px;color:var(--success2);display:block;margin-bottom:10px;"></i>
-    <div style="font-size:15px;font-weight:700;color:var(--success2);">Nenhum débito pendente!</div>
-    <div style="font-size:12px;margin-top:5px;">Todos os vídeos estão em dia.</div>
-  </div>
-
-  <!-- LISTA DE DÉBITOS -->
-  <div id="rep-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1rem;"></div>
-
-  <!-- formulário movido para aba Semana -->
-  <div id="admin-rep-form" style="display:none;">
-    <div class="rep-form-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-        <div class="rep-form-title" style="margin:0;"><i class="ti ti-plus"></i><span id="rep-form-title-txt">Registrar novo débito</span></div>
-        <button id="rep-cancel-btn" onclick="cancelEditRep()" style="display:none;background:none;border:1px solid var(--glass-b);border-radius:7px;color:var(--text3);font-size:11px;padding:4px 10px;cursor:pointer;font-family:inherit;">Cancelar</button>
-      </div>
-      <input type="hidden" id="rf-id" value=""/>
-      <div class="rep-form-grid" style="margin-bottom:8px;">
-        <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
-        <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
-        <div class="ff-rep"><label>Longos devidos</label><input type="number" id="rf-longos" placeholder="0" min="0" max="7"/></div>
-        <div class="ff-rep"><label>Virais devidos</label><input type="number" id="rf-virais" placeholder="0" min="0" max="5"/></div>
-      </div>
-      <div class="ff-rep" style="margin-bottom:8px;"><label>Observação</label><textarea id="rf-obs" placeholder="O que aconteceu nesse dia..."></textarea></div>
-      <button class="add-rep-btn" id="rep-submit-btn" onclick="submitReposicao()"><i class="ti ti-plus"></i> <span id="rep-submit-txt">Registrar débito</span></button>
-    </div>
-  </div>
-</div>
-
 
 <!-- WELCOME POPUP -->
 <div class="popup-overlay" id="welcome-popup">
@@ -1003,316 +981,26 @@ function updateScheduleBanner(){
 }
 
 function switchTab(tab){
-  // Atualizar tabs ativas
-  ['tab-dash','tab-kanban','tab-rep'].forEach(id=>{
+  ['tab-dash','tab-kanban'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  const tabMap={'dashboard':'tab-dash','kanban':'tab-kanban','reposicoes':'tab-rep'};
-  const activeTab=document.getElementById(tabMap[tab]);
-  if(activeTab) activeTab.classList.add('active');
+  if(document.getElementById('tab-dash')) document.getElementById(tab==='dashboard'?'tab-dash':'tab-kanban').classList.add('active');
 
-  // Esconder todas as views principais
-  ['view-dashboard','view-kanban','view-reposicoes'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.style.display='none';
-  });
+  const vDash=document.getElementById('view-dashboard');
+  const vKanban=document.getElementById('view-kanban');
+  if(vDash) vDash.style.display=tab==='dashboard'?'block':'none';
+  if(vKanban) vKanban.style.display=tab==='kanban'?'block':'none';
 
-  // Mostrar view correta
-  const viewMap={'dashboard':'view-dashboard','kanban':'view-kanban','reposicoes':'view-reposicoes'};
-  const target=document.getElementById(viewMap[tab]);
-  if(target) target.style.display='block';
-
-  // Banner só na aba kanban
   const banner=document.getElementById('schedule-banner');
   if(banner) banner.style.display=tab==='kanban'?'':'none';
 
+  const krf=document.getElementById('kanban-rep-form');
+  if(krf) krf.style.display=(tab==='kanban'&&currentUser&&currentUser.role==='admin')?'block':'none';
+
   sessionStorage.setItem('roity_tab',tab);
   if(tab==='dashboard'){try{renderDashboard();updateSaldoBar();}catch(e){}}
-  if(tab==='kanban'){
-    try{renderKanban();}catch(e){}
-    const krf=document.getElementById('kanban-rep-form');
-    if(krf) krf.style.display=(currentUser&&currentUser.role==='admin')?'block':'none';
-  }
-  if(tab==='reposicoes'){setTimeout(()=>{try{renderReposicoes();}catch(e){console.error('rep:',e);}},50);}
-}
-
-async function refreshData(){
-  setSyncing(true);
-  const btn = document.querySelector('[onclick="refreshData()"]');
-  if(btn) btn.style.opacity='0.5';
-  await loadWeek(currentWeekStart);
-  await loadExtraForDash();
-  await loadReposicoes();
-  updateScheduleBanner();
-  updateSaldoBar();
-  if(currentUser.role==='admin'){renderDashboard();renderKanban();}
-  else renderKanban();
-  renderReposicoes();
-  setSyncing(false);
-  if(btn){btn.style.opacity='1';}
-}
-
-function isUserTyping(){
-  const active = document.activeElement;
-  return active && (active.tagName==='INPUT'||active.tagName==='TEXTAREA');
-}
-
-function subscribeRealtime(){
-  sb.channel('dashboard-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'tony_dashboard'},
-      async (payload)=>{
-        const row=payload.new||payload.old;
-        if(!row||!row.day_key) return;
-        // Atualiza cache sempre
-        const prev = cache[row.day_key] || {};
-        cache[row.day_key] = row;
-        updateScheduleBanner();
-
-        // Notificar admin quando editor sobe link
-        if(currentUser && currentUser.role==='admin'){
-          const dayFmt = new Date(row.day_key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
-          if(row.long_updated_at && row.long_updated_at !== prev.long_updated_at){
-            showToast('ti-video', `${row.long_updated_by||'Editor'} subiu os longos`, `Dia ${dayFmt} — link do Drive disponível`);
-          }
-          if(row.viral_updated_at && row.viral_updated_at !== prev.viral_updated_at){
-            showToast('ti-scissors', `${row.viral_updated_by||'Editor'} subiu os virais`, `Dia ${dayFmt} — link do Drive disponível`);
-          }
-        }
-        // Só re-renderiza se o usuário NÃO estiver digitando
-        if(isUserTyping()){
-          // Agenda re-render para quando sair do campo
-          if(!window._pendingRender) window._pendingRender = true;
-          return;
-        }
-        if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
-        else if(currentUser) renderKanban();
-      })
-    .subscribe();
-  // Quando sair de qualquer campo, re-renderiza se havia pendência
-  document.addEventListener('focusout', ()=>{
-    if(window._pendingRender){
-      window._pendingRender = false;
-      setTimeout(()=>{
-        if(!isUserTyping()){
-          if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
-          else if(currentUser) renderKanban();
-        }
-      }, 200);
-    }
-  });
-}
-
-function showWelcomePopup(){
-  document.getElementById('popup-time').textContent=getGreeting()+' • '+new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
-  document.getElementById('popup-name').textContent=currentUser.name+'!';
-  document.getElementById('popup-quote').textContent=QUOTES[Math.floor(Math.random()*QUOTES.length)];
-  document.getElementById('welcome-popup').classList.add('visible');
-}
-function closeWelcome(){document.getElementById('welcome-popup').classList.remove('visible');}
-
-function showEditorPopup(){
-  const today=new Date();today.setHours(0,0,0,0);
-  const checks=[today,addDays(today,1),addDays(today,2)];
-  const missing=checks.filter(d=>{const k=dateKey(d);const r=cache[k];return !r||(!r.long_link&&!r.viral_link);});
-  const box=document.getElementById('editor-popup-box');
-  const icon=document.getElementById('ep-icon');
-  const title=document.getElementById('ep-title');
-  const body=document.getElementById('ep-body');
-  const btn=document.getElementById('ep-btn');
-  if(missing.length>=2){
-    box.className='editor-popup-box danger';
-    icon.className='ep-icon danger';icon.innerHTML='<i class="ti ti-alert-triangle"></i>';
-    title.textContent='Você está em atraso!';
-    body.innerHTML='Você tem <strong>'+missing.length+' dia(s)</strong> sem links nos próximos 2 dias.<br><br>Suba os links do Drive agora para manter a produção em dia.';
-    btn.className='ep-btn danger';
-  } else {
-    box.className='editor-popup-box success';
-    icon.className='ep-icon success';icon.innerHTML='<i class="ti ti-circle-check"></i>';
-    title.textContent='Você está em dia!';
-    body.innerHTML='Links dos próximos dias enviados. <strong>Excelente!</strong><br><br>Continue sempre 2 dias adiantado.';
-    btn.className='ep-btn success';
-  }
-  document.getElementById('editor-popup').classList.add('visible');
-}
-function closeEditorPopup(){document.getElementById('editor-popup').classList.remove('visible');}
-
-function logout(){
-  currentUser=null;cache={};
-  sessionStorage.removeItem('roity_user');
-  sessionStorage.removeItem('roity_tab');
-  document.getElementById('app').style.display='none';
-  document.getElementById('inp-user').value='';document.getElementById('inp-pass').value='';
-  document.getElementById('login-screen').style.display='flex';
-}
-
-async function loadWeek(ws){
-  const keys=[];
-  for(let i=0;i<7;i++){const d=addDays(ws,i);if(d>=PROJECT_START)keys.push(dateKey(d));}
-  const{data}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
-  if(data)data.forEach(r=>{cache[r.day_key]=r;});
-}
-
-async function loadExtraForDash(){
-  const today=new Date();today.setHours(0,0,0,0);
-  const keys=[];
-  for(let i=-14;i<=3;i++){const d=addDays(today,i);if(d>=PROJECT_START)keys.push(dateKey(d));}
-  const{data}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
-  if(data)data.forEach(r=>{cache[r.day_key]=r;});
-}
-
-function showToast(icon, title, msg){
-  const container = document.getElementById('toast-container');
-  if(!container) return;
-  const t = document.createElement('div');
-  t.className = 'toast';
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('pt-BR',{timeZone:'America/Cuiaba',hour:'2-digit',minute:'2-digit'});
-  t.innerHTML = `
-    <div class="toast-icon"><i class="ti ${icon}"></i></div>
-    <div class="toast-body">
-      <div class="toast-title">${title}</div>
-      <div class="toast-msg">${msg}</div>
-      <div class="toast-time">${timeStr}</div>
-    </div>`;
-  container.appendChild(t);
-  playDing();
-  setTimeout(()=>{
-    t.classList.add('hiding');
-    setTimeout(()=>t.remove(), 300);
-  }, 5000);
-}
-
-function fmtTimestamp(iso){
-  if(!iso) return null;
-  const d = new Date(iso);
-  const date = d.toLocaleDateString('pt-BR',{timeZone:'America/Cuiaba',day:'2-digit',month:'2-digit'});
-  const time = d.toLocaleTimeString('pt-BR',{timeZone:'America/Cuiaba',hour:'2-digit',minute:'2-digit'});
-  return date + ' às ' + time;
-}
-
-function getDay(key){
-  if(!cache[key])cache[key]={day_key:key,long_link:'',viral_link:'',long_obs:'',viral_obs:'',platforms:{}};
-  return cache[key];
-}
-
-async function upsertDay(key, changedField){
-  setSyncing(true);
-  const d=getDay(key);
-  const now = new Date().toISOString();
-  const upsertData = {
-    day_key:key,long_link:d.long_link||'',viral_link:d.viral_link||'',
-    long_obs:d.long_obs||'',viral_obs:d.viral_obs||'',
-    admin_notes:d.admin_notes||'',
-    platforms:d.platforms||{},updated_at:now
-  };
-  // Registrar quem e quando subiu cada link (qualquer usuário)
-  if(changedField==='long_link'){
-    if(d.long_link){
-      upsertData.long_updated_at = now;
-      upsertData.long_updated_by = currentUser.name;
-      d.long_updated_at = now;
-      d.long_updated_by = currentUser.name;
-    } else {
-      upsertData.long_updated_at = null;
-      upsertData.long_updated_by = null;
-    }
-  } else {
-    if(d.long_updated_at) upsertData.long_updated_at = d.long_updated_at;
-    if(d.long_updated_by) upsertData.long_updated_by = d.long_updated_by;
-  }
-  if(changedField==='viral_link'){
-    if(d.viral_link){
-      upsertData.viral_updated_at = now;
-      upsertData.viral_updated_by = currentUser.name;
-      d.viral_updated_at = now;
-      d.viral_updated_by = currentUser.name;
-    } else {
-      upsertData.viral_updated_at = null;
-      upsertData.viral_updated_by = null;
-    }
-  } else {
-    if(d.viral_updated_at) upsertData.viral_updated_at = d.viral_updated_at;
-    if(d.viral_updated_by) upsertData.viral_updated_by = d.viral_updated_by;
-  }
-  await sb.from('tony_dashboard').upsert(upsertData,{onConflict:'day_key'});
-  setSyncing(false);
-  updateScheduleBanner();
-  if(currentUser.role==='admin'){
-    renderDashboard();
-    renderKanban();
-  }
-}
-
-function scheduleSave(key, field){
-  if(saveTimers[key])clearTimeout(saveTimers[key]);
-  saveTimers[key]=setTimeout(()=>{
-    const d = getDay(key);
-    if((field==='long_link'||field==='viral_link') && d[field] && d[field].length > 5){
-      playDing();
-    }
-    // Notas internas e observações: salva silenciosamente sem re-renderizar
-    if(field==='admin_notes'||field==='long_obs'||field==='viral_obs'){
-      upsertSilent(key, field);
-    } else {
-      upsertDay(key, field);
-    }
-  },1200);
-}
-
-async function upsertSilent(key, field){
-  setSyncing(true);
-  const d = getDay(key);
-  const update = { updated_at: new Date().toISOString() };
-  update[field] = d[field] || '';
-  await sb.from('tony_dashboard').upsert(
-    { day_key: key, ...update },
-    { onConflict: 'day_key', ignoreDuplicates: false }
-  );
-  setSyncing(false);
-}
-function saveProd(key, field, val){
-  const num = parseInt(val) || 0;
-  getDay(key)[field] = num;
-  if(saveTimers['prod_'+key]) clearTimeout(saveTimers['prod_'+key]);
-  saveTimers['prod_'+key] = setTimeout(async()=>{
-    setSyncing(true);
-    await sb.from('tony_dashboard').upsert(
-      { day_key: key, [field]: num, updated_at: new Date().toISOString() },
-      { onConflict: 'day_key' }
-    );
-    setSyncing(false);
-    updateMeta();
-    updateSaldoBar();
-    playConfirm();
-  }, 600);
-}
-
-function saveField(key,field,val){
-  getDay(key)[field]=val;
-  // Som de confirmação ao salvar observação (admin)
-  if((field==='long_obs'||field==='viral_obs') && currentUser && currentUser.role==='admin'){
-    if(saveTimers['obs_sound']) clearTimeout(saveTimers['obs_sound']);
-    saveTimers['obs_sound'] = setTimeout(()=>playConfirm(), 1000);
-  }
-  scheduleSave(key,field);
-}
-
-function isDayComplete(key){
-  const d=cache[key];
-  if(!d||!d.long_link||!d.viral_link)return false;
-  return PLATFORMS.every(p=>d.platforms&&d.platforms[p]==='done');
-}
-function hasLinks(key){const d=cache[key];return !!(d&&d.long_link&&d.viral_link);}
-
-async function togglePlat(key,plat){
-  if(currentUser.role!=='admin'||!hasLinks(key))return;
-  const d=getDay(key);
-  if(!d.platforms)d.platforms={};
-  d.platforms[plat]=d.platforms[plat]==='done'?'':'done';
-  if(d.platforms[plat]==='done') playConfirm();
-  await upsertDay(key);
-  renderKanban();
+  if(tab==='kanban'){try{renderKanban();renderReposicoes();}catch(e){}}
 }
 
 function closeBanner(){
@@ -1750,11 +1438,7 @@ async function loadReposicoes(){
 }
 
 function updateRepBadge(){
-  const pendentes=reposicoes.filter(r=>!r.rudney_entregue||!r.teixeira_entregue);
-  const badge=document.getElementById('rep-badge');
-  if(!badge)return;
-  if(pendentes.length>0){badge.style.display='inline';badge.textContent=pendentes.length;}
-  else{badge.style.display='none';}
+  // badge removido — aba de reposições unificada no kanban
 }
 
 function updateSaldoBar(){
@@ -1791,16 +1475,9 @@ function updateSaldoBar(){
 function renderReposicoes(){
   if(!currentUser) return;
   const isAdmin = currentUser.role==='admin';
-  const adminForm = document.getElementById('admin-rep-form');
   const list = document.getElementById('rep-list');
   const empty = document.getElementById('rep-empty');
-  const view = document.getElementById('view-reposicoes');
   if(!list||!empty) return;
-
-  // Scroll para o topo da view
-  if(view) view.scrollTop = 0;
-
-  if(adminForm) adminForm.style.display = isAdmin ? 'block' : 'none';
 
   if(!reposicoes||reposicoes.length===0){
     list.innerHTML='';
@@ -1858,9 +1535,12 @@ function renderReposicoes(){
           ${isAdmin&&!tOk?`<button class="rep-check-btn" style="margin-top:5px;width:100%;" onclick="marcarEntregue('${r.id}','teixeira')" ${!r.teixeira_link?'disabled':''}><i class="ti ti-check"></i> Confirmar entrega</button>`:''}
           ${tOk?`<div class="rep-entregue-info"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.teixeira_entregue_at)}</div>`:''}
         </div>`:''}
-        ${isAdmin?`<div style="margin-top:6px;padding-top:8px;border-top:1px solid var(--glass-b);display:flex;justify-content:flex-end;">
+        ${isAdmin?`<div style="margin-top:6px;padding-top:8px;border-top:1px solid var(--glass-b);display:flex;justify-content:flex-end;gap:6px;">
           <button onclick="editRep('${r.id}')" style="background:var(--glass);border:1px solid var(--glass-b);border-radius:7px;color:var(--text2);font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
             <i class="ti ti-edit"></i> Editar
+          </button>
+          <button onclick="deleteRep('${r.id}')" style="background:var(--danger-bg);border:1px solid var(--danger-b);border-radius:7px;color:var(--danger2);font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
+            <i class="ti ti-trash"></i> Apagar
           </button>
         </div>`:''}
       </div>
@@ -1880,8 +1560,8 @@ function editRep(id){
   document.getElementById('rep-form-title-txt').textContent = 'Editar débito';
   document.getElementById('rep-submit-txt').textContent = 'Salvar alterações';
   document.getElementById('rep-cancel-btn').style.display = 'block';
-  const form = document.getElementById('admin-rep-form');
-  if(form) form.scrollIntoView({behavior:'smooth',block:'end'});
+  const form = document.getElementById('kanban-rep-form');
+  if(form) form.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function cancelEditRep(){
@@ -1932,6 +1612,14 @@ function saveRepField(id,field,val){
     const idx=reposicoes.findIndex(r=>r.id===id);
     if(idx>=0)reposicoes[idx][field]=val;
   },900);
+}
+
+async function deleteRep(id){
+  if(!confirm('Apagar este débito?')) return;
+  await sb.from('tony_reposicoes').delete().eq('id',id);
+  await loadReposicoes();
+  renderReposicoes();
+  updateSaldoBar();
 }
 
 async function marcarEntregue(id,editor){
