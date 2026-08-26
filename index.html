@@ -509,7 +509,26 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v3.3 · Roity © 2026</div>
+      <div class="legend-version">v3.4 · Roity © 2026</div>
+    </div>
+
+    <!-- FORMULÁRIO DE DÉBITOS — visível só para admin, abaixo das semanas -->
+    <div id="kanban-rep-form" style="display:none;padding:1rem;">
+      <div class="rep-form-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
+          <div class="rep-form-title" style="margin:0;"><i class="ti ti-plus"></i><span id="rep-form-title-txt">Registrar débito</span></div>
+          <button id="rep-cancel-btn" onclick="cancelEditRep()" style="display:none;background:none;border:1px solid var(--glass-b);border-radius:7px;color:var(--text3);font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;">Cancelar</button>
+        </div>
+        <input type="hidden" id="rf-id" value=""/>
+        <div class="rep-form-grid" style="margin-bottom:8px;">
+          <div class="ff-rep"><label>Dia que falhou</label><input type="date" id="rf-dia" style="color-scheme:dark;"/></div>
+          <div class="ff-rep"><label>Semana de referência</label><input type="text" id="rf-semana" placeholder="ex: 03–09/ago"/></div>
+          <div class="ff-rep"><label>Longos devidos</label><input type="number" id="rf-longos" placeholder="0" min="0" max="7"/></div>
+          <div class="ff-rep"><label>Virais devidos</label><input type="number" id="rf-virais" placeholder="0" min="0" max="5"/></div>
+        </div>
+        <div class="ff-rep" style="margin-bottom:8px;"><label>Observação</label><textarea id="rf-obs" placeholder="O que aconteceu nesse dia..."></textarea></div>
+        <button class="add-rep-btn" onclick="submitReposicao()"><i class="ti ti-plus"></i> <span id="rep-submit-txt">Registrar débito</span></button>
+      </div>
     </div>
   </div>
 </div>
@@ -527,7 +546,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <!-- LISTA DE DÉBITOS -->
   <div id="rep-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1rem;"></div>
 
-  <!-- ADMIN: Registrar/Editar débito -->
+  <!-- formulário movido para aba Semana -->
   <div id="admin-rep-form" style="display:none;">
     <div class="rep-form-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
@@ -1010,7 +1029,11 @@ function switchTab(tab){
 
   sessionStorage.setItem('roity_tab',tab);
   if(tab==='dashboard'){try{renderDashboard();updateSaldoBar();}catch(e){}}
-  if(tab==='kanban'){try{renderKanban();}catch(e){}}
+  if(tab==='kanban'){
+    try{renderKanban();}catch(e){}
+    const krf=document.getElementById('kanban-rep-form');
+    if(krf) krf.style.display=(currentUser&&currentUser.role==='admin')?'block':'none';
+  }
   if(tab==='reposicoes'){setTimeout(()=>{try{renderReposicoes();}catch(e){console.error('rep:',e);}},50);}
 }
 
