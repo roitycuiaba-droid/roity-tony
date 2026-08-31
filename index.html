@@ -508,7 +508,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v3.6 · Roity © 2026</div>
+      <div class="legend-version">v3.7 · Roity © 2026</div>
     </div>
 
     <!-- SEÇÃO DE DÉBITOS — visível para todos abaixo das semanas -->
@@ -1223,8 +1223,12 @@ function updateMeta(){
     const key = dateKey(day);
     const d = cache[key];
     if(!d) return;
-    if(d.long_link) totalLong += (d.prod_longos !== undefined && d.prod_longos !== null) ? Number(d.prod_longos) : META_LONG_DIA;
-    if(d.viral_link) totalViral += (d.prod_virais !== undefined && d.prod_virais !== null) ? Number(d.prod_virais) : META_VIRAL_DIA;
+    if(d.long_link){
+      totalLong += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
+    }
+    if(d.viral_link){
+      totalViral += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
+    }
   });
   const totalAll = totalLong + totalViral;
 
@@ -1380,8 +1384,8 @@ function renderKanban(){
     grid.appendChild(card);
   }
   updateMeta();
-  renderReposicoes();
   populateDiaSelect();
+  renderReposicoes();
 }
 
 function populateDiaSelect(){
@@ -1497,8 +1501,14 @@ function updateSaldoBar(){
   }
   let prod=0;
   Object.values(cache).forEach(d=>{
-    if(d.long_link) prod+=(d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
-    if(d.viral_link) prod+=(d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
+    // Longos: se tem link, usa prod_longos (ou default). Se não tem link, 0.
+    if(d.long_link){
+      prod += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
+    }
+    // Virais: mesma lógica
+    if(d.viral_link){
+      prod += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
+    }
   });
   const pv=document.getElementById('sc-prod-val');
   const ps=document.getElementById('sc-prod-sub');
@@ -1550,19 +1560,25 @@ function renderReposicoes(){
     const tOk = r.teixeira_entregue;
     const allOk = rOk && tOk;
 
-    return `<div class="day-card${pendente?' sched-alert-card':''}" style="border-color:${allOk?'var(--success-b)':'var(--danger-b)'};${pendente?'animation:pulse-danger 2s infinite;':''}">
-      <div class="day-header" style="background:${allOk?'rgba(26,122,64,0.15)':'rgba(192,57,43,0.12)'};">
-        <div class="day-title" style="display:flex;align-items:center;gap:6px;">
-          <i class="ti ${allOk?'ti-circle-check':'ti-alert-triangle'}" style="color:${allOk?'var(--success2)':'var(--danger2)'};font-size:13px;"></i>
+    return `<div class="day-card" style="
+        border:${allOk?'2px solid var(--success2)':'1.5px solid var(--danger2)'};
+        background:${allOk?'rgba(26,122,64,0.12)':'var(--bg2)'};
+        ${pendente?'animation:pulse-danger 2s infinite;':''}
+        border-radius:16px;overflow:hidden;">
+      <div class="day-header" style="
+        background:${allOk?'rgba(26,122,64,0.25)':'rgba(192,57,43,0.15)'};
+        border-bottom:1px solid ${allOk?'var(--success-b)':'var(--danger-b)'};">
+        <div class="day-title" style="display:flex;align-items:center;gap:6px;color:${allOk?'var(--success2)':'var(--text)'};">
+          <i class="ti ${allOk?'ti-circle-check':'ti-alert-triangle'}" style="color:${allOk?'var(--success2)':'var(--danger2)'};font-size:15px;"></i>
           ${dia}
         </div>
         <div class="day-badges">
-          <span style="font-size:10px;font-weight:700;color:${allOk?'var(--success2)':'var(--danger2)'};">
-            ${allOk?'Entregue':'Pendente'}
+          <span style="font-size:11px;font-weight:800;color:${allOk?'var(--success2)':'var(--danger2)'};background:${allOk?'rgba(26,122,64,0.2)':'rgba(192,57,43,0.15)'};padding:3px 8px;border-radius:6px;">
+            ${allOk?'✓ Entregue':'⚠ Pendente'}
           </span>
         </div>
       </div>
-      <div class="day-body">
+      <div class="day-body" style="${allOk?'background:rgba(26,122,64,0.05);':''}">
         <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">${r.semana_ref}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
           ${r.longos_devidos>0?`<div class="rep-debt${rOk?' zero':''}"><i class="ti ti-video"></i>${r.longos_devidos} longos${rOk?' ✓':''}</div>`:''}
