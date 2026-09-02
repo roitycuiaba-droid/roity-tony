@@ -460,6 +460,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="week-nav">
       <button class="nav-btn" onclick="changeWeek(-1)"><i class="ti ti-chevron-left"></i></button>
       <div class="week-label" id="week-label"></div>
+      <button class="nav-btn" onclick="gotoToday()" style="background:linear-gradient(135deg,rgba(201,169,110,0.18),rgba(201,169,110,0.06));border-color:var(--glass-gold-b);color:var(--gold);font-weight:700;letter-spacing:.5px;">Hoje</button>
       <button class="nav-btn" onclick="changeWeek(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
     <div class="meta-bar-wrap" id="meta-bar-wrap">
@@ -592,8 +593,8 @@ const QUOTES=[
   'Cada dia postado é uma semente plantada. A colheita vem para quem não para.',
 ];
 const PROJECT_START=new Date(2026,7,3);
-const PLATFORMS=['Instagram','TikTok','YouTube'];
-const PLAT_ICONS={Instagram:'ti-brand-instagram',TikTok:'ti-brand-tiktok',YouTube:'ti-brand-youtube'};
+const PLATFORMS=['Instagram','TikTok','Shorts'];
+const PLAT_ICONS={Instagram:'ti-brand-instagram',TikTok:'ti-brand-tiktok',Shorts:'ti-brand-youtube'};
 const HISTORY={
   '2026-08-03':{status:'ok'},
   '2026-08-04':{status:'ok'},
@@ -843,7 +844,9 @@ async function upsertDay(key, changedField){
     day_key:key,long_link:d.long_link||'',viral_link:d.viral_link||'',
     long_obs:d.long_obs||'',viral_obs:d.viral_obs||'',
     admin_notes:d.admin_notes||'',
-    platforms:d.platforms||{},updated_at:now
+    platforms:d.platforms||{},updated_at:now,
+    prod_longos:(d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):(d.long_link?META_LONG_DIA:0),
+    prod_virais:(d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):(d.viral_link?META_VIRAL_DIA:0)
   };
   // Registrar quem e quando subiu cada link (qualquer usuário)
   if(changedField==='long_link'){
@@ -852,9 +855,16 @@ async function upsertDay(key, changedField){
       upsertData.long_updated_by = currentUser.name;
       d.long_updated_at = now;
       d.long_updated_by = currentUser.name;
+      // Contabilizar automaticamente: link subido = prod_longos preenchido com default
+      if(d.prod_longos===undefined||d.prod_longos===null){
+        d.prod_longos = META_LONG_DIA;
+      }
+      upsertData.prod_longos = d.prod_longos;
     } else {
       upsertData.long_updated_at = null;
       upsertData.long_updated_by = null;
+      upsertData.prod_longos = 0;
+      d.prod_longos = 0;
     }
   } else {
     if(d.long_updated_at) upsertData.long_updated_at = d.long_updated_at;
@@ -866,9 +876,16 @@ async function upsertDay(key, changedField){
       upsertData.viral_updated_by = currentUser.name;
       d.viral_updated_at = now;
       d.viral_updated_by = currentUser.name;
+      // Contabilizar automaticamente: link subido = prod_virais preenchido com default
+      if(d.prod_virais===undefined||d.prod_virais===null){
+        d.prod_virais = META_VIRAL_DIA;
+      }
+      upsertData.prod_virais = d.prod_virais;
     } else {
       upsertData.viral_updated_at = null;
       upsertData.viral_updated_by = null;
+      upsertData.prod_virais = 0;
+      d.prod_virais = 0;
     }
   } else {
     if(d.viral_updated_at) upsertData.viral_updated_at = d.viral_updated_at;
@@ -877,6 +894,9 @@ async function upsertDay(key, changedField){
   await sb.from('tony_dashboard').upsert(upsertData,{onConflict:'day_key'});
   setSyncing(false);
   updateScheduleBanner();
+  // Recalcular meta e saldo sempre que algo muda (bug fix: contagem desatualizava)
+  updateMeta();
+  updateSaldoBar();
   if(currentUser.role==='admin'){
     renderDashboard();
     renderKanban();
@@ -1189,8 +1209,14 @@ async function changeWeek(dir){
   renderKanban();
 }
 
+function gotoToday(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  currentWeekStart = getWeekStart(today);
+  loadWeek(currentWeekStart).then(()=>renderKanban());
+}
+
 // Constantes do projeto
-const PROJECT_END   = new Date(2026, 8, 2); // 02/set/2026
+const PROJECT_END   = new Date(2026, 8, 30); // 30/set/2026
 const META_LONG_DIA = 7;
 const META_VIRAL_DIA = 5;
 const META_LONG_TOTAL = 217;
@@ -1562,8 +1588,9 @@ function renderReposicoes(){
 
     return `<div class="day-card" style="
         border:${allOk?'2px solid var(--success2)':'1.5px solid var(--danger2)'};
-        background:${allOk?'rgba(26,122,64,0.12)':'var(--bg2)'};
-        ${pendente?'animation:pulse-danger 2s infinite;':''}
+        background:${allOk?'rgba(26,122,64,0.18)':'var(--bg2)'};
+        box-shadow:${allOk?'0 0 0 0 transparent':'inset 0 0 0 1000px rgba(192,57,43,0.04)'};
+        ${pendente&&!allOk?'animation:pulse-danger 2s infinite;':'animation:none;'}
         border-radius:16px;overflow:hidden;">
       <div class="day-header" style="
         background:${allOk?'rgba(26,122,64,0.25)':'rgba(192,57,43,0.15)'};
