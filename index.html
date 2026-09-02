@@ -1470,7 +1470,11 @@ function renderKanban(){
   }
   updateMeta();
   populateDiaSelect();
-  renderReposicoes();
+  // Só renderiza reposições se a aba kanban está visível (fix: evita vazar no DOM da aba postagens)
+  const tabKanban = document.getElementById('view-kanban');
+  if(tabKanban && tabKanban.style.display !== 'none'){
+    renderReposicoes();
+  }
 }
 
 function populateDiaSelect(){
@@ -1800,9 +1804,26 @@ async function marcarEntregue(id,editor){
 // ══════════════════════════════════════════════════════════════════════
 let postagens = [];
 let editingPostId = null;
+let selectedMesPost = new Date().getMonth();
+let selectedAnoPost = new Date().getFullYear();
 
 const POST_PLAT = ['Instagram','TikTok','YouTube'];
 const POST_TIPO = ['Longo','Curto'];
+
+function trocarMesPost(val){
+  const [m,a] = val.split('_').map(Number);
+  selectedMesPost = m;
+  selectedAnoPost = a;
+  renderPostagens();
+}
+
+async function recarregarPostagens(){
+  const btn = document.querySelector('[onclick="recarregarPostagens()"]');
+  if(btn){ btn.style.opacity='0.5'; btn.style.pointerEvents='none'; }
+  await loadPostagens();
+  renderPostagens();
+  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; }
+}
 
 async function loadPostagens(){
   const {data} = await sb.from('tony_postagens').select('*').order('data_post',{ascending:false});
@@ -1812,6 +1833,9 @@ async function loadPostagens(){
 function renderPostagens(){
   const el = document.getElementById('postagens-content');
   if(!el) return;
+  // Só renderiza se a aba de postagens estiver visível
+  const viewPost = document.getElementById('view-postagens');
+  if(!viewPost || viewPost.style.display === 'none') return;
   const isAdmin = currentUser && currentUser.role==='admin';
 
   // ── Stats do mês atual ──────────────────────────────────────────────
@@ -1840,7 +1864,34 @@ function renderPostagens(){
     if(d.viral_link) produzidoMes += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
   });
 
-  const mesLabel = hoje.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  const mesRefDate = new Date(anoAtual, mesAtual, 1);
+  const mesLabel = mesRefDate.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+
+  // ── Seletor de mês ──────────────────────────────────────────────────
+  // Gerar opções: 12 meses anteriores + mês atual
+  const mesesOpts = [];
+  const hoje = new Date();
+  for(let i = 11; i >= 0; i--){
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const m = d.getMonth();
+    const a = d.getFullYear();
+    const label = d.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+    const sel = (m===mesAtual && a===anoAtual) ? 'selected' : '';
+    mesesOpts.push(`<option value="${m}_${a}" ${sel}>${label.charAt(0).toUpperCase()+label.slice(1)}</option>`);
+  }
+
+  const mesSelectorHtml = `
+  <div style="background:var(--bg2);border:1px solid var(--glass-b);border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:6px;">
+      <i class="ti ti-calendar" style="color:var(--gold);font-size:14px;"></i>Mês de referência
+    </div>
+    <select id="mes-selector" style="background:rgba(255,255,255,0.05);border:1px solid var(--glass-gold-b);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;cursor:pointer;flex:1;min-width:180px;" onchange="trocarMesPost(this.value)">
+      ${mesesOpts.join('')}
+    </select>
+    <button onclick="recarregarPostagens()" style="background:linear-gradient(135deg,rgba(201,169,110,0.18),rgba(201,169,110,0.06));border:1px solid var(--glass-gold-b);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--gold);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap;">
+      <i class="ti ti-refresh"></i> Carregar dados
+    </button>
+  </div>`;
 
   // ── Form de registro ────────────────────────────────────────────────
   const formHtml = isAdmin ? `
@@ -1942,7 +1993,7 @@ function renderPostagens(){
     </div>
   </div>`;
 
-  el.innerHTML = formHtml + statsHtml + tableHtml;
+  el.innerHTML = mesSelectorHtml + formHtml + statsHtml + tableHtml;
 
   // Restaurar valores do form se estava editando
   if(editingPostId){
@@ -2010,10 +2061,10 @@ async function deletePost(id){
 
 // ── RELATÓRIO PDF ─────────────────────────────────────────────────────────
 function gerarRelatorioPDF(){
-  const hoje = new Date();
-  const mesLabel = hoje.toLocaleString('pt-BR',{month:'long',year:'numeric'});
-  const mesAtual = hoje.getMonth();
-  const anoAtual = hoje.getFullYear();
+  const mesAtual = selectedMesPost;
+  const anoAtual = selectedAnoPost;
+  const mesRefDate2 = new Date(anoAtual, mesAtual, 1);
+  const mesLabel = mesRefDate2.toLocaleString('pt-BR',{month:'long',year:'numeric'});
 
   const doMes = postagens.filter(p => {
     const d = new Date(p.data_post+'T12:00:00');
