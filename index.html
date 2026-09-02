@@ -357,6 +357,50 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   .topbar-project,.sync-pill{display:none;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
 }
+
+/* ── ABA DE POSTAGENS ── */
+.post-aba-grid{padding:1rem;display:flex;flex-direction:column;gap:1rem;}
+.post-form-card{background:var(--bg2);border:1px solid var(--glass-gold-b);border-radius:14px;padding:1rem 1.25rem;}
+.post-form-title{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.875rem;display:flex;align-items:center;gap:6px;}
+.post-form-title i{font-size:14px;}
+.post-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:8px;}
+.ff-post{display:flex;flex-direction:column;gap:4px;}
+.ff-post label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;}
+.ff-post input,.ff-post select,.ff-post textarea{background:rgba(255,255,255,0.04);border:1px solid var(--glass-b);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--text);font-family:inherit;transition:border-color .15s;width:100%;}
+.ff-post input:focus,.ff-post select:focus{outline:none;border-color:var(--gold);}
+.ff-post input::placeholder{color:var(--text3);}
+.add-post-btn{background:linear-gradient(135deg,var(--gold),#9a7030);border:none;border-radius:9px;padding:10px 16px;font-size:12px;font-weight:700;color:#05070f;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;margin-top:4px;}
+.add-post-btn:hover{opacity:.87;}
+.post-list-card{background:var(--bg2);border:1px solid var(--glass-b);border-radius:14px;overflow:hidden;}
+.post-list-header{padding:10px 14px;border-bottom:1px solid var(--glass-b);display:flex;align-items:center;justify-content:space-between;}
+.post-list-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:6px;}
+.post-list-title i{font-size:14px;color:var(--gold);}
+.post-table{width:100%;border-collapse:collapse;font-size:12px;}
+.post-table th{text-align:left;padding:8px 14px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--glass-b);}
+.post-table td{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text2);vertical-align:middle;}
+.post-table td:first-child{color:var(--text);font-weight:600;}
+.post-table tr:last-child td{border-bottom:none;}
+.post-table tr:hover td{background:rgba(255,255,255,0.018);}
+.plat-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.5px;}
+.plat-badge.IG{background:rgba(139,63,192,0.15);color:#a569bd;}
+.plat-badge.TK{background:rgba(224,0,60,0.15);color:#e0003c;}
+.plat-badge.YT{background:rgba(204,0,0,0.15);color:#cc0000;}
+.tipo-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;}
+.tipo-badge.longo{background:rgba(52,152,219,0.15);color:#5dade2;}
+.tipo-badge.curto{background:rgba(142,68,173,0.15);color:#a569bd;}
+.pdf-btn{background:var(--danger-bg);border:1px solid var(--danger-b);border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;color:var(--danger2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;}
+.pdf-btn:hover{opacity:.85;}
+.post-stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:1rem;}
+.post-stat{background:var(--bg2);border:1px solid var(--glass-b);border-radius:12px;padding:.9rem 1rem;}
+.post-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.post-stat-val{font-size:22px;font-weight:800;color:var(--text);}
+.post-stat-val.gold{color:var(--gold);}
+.post-stat-sub{font-size:10px;color:var(--text3);margin-top:3px;}
+.del-post-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px 5px;transition:color .1s;}
+.del-post-btn:hover{color:var(--danger2);}
+.link-post-btn{background:none;border:none;cursor:pointer;color:var(--gold-dim);font-size:14px;padding:3px 5px;transition:color .1s;}
+.link-post-btn:hover{color:var(--gold);}
+
 </style>
 </head>
 <body>
@@ -446,12 +490,20 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <div class="app-tabs" id="nav-tabs" style="display:none;">
     <button class="app-tab active" id="tab-dash" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
     <button class="app-tab" id="tab-kanban" onclick="switchTab('kanban')"><i class="ti ti-calendar-week"></i> Semana</button>
+    <button class="app-tab" id="tab-postagens" onclick="switchTab('postagens')"><i class="ti ti-device-mobile"></i> Postagens</button>
   </div>
 
   <!-- DASHBOARD VIEW -->
   <div class="view active" id="view-dashboard">
     <div id="view-dashboard-content" style="padding:1.25rem;">
       <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <!-- POSTAGENS VIEW -->
+  <div class="view" id="view-postagens" style="display:none;">
+    <div class="post-aba-grid" id="postagens-content">
+      <!-- renderizado por JS -->
     </div>
   </div>
 
@@ -650,6 +702,7 @@ async function startApp(){
   await loadWeek(currentWeekStart);
   await loadExtraForDash();
   await loadReposicoes();
+  await loadPostagens();
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='flex';
 
@@ -659,6 +712,9 @@ async function startApp(){
   // Esconder tab de dashboard para editores
   const tabDash=document.getElementById('tab-dash');
   if(tabDash) tabDash.style.display=currentUser.role==='admin'?'flex':'none';
+  // Postagens só admin registra, mas todos podem ver
+  const tabPost=document.getElementById('tab-postagens');
+  if(tabPost) tabPost.style.display='flex';
 
   // Restaurar aba salva ou padrão
   const savedTab=sessionStorage.getItem('roity_tab')||'kanban';
@@ -1005,7 +1061,7 @@ function updateScheduleBanner(){
 }
 
 function switchTab(tab){
-  ['tab-dash','tab-kanban'].forEach(id=>{
+  ['tab-dash','tab-kanban','tab-postagens'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
@@ -1013,8 +1069,10 @@ function switchTab(tab){
 
   const vDash=document.getElementById('view-dashboard');
   const vKanban=document.getElementById('view-kanban');
+  const vPost=document.getElementById('view-postagens');
   if(vDash) vDash.style.display=tab==='dashboard'?'block':'none';
   if(vKanban) vKanban.style.display=tab==='kanban'?'block':'none';
+  if(vPost) vPost.style.display=tab==='postagens'?'block':'none';
 
   const banner=document.getElementById('schedule-banner');
   if(banner) banner.style.display=tab==='kanban'?'':'none';
@@ -1025,6 +1083,7 @@ function switchTab(tab){
   sessionStorage.setItem('roity_tab',tab);
   if(tab==='dashboard'){try{renderDashboard();updateSaldoBar();}catch(e){}}
   if(tab==='kanban'){try{renderKanban();renderReposicoes();}catch(e){}}
+  if(tab==='postagens'){try{renderPostagens();}catch(e){}}
 }
 
 function closeBanner(){
@@ -1736,6 +1795,316 @@ async function marcarEntregue(id,editor){
   playConfirm();
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// ABA DE POSTAGENS
+// ══════════════════════════════════════════════════════════════════════
+let postagens = [];
+let editingPostId = null;
+
+const POST_PLAT = ['Instagram','TikTok','YouTube'];
+const POST_TIPO = ['Longo','Curto'];
+
+async function loadPostagens(){
+  const {data} = await sb.from('tony_postagens').select('*').order('data_post',{ascending:false});
+  postagens = data || [];
+}
+
+function renderPostagens(){
+  const el = document.getElementById('postagens-content');
+  if(!el) return;
+  const isAdmin = currentUser && currentUser.role==='admin';
+
+  // ── Stats do mês atual ──────────────────────────────────────────────
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+  const doMes = postagens.filter(p => {
+    const d = new Date(p.data_post+'T12:00:00');
+    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
+  });
+
+  const totalPost = doMes.reduce((a,p) => a+(p.quantidade||0), 0);
+  const totalIG   = doMes.filter(p=>p.plataforma==='Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalTK   = doMes.filter(p=>p.plataforma==='TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalYT   = doMes.filter(p=>p.plataforma==='YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalLong = doMes.filter(p=>p.tipo==='Longo').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalCurt = doMes.filter(p=>p.tipo==='Curto').reduce((a,p)=>a+(p.quantidade||0),0);
+
+  // Produzido no mês (do cache)
+  let produzidoMes = 0;
+  Object.values(cache).forEach(d => {
+    if(!d.day_key) return;
+    const dp = new Date(d.day_key+'T12:00:00');
+    if(dp.getMonth()!==mesAtual||dp.getFullYear()!==anoAtual) return;
+    if(d.long_link) produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
+    if(d.viral_link) produzidoMes += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
+  });
+
+  const mesLabel = hoje.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+
+  // ── Form de registro ────────────────────────────────────────────────
+  const formHtml = isAdmin ? `
+  <div class="post-form-card">
+    <div class="post-form-title"><i class="ti ti-${editingPostId?'edit':'plus'}"></i>${editingPostId?'Editar postagem':'Registrar postagem'}</div>
+    <input type="hidden" id="pf-id" value="${editingPostId||''}"/>
+    <div class="post-form-grid">
+      <div class="ff-post"><label>Data</label><input type="date" id="pf-data" value="${document.getElementById('pf-data')?.value||new Date().toISOString().slice(0,10)}"/></div>
+      <div class="ff-post"><label>Plataforma</label>
+        <select id="pf-plat">
+          ${POST_PLAT.map(p=>`<option value="${p}">${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ff-post"><label>Tipo</label>
+        <select id="pf-tipo">
+          ${POST_TIPO.map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ff-post"><label>Quantidade</label><input type="number" id="pf-qtd" min="1" max="99" placeholder="0" value="1"/></div>
+      <div class="ff-post"><label>Horário</label><input type="time" id="pf-hora"/></div>
+      <div class="ff-post"><label>Link</label><input type="text" id="pf-link" placeholder="https://..."/></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="add-post-btn" onclick="submitPostagem()"><i class="ti ti-${editingPostId?'check':'plus'}"></i>${editingPostId?'Salvar alteração':'Registrar'}</button>
+      ${editingPostId?`<button onclick="cancelEditPost()" style="background:var(--glass);border:1px solid var(--glass-b);border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;">Cancelar</button>`:''}
+    </div>
+  </div>` : '';
+
+  // ── Stats ────────────────────────────────────────────────────────────
+  const statsHtml = `
+  <div class="post-stats-row">
+    <div class="post-stat">
+      <div class="post-stat-label">Postados no mês</div>
+      <div class="post-stat-val gold">${totalPost}</div>
+      <div class="post-stat-sub">${mesLabel}</div>
+    </div>
+    <div class="post-stat">
+      <div class="post-stat-label">Produzidos no mês</div>
+      <div class="post-stat-val">${produzidoMes}</div>
+      <div class="post-stat-sub">contabilizado via links</div>
+    </div>
+    <div class="post-stat">
+      <div class="post-stat-label">Instagram</div>
+      <div class="post-stat-val">${totalIG}</div>
+      <div class="post-stat-sub">postados</div>
+    </div>
+    <div class="post-stat">
+      <div class="post-stat-label">TikTok</div>
+      <div class="post-stat-val">${totalTK}</div>
+      <div class="post-stat-sub">postados</div>
+    </div>
+    <div class="post-stat">
+      <div class="post-stat-label">YouTube Shorts</div>
+      <div class="post-stat-val">${totalYT}</div>
+      <div class="post-stat-sub">postados</div>
+    </div>
+    <div class="post-stat">
+      <div class="post-stat-label">Longos / Curtos</div>
+      <div class="post-stat-val">${totalLong} <span style="font-size:14px;color:var(--text3);">/</span> ${totalCurt}</div>
+      <div class="post-stat-sub">por tipo</div>
+    </div>
+  </div>`;
+
+  // ── Tabela de postagens ──────────────────────────────────────────────
+  const platCode = {Instagram:'IG', TikTok:'TK', YouTube:'YT'};
+  const rows = postagens.length === 0
+    ? `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem;">Nenhuma postagem registrada.</td></tr>`
+    : postagens.map(p => {
+        const d = new Date(p.data_post+'T12:00:00');
+        const dataFmt = d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+        const pc = platCode[p.plataforma]||p.plataforma;
+        return `<tr>
+          <td>${dataFmt}</td>
+          <td>${p.hora_post||'—'}</td>
+          <td><span class="plat-badge ${pc}">${p.plataforma}</span></td>
+          <td><span class="tipo-badge ${p.tipo?.toLowerCase()}">${p.tipo||'—'}</span></td>
+          <td style="font-weight:800;color:var(--text);">${p.quantidade||0}</td>
+          <td>${p.link_post?`<button class="link-post-btn" onclick="window.open('${p.link_post}','_blank')" title="Abrir link"><i class="ti ti-external-link"></i></button>`:'—'}</td>
+          ${isAdmin?`<td><button class="del-post-btn" onclick="deletePost('${p.id}')" title="Apagar"><i class="ti ti-trash"></i></button>
+            <button class="del-post-btn" onclick="editPost('${p.id}')" title="Editar" style="color:var(--gold-dim);"><i class="ti ti-edit"></i></button></td>`:'<td></td>'}
+        </tr>`;
+      }).join('');
+
+  const tableHtml = `
+  <div class="post-list-card">
+    <div class="post-list-header">
+      <div class="post-list-title"><i class="ti ti-list"></i>Todas as postagens</div>
+      ${isAdmin?`<button class="pdf-btn" onclick="gerarRelatorioPDF()"><i class="ti ti-file-text"></i> Gerar relatório PDF</button>`:''}
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="post-table">
+        <thead>
+          <tr>
+            <th>Data</th><th>Horário</th><th>Plataforma</th><th>Tipo</th><th>Qtd</th><th>Link</th><th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  el.innerHTML = formHtml + statsHtml + tableHtml;
+
+  // Restaurar valores do form se estava editando
+  if(editingPostId){
+    const p = postagens.find(x=>x.id===editingPostId);
+    if(p){
+      const pfData = document.getElementById('pf-data');
+      const pfPlat = document.getElementById('pf-plat');
+      const pfTipo = document.getElementById('pf-tipo');
+      const pfQtd  = document.getElementById('pf-qtd');
+      const pfHora = document.getElementById('pf-hora');
+      const pfLink = document.getElementById('pf-link');
+      if(pfData) pfData.value = p.data_post||'';
+      if(pfPlat) pfPlat.value = p.plataforma||'Instagram';
+      if(pfTipo) pfTipo.value = p.tipo||'Longo';
+      if(pfQtd)  pfQtd.value  = p.quantidade||1;
+      if(pfHora) pfHora.value = p.hora_post||'';
+      if(pfLink) pfLink.value = p.link_post||'';
+    }
+  }
+}
+
+async function submitPostagem(){
+  const id    = document.getElementById('pf-id')?.value;
+  const data  = document.getElementById('pf-data')?.value;
+  const plat  = document.getElementById('pf-plat')?.value;
+  const tipo  = document.getElementById('pf-tipo')?.value;
+  const qtd   = parseInt(document.getElementById('pf-qtd')?.value)||1;
+  const hora  = document.getElementById('pf-hora')?.value;
+  const link  = document.getElementById('pf-link')?.value;
+  if(!data||!plat||!tipo){alert('Preencha data, plataforma e tipo.');return;}
+  const payload = {data_post:data,plataforma:plat,tipo,quantidade:qtd,hora_post:hora||null,link_post:link||null,updated_at:new Date().toISOString()};
+  let error;
+  if(id){
+    ({error}=await sb.from('tony_postagens').update(payload).eq('id',id));
+  } else {
+    ({error}=await sb.from('tony_postagens').insert(payload));
+  }
+  if(!error){
+    editingPostId = null;
+    await loadPostagens();
+    renderPostagens();
+    playConfirm();
+  } else {
+    alert('Erro ao salvar: '+error.message);
+  }
+}
+
+function editPost(id){
+  editingPostId = id;
+  renderPostagens();
+  document.getElementById('postagens-content')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEditPost(){
+  editingPostId = null;
+  renderPostagens();
+}
+
+async function deletePost(id){
+  if(!confirm('Apagar esta postagem?')) return;
+  await sb.from('tony_postagens').delete().eq('id',id);
+  await loadPostagens();
+  renderPostagens();
+}
+
+// ── RELATÓRIO PDF ─────────────────────────────────────────────────────────
+function gerarRelatorioPDF(){
+  const hoje = new Date();
+  const mesLabel = hoje.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+
+  const doMes = postagens.filter(p => {
+    const d = new Date(p.data_post+'T12:00:00');
+    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
+  });
+
+  const totalPost = doMes.reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalIG   = doMes.filter(p=>p.plataforma==='Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalTK   = doMes.filter(p=>p.plataforma==='TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalYT   = doMes.filter(p=>p.plataforma==='YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalLong = doMes.filter(p=>p.tipo==='Longo').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalCurt = doMes.filter(p=>p.tipo==='Curto').reduce((a,p)=>a+(p.quantidade||0),0);
+
+  let produzidoMes = 0;
+  Object.values(cache).forEach(d => {
+    if(!d.day_key) return;
+    const dp = new Date(d.day_key+'T12:00:00');
+    if(dp.getMonth()!==mesAtual||dp.getFullYear()!==anoAtual) return;
+    if(d.long_link) produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
+    if(d.viral_link) produzidoMes += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
+  });
+
+  const rows = doMes.sort((a,b)=>a.data_post.localeCompare(b.data_post)).map(p => {
+    const d = new Date(p.data_post+'T12:00:00');
+    const dataFmt = d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+    return `<tr>
+      <td>${dataFmt}</td>
+      <td>${p.hora_post||'—'}</td>
+      <td>${p.plataforma}</td>
+      <td>${p.tipo}</td>
+      <td style="text-align:center;font-weight:700;">${p.quantidade}</td>
+      <td style="font-size:10px;color:#555;max-width:200px;word-break:break-all;">${p.link_post||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Relatório de Postagens — ${mesLabel}</title>
+<style>
+  body{font-family:system-ui,sans-serif;color:#111;margin:0;padding:2rem;background:#fff;}
+  h1{font-size:22px;font-weight:900;color:#111;margin-bottom:4px;}
+  .sub{font-size:13px;color:#666;margin-bottom:2rem;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem;}
+  .kpi{background:#f5f5f5;border-radius:10px;padding:14px;border-left:3px solid #c9a96e;}
+  .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;}
+  .kpi-val{font-size:24px;font-weight:900;color:#111;}
+  .kpi-val.gold{color:#c9a96e;}
+  .kpi-sub{font-size:10px;color:#888;margin-top:2px;}
+  h2{font-size:14px;font-weight:800;color:#111;margin:1.5rem 0 .5rem;text-transform:uppercase;letter-spacing:.5px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{text-align:left;padding:8px 10px;background:#f0f0f0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;border-bottom:2px solid #ddd;}
+  td{padding:8px 10px;border-bottom:1px solid #eee;color:#333;}
+  tr:last-child td{border-bottom:none;}
+  .footer{margin-top:2rem;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:1rem;}
+  @media print{body{padding:1rem;}}
+</style></head><body>
+<h1>Relatório de Postagens</h1>
+<div class="sub">Projeto Tony Cozendey · Roity · ${mesLabel}</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">Total postados</div><div class="kpi-val gold">${totalPost}</div><div class="kpi-sub">no mês</div></div>
+  <div class="kpi"><div class="kpi-label">Total produzidos</div><div class="kpi-val">${produzidoMes}</div><div class="kpi-sub">registrado no sistema</div></div>
+  <div class="kpi"><div class="kpi-label">Longos / Curtos</div><div class="kpi-val">${totalLong} / ${totalCurt}</div><div class="kpi-sub">por tipo de vídeo</div></div>
+  <div class="kpi"><div class="kpi-label">Diferença</div><div class="kpi-val" style="color:${produzidoMes-totalPost>=0?'#27ae60':'#e74c3c'};">${produzidoMes-totalPost>=0?'+':''}${produzidoMes-totalPost}</div><div class="kpi-sub">produzido − postado</div></div>
+</div>
+
+<h2>Por plataforma</h2>
+<table>
+  <thead><tr><th>Plataforma</th><th>Vídeos postados</th><th>% do total</th></tr></thead>
+  <tbody>
+    <tr><td>Instagram</td><td>${totalIG}</td><td>${totalPost>0?Math.round(totalIG/totalPost*100):0}%</td></tr>
+    <tr><td>TikTok</td><td>${totalTK}</td><td>${totalPost>0?Math.round(totalTK/totalPost*100):0}%</td></tr>
+    <tr><td>YouTube Shorts</td><td>${totalYT}</td><td>${totalPost>0?Math.round(totalYT/totalPost*100):0}%</td></tr>
+    <tr style="font-weight:800;background:#f9f9f9;"><td>Total</td><td>${totalPost}</td><td>100%</td></tr>
+  </tbody>
+</table>
+
+<h2>Detalhamento por dia</h2>
+<table>
+  <thead><tr><th>Data</th><th>Horário</th><th>Plataforma</th><th>Tipo</th><th>Qtd</th><th>Link</th></tr></thead>
+  <tbody>${rows||'<tr><td colspan="6" style="text-align:center;color:#aaa;">Sem postagens registradas.</td></tr>'}</tbody>
+</table>
+
+<div class="footer">Gerado em ${new Date().toLocaleString('pt-BR',{timeZone:'America/Cuiaba'})} · Roity © 2026</div>
+</body></html>`;
+
+  const blob = new Blob([html],{type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url,'_blank');
+  if(w) setTimeout(()=>{ w.print(); },600);
+}
+
 window.addEventListener('DOMContentLoaded',async()=>{
   // Tentar restaurar sessão
   const savedUser = sessionStorage.getItem('roity_user');
@@ -1750,6 +2119,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
         await loadWeek(currentWeekStart);
         await loadExtraForDash();
         await loadReposicoes();
+        await loadPostagens();
         document.getElementById('loading').style.display='none';
         document.getElementById('app').style.display='flex';
 
