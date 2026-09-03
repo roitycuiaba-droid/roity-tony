@@ -1003,8 +1003,12 @@ function logout(){
 async function loadWeek(ws){
   const keys=[];
   for(let i=0;i<7;i++){const d=addDays(ws,i);if(d>=PROJECT_START)keys.push(dateKey(d));}
+  if(!keys.length) return;
   const{data}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
+  // Sempre sobrescrever com dados frescos do banco (corrige bug de stale cache)
   if(data)data.forEach(r=>{cache[r.day_key]=r;});
+  // Garantir que dias sem registro no banco existam no cache
+  keys.forEach(k=>{ if(!cache[k]) cache[k]={day_key:k}; });
 }
 
 async function loadExtraForDash(){
@@ -1145,18 +1149,25 @@ async function upsertSilent(key, field){
   setSyncing(false);
 }
 function saveProd(key, field, val){
-  const num = parseInt(val) || 0;
-  getDay(key)[field] = num;
-  if(saveTimers['prod_'+key]) clearTimeout(saveTimers['prod_'+key]);
-  saveTimers['prod_'+key] = setTimeout(async()=>{
+  const num = parseInt(val);
+  if(isNaN(num)||num<0) return;
+  // Atualizar cache local imediatamente para UI responsiva
+  const d = getDay(key);
+  d[field] = num;
+  cache[key] = d;
+  updateMeta();
+  updateSaldoBar();
+  if(saveTimers['prod_'+key+'_'+field]) clearTimeout(saveTimers['prod_'+key+'_'+field]);
+  saveTimers['prod_'+key+'_'+field] = setTimeout(async()=>{
     setSyncing(true);
     await sb.from('tony_dashboard').upsert(
       { day_key: key, [field]: num, updated_at: new Date().toISOString() },
       { onConflict: 'day_key' }
     );
     setSyncing(false);
-    updateMeta();
-    updateSaldoBar();
+    // Re-ler do banco para garantir sincronia total
+    const {data} = await sb.from('tony_dashboard').select('*').eq('day_key', key).single();
+    if(data){ cache[key]=data; updateMeta(); updateSaldoBar(); }
     playConfirm();
   }, 600);
 }
@@ -1469,12 +1480,11 @@ function updateMeta(){
     const key = dateKey(day);
     const d = cache[key];
     if(!d) return;
-    if(d.long_link){
-      totalLong += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
-    }
-    if(d.viral_link){
-      totalViral += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
-    }
+    // Usar sempre o valor do cache (que foi sincronizado com o banco)
+    const lVal = (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : (d.long_link ? META_LONG_DIA : 0);
+    const vVal = (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : (d.viral_link ? META_VIRAL_DIA : 0);
+    if(d.long_link)  totalLong  += lVal;
+    if(d.viral_link) totalViral += vVal;
   });
   const totalAll = totalLong + totalViral;
 
@@ -1750,12 +1760,15 @@ function updateSaldoBar(){
     else{scDev.classList.remove('danger');scDev.classList.add('success');if(devVal)devVal.className='saldo-val green';}
   }
   let prod=0;
+  const psKey=dateKey(PROJECT_START);
+  const peKey=dateKey(PROJECT_END);
   Object.values(cache).forEach(d=>{
-    // Longos: se tem link, usa prod_longos (ou default). Se não tem link, 0.
+    if(!d.day_key) return;
+    // Só contar dias dentro do período do projeto
+    if(d.day_key < psKey || d.day_key > peKey) return;
     if(d.long_link){
       prod += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
     }
-    // Virais: mesma lógica
     if(d.viral_link){
       prod += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
     }
@@ -2464,7 +2477,7 @@ function renderPostagens(){
                 <td style="padding:8px 4px;"><span class="tipo-badge ${v.tipo?.toLowerCase()}">${v.tipo||'—'}</span></td>
                 <td></td>
                 ${isAdmin?`<td style="padding:8px 14px;white-space:nowrap;">
-                  <button class="del-post-btn" onclick="deleteVideoUnico(${JSON.stringify(v.ids)})" title="Apagar"><i class="ti ti-trash"></i></button>
+                  <button class="del-post-btn" onclick="deleteVideoUnico(this)" data-ids="${v.ids.join(',')}" title="Apagar"><i class="ti ti-trash"></i></button>
                 </td>`:'<td></td>'}
               </tr>`;
             }).join('')}
@@ -2567,7 +2580,9 @@ function toggleGrupo(dataKey){
   }
 }
 
-async function deleteVideoUnico(ids){
+async function deleteVideoUnico(btn){
+  const ids=(btn.dataset.ids||'').split(',').filter(Boolean);
+  if(!ids.length) return;
   if(!confirm('Apagar este vídeo e todas as suas distribuições?')) return;
   for(const id of ids){
     await sb.from('tony_postagens').delete().eq('id',id);
@@ -2577,8 +2592,10 @@ async function deleteVideoUnico(ids){
 }
 
 async function deletePost(id){
+  if(!id){alert('ID inválido.');return;}
   if(!confirm('Apagar esta postagem?')) return;
-  await sb.from('tony_postagens').delete().eq('id',id);
+  const {error}=await sb.from('tony_postagens').delete().eq('id',id);
+  if(error){alert('Erro ao apagar: '+error.message);return;}
   await loadPostagens();
   renderPostagens();
 }
