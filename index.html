@@ -363,6 +363,28 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 }
 
 /* ── ABA DE POSTAGENS ── */
+/* ── MULTI-LINK FORM ── */
+.link-batch-area{display:flex;flex-direction:column;gap:6px;margin:8px 0;}
+.link-row{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;background:rgba(255,255,255,0.03);border:1px solid var(--glass-b);border-radius:9px;padding:6px 10px;transition:border-color .15s;}
+.link-row:focus-within{border-color:rgba(201,169,110,0.4);}
+.link-row input{background:none;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit;width:100%;padding:4px 0;}
+.link-row input::placeholder{color:var(--text3);}
+.link-plat-auto{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap;letter-spacing:.5px;text-transform:uppercase;}
+.link-plat-auto.IG{background:rgba(139,63,192,0.2);color:#a569bd;}
+.link-plat-auto.TK{background:rgba(224,0,60,0.2);color:#e0003c;}
+.link-plat-auto.YT{background:rgba(204,0,0,0.2);color:#cc0000;}
+.link-plat-auto.desconhecido{background:rgba(255,255,255,0.06);color:var(--text3);}
+.link-tipo-sel{background:rgba(255,255,255,0.04);border:1px solid var(--glass-b);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--text2);font-family:inherit;cursor:pointer;}
+.link-tipo-sel:focus{outline:none;border-color:var(--gold);}
+.link-remove-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px;transition:color .15s;}
+.link-remove-btn:hover{color:var(--danger2);}
+.add-link-row-btn{background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.12);border-radius:9px;padding:9px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.add-link-row-btn:hover{border-color:var(--gold);color:var(--gold);}
+.batch-count{font-size:11px;color:var(--text3);margin-left:4px;}
+.link-date-header{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin:1rem 0 .4rem;padding-bottom:.4rem;border-bottom:1px solid var(--glass-b);}
+.post-group{margin-bottom:1.5rem;}
+.post-group-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;padding:8px 14px;background:rgba(255,255,255,0.025);border-bottom:1px solid rgba(255,255,255,0.04);}
+
 .post-aba-grid{padding:1rem;display:flex;flex-direction:column;gap:1rem;}
 .post-form-card{background:var(--bg2);border:1px solid var(--glass-gold-b);border-radius:14px;padding:1rem 1.25rem;}
 .post-form-title{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.875rem;display:flex;align-items:center;gap:6px;}
@@ -1961,6 +1983,121 @@ function sincronizarMesComData(dataVal){
   renderPostagensSemForm();
 }
 
+function detectarPlataforma(url){
+  if(!url) return 'desconhecido';
+  const u = url.toLowerCase();
+  if(u.includes('instagram.com') || u.includes('instagr.am')) return 'Instagram';
+  if(u.includes('tiktok.com') || u.includes('vm.tiktok')) return 'TikTok';
+  if(u.includes('youtube.com') || u.includes('youtu.be') || u.includes('yt.be')) return 'YouTube';
+  return 'desconhecido';
+}
+
+function detectarTipo(url){
+  // YouTube Shorts = curto, outros = longo por padrão
+  const u = url.toLowerCase();
+  if(u.includes('/shorts/')) return 'Curto';
+  if(u.includes('tiktok') && !u.includes('/live')) return 'Curto';
+  return 'Longo';
+}
+
+let linkRows = []; // [{link, plataforma, tipo}]
+
+function addLinkRow(linkVal=''){
+  const idx = linkRows.length;
+  linkRows.push({link:linkVal, plataforma:'desconhecido', tipo:'Longo'});
+  renderLinkRows();
+  // Foco no novo input
+  setTimeout(()=>{
+    const inputs = document.querySelectorAll('.lr-input');
+    if(inputs[idx]) inputs[idx].focus();
+  },50);
+  atualizarBatchCount();
+}
+
+function renderLinkRows(){
+  const area = document.getElementById('link-batch-area');
+  if(!area) return;
+  area.innerHTML = linkRows.map((row,i)=>{
+    const pc = {Instagram:'IG',TikTok:'TK',YouTube:'YT',desconhecido:'desconhecido'}[row.plataforma]||'desconhecido';
+    const platLabel = row.plataforma==='desconhecido' ? '?' : row.plataforma;
+    return `<div class="link-row" id="lr-${i}">
+      <input class="lr-input" type="text" placeholder="https://..." value="${row.link||''}"
+        oninput="onLinkInput(${i},this.value)"
+        onpaste="setTimeout(()=>onLinkInput(${i},this.value),10)"/>
+      <span class="link-plat-auto ${pc}">${platLabel}</span>
+      <select class="link-tipo-sel" onchange="linkRows[${i}].tipo=this.value" >
+        <option value="Longo" ${row.tipo==='Longo'?'selected':''}>Longo</option>
+        <option value="Curto" ${row.tipo==='Curto'?'selected':''}>Curto</option>
+      </select>
+      <button class="link-remove-btn" onclick="removeLinkRow(${i})"><i class="ti ti-x"></i></button>
+    </div>`;
+  }).join('');
+  atualizarBatchCount();
+}
+
+function onLinkInput(idx, val){
+  linkRows[idx].link = val;
+  const plat = detectarPlataforma(val);
+  const tipo = detectarTipo(val);
+  linkRows[idx].plataforma = plat;
+  if(val && tipo) linkRows[idx].tipo = tipo;
+  // Atualizar só o badge e o select dessa row sem re-renderizar tudo
+  const row = document.getElementById('lr-'+idx);
+  if(!row) return;
+  const pc = {Instagram:'IG',TikTok:'TK',YouTube:'YT',desconhecido:'desconhecido'}[plat]||'desconhecido';
+  const badge = row.querySelector('.link-plat-auto');
+  if(badge){ badge.className='link-plat-auto '+pc; badge.textContent=plat==='desconhecido'?'?':plat; }
+  const sel = row.querySelector('.link-tipo-sel');
+  if(sel) sel.value = linkRows[idx].tipo;
+  atualizarBatchCount();
+}
+
+function removeLinkRow(idx){
+  linkRows.splice(idx,1);
+  renderLinkRows();
+}
+
+function atualizarBatchCount(){
+  const el = document.getElementById('batch-count');
+  const validos = linkRows.filter(r=>r.link && r.plataforma!=='desconhecido').length;
+  if(el) el.textContent = linkRows.length>0 ? `(${validos}/${linkRows.length} detectados)` : '';
+}
+
+async function submitBatch(){
+  const data = document.getElementById('pf-data')?.value;
+  if(!data){ alert('Selecione a data.'); return; }
+  const validos = linkRows.filter(r=>r.link && r.plataforma && r.plataforma!=='desconhecido');
+  if(validos.length===0){ alert('Adicione pelo menos um link com plataforma detectada.'); return; }
+
+  const statusEl = document.getElementById('batch-status');
+  if(statusEl) statusEl.textContent = 'Salvando...';
+  const btn = document.querySelector('[onclick="submitBatch()"]');
+  if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
+
+  const payload = validos.map(r=>({
+    data_post:data, plataforma:r.plataforma, tipo:r.tipo,
+    quantidade:1, hora_post:null, link_post:r.link,
+    updated_at:new Date().toISOString()
+  }));
+
+  const {error} = await sb.from('tony_postagens').insert(payload);
+  if(error){
+    alert('Erro ao salvar: '+error.message);
+  } else {
+    linkRows = [];
+    await loadPostagens();
+    // Sincronizar mês com a data registrada
+    sincronizarMesComData(data);
+    playConfirm();
+    if(statusEl) statusEl.textContent = `${payload.length} postagem${payload.length>1?'s':''} salva${payload.length>1?'s':''}!`;
+    setTimeout(()=>{ if(statusEl) statusEl.textContent=''; },3000);
+    renderPostagens();
+    // Restaurar uma linha em branco
+    setTimeout(()=>{ if(document.getElementById('link-batch-area')) addLinkRow(); },100);
+  }
+  if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+}
+
 function trocarMesPost(val){
   const [m,a] = val.split('_').map(Number);
   selectedMesPost = m;
@@ -2000,9 +2137,11 @@ function renderPostagensSemForm(){
     const labelEl = document.getElementById('data-semana-label');
     if(labelEl) labelEl.innerHTML = getLabelSemanaData(pfData);
   }
-  if(pfPlat && document.getElementById('pf-plat')) document.getElementById('pf-plat').value = pfPlat;
-  if(pfTipo && document.getElementById('pf-tipo')) document.getElementById('pf-tipo').value = pfTipo;
-  if(pfLink && document.getElementById('pf-link')) document.getElementById('pf-link').value = pfLink;
+  // Inicializar batch area com rows existentes ou 1 linha em branco
+  if(document.getElementById('link-batch-area')){
+    if(linkRows.length===0) linkRows = [{link:'',plataforma:'desconhecido',tipo:'Longo'}];
+    renderLinkRows();
+  }
 }
 
 function renderPostagens(){
@@ -2069,33 +2208,52 @@ function renderPostagens(){
     </button>
   </div>`;
 
-  // ── Form de registro ────────────────────────────────────────────────
-  const formHtml = isAdmin ? `
+  // ── Form de registro multi-link ────────────────────────────────────
+  const dataAtual = document.getElementById('pf-data')?.value || new Date().toISOString().slice(0,10);
+  const semLabel  = getLabelSemanaData(dataAtual);
+  const formHtml = isAdmin && !editingPostId ? `
   <div class="post-form-card">
-    <div class="post-form-title"><i class="ti ti-${editingPostId?'edit':'plus'}"></i>${editingPostId?'Editar postagem':'Registrar postagem'}</div>
+    <div class="post-form-title"><i class="ti ti-plus"></i>Registrar postagens do dia</div>
+    <div class="post-form-grid" style="grid-template-columns:1fr;gap:10px;">
+      <div class="ff-post">
+        <label>Data</label>
+        <input type="date" id="pf-data" value="${dataAtual}" onchange="sincronizarMesComData(this.value)"/>
+        <div id="data-semana-label" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.3px;min-height:16px;">${semLabel}</div>
+      </div>
+      <div>
+        <div class="link-date-header">Links do dia <span class="batch-count" id="batch-count"></span></div>
+        <div class="link-batch-area" id="link-batch-area"></div>
+        <button class="add-link-row-btn" onclick="addLinkRow()"><i class="ti ti-plus"></i> Adicionar link</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+      <button class="add-post-btn" onclick="submitBatch()"><i class="ti ti-device-floppy"></i> Salvar todos</button>
+      <span id="batch-status" style="font-size:11px;color:var(--text3);"></span>
+    </div>
+  </div>` : (isAdmin && editingPostId ? `
+  <div class="post-form-card">
+    <div class="post-form-title"><i class="ti ti-edit"></i>Editar postagem</div>
     <input type="hidden" id="pf-id" value="${editingPostId||''}"/>
     <div class="post-form-grid">
-      <div class="ff-post" style="grid-column:1/-1;"><label>Data</label><input type="date" id="pf-data" value="${document.getElementById('pf-data')?.value||new Date().toISOString().slice(0,10)}" onchange="sincronizarMesComData(this.value)"/>
-        <div id="data-semana-label" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.3px;min-height:16px;"></div>
+      <div class="ff-post" style="grid-column:1/-1;">
+        <label>Link</label>
+        <input type="text" id="pf-link" placeholder="https://..."/>
       </div>
       <div class="ff-post"><label>Plataforma</label>
-        <select id="pf-plat">
-          ${POST_PLAT.map(p=>`<option value="${p}">${p}</option>`).join('')}
-        </select>
+        <select id="pf-plat">${POST_PLAT.map(p=>`<option value="${p}">${p}</option>`).join('')}</select>
       </div>
       <div class="ff-post"><label>Tipo</label>
-        <select id="pf-tipo">
-          ${POST_TIPO.map(t=>`<option value="${t}">${t}</option>`).join('')}
-        </select>
+        <select id="pf-tipo">${POST_TIPO.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
       </div>
-
-      <div class="ff-post"><label>Link</label><input type="text" id="pf-link" placeholder="https://..."/></div>
+      <div class="ff-post"><label>Data</label>
+        <input type="date" id="pf-data" value="${dataAtual}"/>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <button class="add-post-btn" onclick="submitPostagem()"><i class="ti ti-${editingPostId?'check':'plus'}"></i>${editingPostId?'Salvar alteração':'Registrar'}</button>
-      ${editingPostId?`<button onclick="cancelEditPost()" style="background:var(--glass);border:1px solid var(--glass-b);border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;">Cancelar</button>`:''}
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="add-post-btn" onclick="submitPostagem()"><i class="ti ti-check"></i>Salvar alteração</button>
+      <button onclick="cancelEditPost()" style="background:var(--glass);border:1px solid var(--glass-b);border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;">Cancelar</button>
     </div>
-  </div>` : '';
+  </div>` : '');
 
   // ── Stats ────────────────────────────────────────────────────────────
   const statsHtml = `
@@ -2134,21 +2292,43 @@ function renderPostagens(){
 
   // ── Tabela de postagens ──────────────────────────────────────────────
   const platCode = {Instagram:'IG', TikTok:'TK', YouTube:'YT'};
-  const rows = postagens.length === 0
-    ? `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem;">Nenhuma postagem registrada.</td></tr>`
-    : postagens.map(p => {
-        const d = new Date(p.data_post+'T12:00:00');
-        const dataFmt = d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
-        const pc = platCode[p.plataforma]||p.plataforma;
-        return `<tr>
-          <td>${dataFmt}</td>
+
+  // Agrupar por data
+  const grupos = {};
+  const doMesOrdenado = [...doMes].sort((a,b)=>a.data_post.localeCompare(b.data_post));
+  doMesOrdenado.forEach(p=>{
+    if(!grupos[p.data_post]) grupos[p.data_post]=[];
+    grupos[p.data_post].push(p);
+  });
+
+  let rows = '';
+  if(doMes.length === 0){
+    rows = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem;">Nenhuma postagem registrada para este mês.</td></tr>`;
+  } else {
+    Object.keys(grupos).sort().forEach(dataKey=>{
+      const itens = grupos[dataKey];
+      const d = new Date(dataKey+'T12:00:00');
+      const diaSem = d.toLocaleDateString('pt-BR',{weekday:'long'});
+      const diaFmt = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      const semInfo = getLabelSemanaData(dataKey);
+      rows += `<tr><td colspan="5" class="post-group-label">
+        <span style="color:var(--gold);">${diaSem.charAt(0).toUpperCase()+diaSem.slice(1)}, ${diaFmt}</span>
+        <span style="color:var(--text3);font-weight:400;font-size:10px;margin-left:8px;">${semInfo}</span>
+        <span style="float:right;font-size:10px;color:var(--text3);font-weight:400;">${itens.length} postagem${itens.length>1?'s':''}</span>
+      </td></tr>`;
+      itens.forEach(p=>{
+        const pc = platCode[p.plataforma]||'desconhecido';
+        rows += `<tr>
+          <td style="padding-left:20px;color:var(--text3);font-size:11px;width:24px;">&rarr;</td>
           <td><span class="plat-badge ${pc}">${p.plataforma}</span></td>
           <td><span class="tipo-badge ${p.tipo?.toLowerCase()}">${p.tipo||'—'}</span></td>
           <td>${p.link_post?`<button class="link-post-btn" onclick="window.open('${p.link_post}','_blank')" title="Abrir link"><i class="ti ti-external-link"></i></button>`:'—'}</td>
-          ${isAdmin?`<td><button class="del-post-btn" onclick="deletePost('${p.id}')" title="Apagar"><i class="ti ti-trash"></i></button>
+          ${isAdmin?`<td style="white-space:nowrap;"><button class="del-post-btn" onclick="deletePost('${p.id}')" title="Apagar"><i class="ti ti-trash"></i></button>
             <button class="del-post-btn" onclick="editPost('${p.id}')" title="Editar" style="color:var(--gold-dim);"><i class="ti ti-edit"></i></button></td>`:'<td></td>'}
         </tr>`;
-      }).join('');
+      });
+    });
+  }
 
   const tableHtml = `
   <div class="post-list-card">
@@ -2160,7 +2340,7 @@ function renderPostagens(){
       <table class="post-table">
         <thead>
           <tr>
-            <th>Data</th><th>Plataforma</th><th>Tipo</th><th>Link</th><th></th>
+            <th></th><th>Plataforma</th><th>Tipo</th><th>Link</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -2169,6 +2349,12 @@ function renderPostagens(){
   </div>`;
 
   el.innerHTML = mesSelectorHtml + formHtml + statsHtml + tableHtml;
+
+  // Inicializar batch area no form de novo registro
+  if(!editingPostId && document.getElementById('link-batch-area')){
+    if(linkRows.length===0) linkRows = [{link:'',plataforma:'desconhecido',tipo:'Longo'}];
+    renderLinkRows();
+  }
 
   // Restaurar valores do form se estava editando
   if(editingPostId){
