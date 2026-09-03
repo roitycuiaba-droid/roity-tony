@@ -1916,6 +1916,32 @@ let selectedAnoPost = new Date().getFullYear();
 const POST_PLAT = ['Instagram','TikTok','YouTube'];
 const POST_TIPO = ['Longo','Curto'];
 
+function getLabelSemanaData(dataVal){
+  if(!dataVal) return '';
+  const d = new Date(dataVal+'T12:00:00');
+  const ps = new Date(2026,7,3); // PROJECT_START 03/ago/2026
+
+  // Calcular número da semana relativo ao projeto
+  const wsD = getWeekStart(d);
+  const wsP = getWeekStart(ps);
+  const diffMs = wsD - wsP;
+  const semNum = Math.floor(diffMs/(7*24*60*60*1000)) + 1;
+
+  // Início e fim da semana
+  const wStart = getWeekStart(d);
+  const wEnd = new Date(wStart); wEnd.setDate(wEnd.getDate()+6);
+
+  const fmtDia = (dt) => dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','').replace(' de ','\/');
+  const wStartFmt = fmtDia(wStart);
+  const wEndFmt   = fmtDia(wEnd);
+
+  // Dia da semana abreviado + data
+  const diaSemana = d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+  const diaNum = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+
+  return `Semana ${semNum} — ${wStartFmt} a ${wEndFmt} &nbsp;·&nbsp; ${diaSemana} ${diaNum}`;
+}
+
 function sincronizarMesComData(dataVal){
   if(!dataVal) return;
   const d = new Date(dataVal+'T12:00:00');
@@ -1928,6 +1954,9 @@ function sincronizarMesComData(dataVal){
   selectedAnoPost = a;
   const sel = document.getElementById('mes-selector');
   if(sel) sel.value = m+'_'+a;
+  // Atualizar label de semana/dia
+  const labelEl = document.getElementById('data-semana-label');
+  if(labelEl) labelEl.innerHTML = getLabelSemanaData(dataVal);
   // Atualiza stats sem re-renderizar o form todo
   renderPostagensSemForm();
 }
@@ -1966,7 +1995,11 @@ function renderPostagensSemForm(){
   const pfId   = document.getElementById('pf-id')?.value;
   renderPostagens();
   // Restaurar form depois do re-render
-  if(pfData && document.getElementById('pf-data')) document.getElementById('pf-data').value = pfData;
+  if(pfData && document.getElementById('pf-data')){
+    document.getElementById('pf-data').value = pfData;
+    const labelEl = document.getElementById('data-semana-label');
+    if(labelEl) labelEl.innerHTML = getLabelSemanaData(pfData);
+  }
   if(pfPlat && document.getElementById('pf-plat')) document.getElementById('pf-plat').value = pfPlat;
   if(pfTipo && document.getElementById('pf-tipo')) document.getElementById('pf-tipo').value = pfTipo;
   if(pfLink && document.getElementById('pf-link')) document.getElementById('pf-link').value = pfLink;
@@ -2042,7 +2075,9 @@ function renderPostagens(){
     <div class="post-form-title"><i class="ti ti-${editingPostId?'edit':'plus'}"></i>${editingPostId?'Editar postagem':'Registrar postagem'}</div>
     <input type="hidden" id="pf-id" value="${editingPostId||''}"/>
     <div class="post-form-grid">
-      <div class="ff-post"><label>Data</label><input type="date" id="pf-data" value="${document.getElementById('pf-data')?.value||new Date().toISOString().slice(0,10)}" onchange="sincronizarMesComData(this.value)"/></div>
+      <div class="ff-post" style="grid-column:1/-1;"><label>Data</label><input type="date" id="pf-data" value="${document.getElementById('pf-data')?.value||new Date().toISOString().slice(0,10)}" onchange="sincronizarMesComData(this.value)"/>
+        <div id="data-semana-label" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.3px;min-height:16px;"></div>
+      </div>
       <div class="ff-post"><label>Plataforma</label>
         <select id="pf-plat">
           ${POST_PLAT.map(p=>`<option value="${p}">${p}</option>`).join('')}
