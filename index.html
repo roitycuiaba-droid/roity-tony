@@ -842,14 +842,19 @@ function setupInactivityDetection(){
 
 // ── CSP via meta tag ─────────────────────────────────────────────────
 (function enforceCSP(){
-  // Bloquear iframes tentando embutir este app
-  if(window.top!==window.self){
-    window.top.location=window.self.location;
+  // Anti-clickjacking: bloquear iframes externos (exceto preview de desenvolvimento)
+  try {
+    if(window.top !== window.self){
+      const topHost = window.top.location.hostname;
+      const selfHost = window.self.location.hostname;
+      // Só redireciona se for um iframe de domínio diferente (não preview/dev)
+      if(topHost && selfHost && topHost !== selfHost){
+        window.top.location = window.self.location;
+      }
+    }
+  } catch(e) {
+    // Se não conseguir acessar window.top.location é cross-origin — seguro, deixa passar
   }
-  // Anti-clickjacking
-  document.addEventListener('DOMContentLoaded',()=>{
-    document.documentElement.style.display='block';
-  });
 })();
 
 function subscribeRealtime(){
@@ -1163,7 +1168,10 @@ function switchTab(tab){
     const el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  if(document.getElementById('tab-dash')) document.getElementById(tab==='dashboard'?'tab-dash':'tab-kanban').classList.add('active');
+  const tabMap = {dashboard:'tab-dash', kanban:'tab-kanban', postagens:'tab-postagens'};
+  const activeTabId = tabMap[tab] || 'tab-kanban';
+  const activeTabEl = document.getElementById(activeTabId);
+  if(activeTabEl) activeTabEl.classList.add('active');
 
   const vDash=document.getElementById('view-dashboard');
   const vKanban=document.getElementById('view-kanban');
@@ -1908,6 +1916,22 @@ let selectedAnoPost = new Date().getFullYear();
 const POST_PLAT = ['Instagram','TikTok','YouTube'];
 const POST_TIPO = ['Longo','Curto'];
 
+function sincronizarMesComData(dataVal){
+  if(!dataVal) return;
+  const d = new Date(dataVal+'T12:00:00');
+  const m = d.getMonth();
+  const a = d.getFullYear();
+  // Só sincroniza se estiver no range ago-dez/2026
+  const mesesValidos = [{m:7,a:2026},{m:8,a:2026},{m:9,a:2026},{m:10,a:2026},{m:11,a:2026}];
+  if(!mesesValidos.some(x=>x.m===m&&x.a===a)) return;
+  selectedMesPost = m;
+  selectedAnoPost = a;
+  const sel = document.getElementById('mes-selector');
+  if(sel) sel.value = m+'_'+a;
+  // Atualiza stats sem re-renderizar o form todo
+  renderPostagensSemForm();
+}
+
 function trocarMesPost(val){
   const [m,a] = val.split('_').map(Number);
   selectedMesPost = m;
@@ -1926,6 +1950,26 @@ async function recarregarPostagens(){
 async function loadPostagens(){
   const {data} = await sb.from('tony_postagens').select('*').order('data_post',{ascending:false});
   postagens = data || [];
+}
+
+function renderPostagensSemForm(){
+  // Recalcula só os stats e tabela, preservando o form ativo
+  const el = document.getElementById('postagens-content');
+  if(!el) return;
+  const viewPost = document.getElementById('view-postagens');
+  if(!viewPost || viewPost.style.display === 'none') return;
+  // Re-render completo mas mantendo valores do form
+  const pfData = document.getElementById('pf-data')?.value;
+  const pfPlat = document.getElementById('pf-plat')?.value;
+  const pfTipo = document.getElementById('pf-tipo')?.value;
+  const pfLink = document.getElementById('pf-link')?.value;
+  const pfId   = document.getElementById('pf-id')?.value;
+  renderPostagens();
+  // Restaurar form depois do re-render
+  if(pfData && document.getElementById('pf-data')) document.getElementById('pf-data').value = pfData;
+  if(pfPlat && document.getElementById('pf-plat')) document.getElementById('pf-plat').value = pfPlat;
+  if(pfTipo && document.getElementById('pf-tipo')) document.getElementById('pf-tipo').value = pfTipo;
+  if(pfLink && document.getElementById('pf-link')) document.getElementById('pf-link').value = pfLink;
 }
 
 function renderPostagens(){
@@ -1966,16 +2010,18 @@ function renderPostagens(){
 
   // ── Seletor de mês ──────────────────────────────────────────────────
   // Gerar opções: 12 meses anteriores + mês atual
-  const mesesOpts = [];
-  const hoje = new Date();
-  for(let i = 11; i >= 0; i--){
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-    const m = d.getMonth();
-    const a = d.getFullYear();
-    const label = d.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  // Meses fixos: agosto/2026 até dezembro/2026
+  const mesesFixos = [
+    {m:7, a:2026, label:'Agosto de 2026'},
+    {m:8, a:2026, label:'Setembro de 2026'},
+    {m:9, a:2026, label:'Outubro de 2026'},
+    {m:10,a:2026, label:'Novembro de 2026'},
+    {m:11,a:2026, label:'Dezembro de 2026'},
+  ];
+  const mesesOpts = mesesFixos.map(({m,a,label})=>{
     const sel = (m===mesAtual && a===anoAtual) ? 'selected' : '';
-    mesesOpts.push(`<option value="${m}_${a}" ${sel}>${label.charAt(0).toUpperCase()+label.slice(1)}</option>`);
-  }
+    return `<option value="${m}_${a}" ${sel}>${label}</option>`;
+  });
 
   const mesSelectorHtml = `
   <div style="background:var(--bg2);border:1px solid var(--glass-b);border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1996,7 +2042,7 @@ function renderPostagens(){
     <div class="post-form-title"><i class="ti ti-${editingPostId?'edit':'plus'}"></i>${editingPostId?'Editar postagem':'Registrar postagem'}</div>
     <input type="hidden" id="pf-id" value="${editingPostId||''}"/>
     <div class="post-form-grid">
-      <div class="ff-post"><label>Data</label><input type="date" id="pf-data" value="${document.getElementById('pf-data')?.value||new Date().toISOString().slice(0,10)}"/></div>
+      <div class="ff-post"><label>Data</label><input type="date" id="pf-data" value="${document.getElementById('pf-data')?.value||new Date().toISOString().slice(0,10)}" onchange="sincronizarMesComData(this.value)"/></div>
       <div class="ff-post"><label>Plataforma</label>
         <select id="pf-plat">
           ${POST_PLAT.map(p=>`<option value="${p}">${p}</option>`).join('')}
@@ -2007,8 +2053,7 @@ function renderPostagens(){
           ${POST_TIPO.map(t=>`<option value="${t}">${t}</option>`).join('')}
         </select>
       </div>
-      <div class="ff-post"><label>Quantidade</label><input type="number" id="pf-qtd" min="1" max="99" placeholder="0" value="1"/></div>
-      <div class="ff-post"><label>Horário</label><input type="time" id="pf-hora"/></div>
+
       <div class="ff-post"><label>Link</label><input type="text" id="pf-link" placeholder="https://..."/></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -2062,10 +2107,8 @@ function renderPostagens(){
         const pc = platCode[p.plataforma]||p.plataforma;
         return `<tr>
           <td>${dataFmt}</td>
-          <td>${p.hora_post||'—'}</td>
           <td><span class="plat-badge ${pc}">${p.plataforma}</span></td>
           <td><span class="tipo-badge ${p.tipo?.toLowerCase()}">${p.tipo||'—'}</span></td>
-          <td style="font-weight:800;color:var(--text);">${p.quantidade||0}</td>
           <td>${p.link_post?`<button class="link-post-btn" onclick="window.open('${p.link_post}','_blank')" title="Abrir link"><i class="ti ti-external-link"></i></button>`:'—'}</td>
           ${isAdmin?`<td><button class="del-post-btn" onclick="deletePost('${p.id}')" title="Apagar"><i class="ti ti-trash"></i></button>
             <button class="del-post-btn" onclick="editPost('${p.id}')" title="Editar" style="color:var(--gold-dim);"><i class="ti ti-edit"></i></button></td>`:'<td></td>'}
@@ -2082,7 +2125,7 @@ function renderPostagens(){
       <table class="post-table">
         <thead>
           <tr>
-            <th>Data</th><th>Horário</th><th>Plataforma</th><th>Tipo</th><th>Qtd</th><th>Link</th><th></th>
+            <th>Data</th><th>Plataforma</th><th>Tipo</th><th>Link</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -2099,14 +2142,12 @@ function renderPostagens(){
       const pfData = document.getElementById('pf-data');
       const pfPlat = document.getElementById('pf-plat');
       const pfTipo = document.getElementById('pf-tipo');
-      const pfQtd  = document.getElementById('pf-qtd');
-      const pfHora = document.getElementById('pf-hora');
+
       const pfLink = document.getElementById('pf-link');
       if(pfData) pfData.value = p.data_post||'';
       if(pfPlat) pfPlat.value = p.plataforma||'Instagram';
       if(pfTipo) pfTipo.value = p.tipo||'Longo';
-      if(pfQtd)  pfQtd.value  = p.quantidade||1;
-      if(pfHora) pfHora.value = p.hora_post||'';
+
       if(pfLink) pfLink.value = p.link_post||'';
     }
   }
@@ -2117,11 +2158,10 @@ async function submitPostagem(){
   const data  = document.getElementById('pf-data')?.value;
   const plat  = document.getElementById('pf-plat')?.value;
   const tipo  = document.getElementById('pf-tipo')?.value;
-  const qtd   = parseInt(document.getElementById('pf-qtd')?.value)||1;
-  const hora  = document.getElementById('pf-hora')?.value;
   const link  = document.getElementById('pf-link')?.value;
   if(!data||!plat||!tipo){alert('Preencha data, plataforma e tipo.');return;}
-  const payload = {data_post:data,plataforma:plat,tipo,quantidade:qtd,hora_post:hora||null,link_post:link||null,updated_at:new Date().toISOString()};
+  // A data define automaticamente o mês — sem campo de quantidade ou horário
+  const payload = {data_post:data,plataforma:plat,tipo,quantidade:1,hora_post:null,link_post:link||null,updated_at:new Date().toISOString()};
   let error;
   if(id){
     ({error}=await sb.from('tony_postagens').update(payload).eq('id',id));
@@ -2189,10 +2229,8 @@ function gerarRelatorioPDF(){
     const dataFmt = d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
     return `<tr>
       <td>${dataFmt}</td>
-      <td>${p.hora_post||'—'}</td>
       <td>${p.plataforma}</td>
       <td>${p.tipo}</td>
-      <td style="text-align:center;font-weight:700;">${p.quantidade}</td>
       <td style="font-size:10px;color:#555;max-width:200px;word-break:break-all;">${p.link_post||'—'}</td>
     </tr>`;
   }).join('');
@@ -2240,7 +2278,7 @@ function gerarRelatorioPDF(){
 
 <h2>Detalhamento por dia</h2>
 <table>
-  <thead><tr><th>Data</th><th>Horário</th><th>Plataforma</th><th>Tipo</th><th>Qtd</th><th>Link</th></tr></thead>
+  <thead><tr><th>Data</th><th>Plataforma</th><th>Tipo</th><th>Link</th></tr></thead>
   <tbody>${rows||'<tr><td colspan="6" style="text-align:center;color:#aaa;">Sem postagens registradas.</td></tr>'}</tbody>
 </table>
 
