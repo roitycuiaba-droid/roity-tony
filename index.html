@@ -1012,11 +1012,24 @@ async function loadWeek(ws){
 }
 
 async function loadExtraForDash(){
-  const today=new Date();today.setHours(0,0,0,0);
+  // Carrega TODOS os dias do projeto (necessário para contagem global correta)
+  await loadAllProjectDays();
+}
+
+async function loadAllProjectDays(){
+  // Gerar todas as chaves de datas do projeto inteiro
   const keys=[];
-  for(let i=-14;i<=3;i++){const d=addDays(today,i);if(d>=PROJECT_START)keys.push(dateKey(d));}
-  const{data}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
-  if(data)data.forEach(r=>{cache[r.day_key]=r;});
+  const cur=new Date(PROJECT_START);
+  const end=new Date(PROJECT_END);
+  while(cur<=end){
+    keys.push(dateKey(new Date(cur)));
+    cur.setDate(cur.getDate()+1);
+  }
+  // Buscar tudo em uma única query (o projeto tem ~60 dias, bem dentro do limite)
+  const{data,error}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
+  if(data) data.forEach(r=>{ cache[r.day_key]=r; });
+  // Garantir que dias sem registro existam no cache como objeto vazio
+  keys.forEach(k=>{ if(!cache[k]) cache[k]={day_key:k}; });
 }
 
 function showToast(icon, title, msg){
@@ -1428,22 +1441,25 @@ function renderDashboard(){
 
 async function changeWeek(dir){
   const next=addDays(currentWeekStart,dir*7);
-  // Não navegar antes do início ou depois do fim do projeto
   if(dir>0 && next > PROJECT_END) return;
   if(dir<0 && addDays(next,6) < PROJECT_START) return;
   currentWeekStart=next;
   document.getElementById('loading').style.display='flex';
   document.getElementById('view-kanban').style.display='none';
-  await loadWeek(currentWeekStart);
+  // Carregar semana atual + todos os dias do projeto (contagem global)
+  await Promise.all([loadWeek(currentWeekStart), loadAllProjectDays()]);
   document.getElementById('loading').style.display='none';
   document.getElementById('view-kanban').style.display='block';
   renderKanban();
+  updateMeta();
+  updateSaldoBar();
 }
 
 function gotoToday(){
   const today = new Date(); today.setHours(0,0,0,0);
   currentWeekStart = getWeekStart(today);
-  loadWeek(currentWeekStart).then(()=>renderKanban());
+  Promise.all([loadWeek(currentWeekStart), loadAllProjectDays()])
+    .then(()=>{ renderKanban(); updateMeta(); updateSaldoBar(); });
 }
 
 // Constantes do projeto
