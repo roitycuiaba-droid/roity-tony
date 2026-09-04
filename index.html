@@ -387,6 +387,40 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 /* ── ABA DE POSTAGENS ── */
 /* ── MULTI-LINK FORM ── */
 
+
+/* ── SISTEMA DE LINKS COM APROVAÇÃO (setembro+) ── */
+.vlink-list{display:flex;flex-direction:column;gap:5px;margin-top:4px;}
+.vlink-item{border-radius:8px;border:1px solid var(--glass-b);background:rgba(255,255,255,0.03);overflow:hidden;transition:border-color .15s;}
+.vlink-item.aprovado{border-color:rgba(39,174,96,0.5);background:rgba(26,122,64,0.07);}
+.vlink-item.reprovado{border-color:rgba(192,57,43,0.5);background:rgba(192,57,43,0.06);}
+.vlink-item.pendente{border-color:var(--glass-b);}
+.vlink-row{display:flex;gap:5px;align-items:center;padding:6px 8px;}
+.vlink-input{flex:1;font-size:11px;padding:5px 8px;border:none;border-radius:6px;background:transparent;color:var(--text);font-family:inherit;min-width:0;}
+.vlink-input:focus{outline:none;}
+.vlink-input::placeholder{color:var(--text3);}
+.vlink-num{font-size:9px;font-weight:800;color:var(--text3);min-width:14px;text-align:center;}
+.vlink-num.aprovado{color:var(--success2);}
+.vlink-num.reprovado{color:var(--danger2);}
+.vlink-open{background:none;border:none;cursor:pointer;color:var(--gold-dim);font-size:13px;padding:3px;transition:color .1s;}
+.vlink-open:hover{color:var(--gold);}
+.vlink-btn{background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:11px;padding:3px 7px;font-family:inherit;font-weight:700;transition:all .12s;}
+.vlink-btn.aprovar{color:var(--success2);border-color:rgba(39,174,96,0.3);}
+.vlink-btn.aprovar:hover{background:rgba(39,174,96,0.12);}
+.vlink-btn.reprovar{color:var(--danger2);border-color:rgba(192,57,43,0.3);}
+.vlink-btn.reprovar:hover{background:rgba(192,57,43,0.12);}
+.vlink-btn.remover{color:var(--text3);font-size:13px;}
+.vlink-btn.remover:hover{color:var(--danger2);}
+.vlink-obs-area{padding:0 8px 7px;display:none;}
+.vlink-obs-area.visible{display:block;}
+.vlink-obs-input{width:100%;font-size:10px;padding:5px 7px;border:1px solid rgba(192,57,43,0.3);border-radius:6px;background:rgba(192,57,43,0.05);color:var(--text2);font-family:inherit;resize:none;}
+.vlink-obs-input:focus{outline:none;border-color:rgba(192,57,43,0.5);}
+.vlink-obs-input::placeholder{color:var(--text3);}
+.vlink-obs-display{font-size:10px;color:var(--danger2);padding:0 8px 7px;display:flex;align-items:flex-start;gap:5px;line-height:1.4;}
+.vlink-obs-display i{font-size:12px;margin-top:1px;flex-shrink:0;}
+.vlink-add-btn{background:none;border:1px dashed rgba(255,255,255,0.1);border-radius:8px;padding:6px;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;width:100%;transition:all .15s;margin-top:4px;}
+.vlink-add-btn:hover{border-color:var(--gold);color:var(--gold);}
+.vlink-reprov-banner{background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.3);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--danger2);display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+
 /* ── SISTEMA DE VÍDEOS ÚNICOS ── */
 .video-row{background:rgba(255,255,255,0.025);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s;}
 .video-row:focus-within{border-color:rgba(201,169,110,0.35);}
@@ -848,6 +882,7 @@ async function startApp(){
   await loadReposicoes();
   await loadPostagens();
   await loadProjetoConfig();
+  await loadVlinksWeek(currentWeekStart);
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='flex';
 
@@ -1474,7 +1509,7 @@ async function changeWeek(dir){
   document.getElementById('loading').style.display='flex';
   document.getElementById('view-kanban').style.display='none';
   // Carregar semana atual + todos os dias do projeto (contagem global)
-  await Promise.all([loadWeek(currentWeekStart), loadAllProjectDays()]);
+  await Promise.all([loadWeek(currentWeekStart), loadAllProjectDays(), loadVlinksWeek(currentWeekStart)]);
   document.getElementById('loading').style.display='none';
   document.getElementById('view-kanban').style.display='block';
   renderKanban();
@@ -1485,7 +1520,7 @@ async function changeWeek(dir){
 function gotoToday(){
   const today = new Date(); today.setHours(0,0,0,0);
   currentWeekStart = getWeekStart(today);
-  Promise.all([loadWeek(currentWeekStart), loadAllProjectDays()])
+  Promise.all([loadWeek(currentWeekStart), loadAllProjectDays(), loadVlinksWeek(currentWeekStart)])
     .then(()=>{ renderKanban(); updateMeta(); updateSaldoBar(); });
 }
 
@@ -1523,11 +1558,18 @@ function updateMeta(){
     const key = dateKey(day);
     const d = cache[key];
     if(!d) return;
-    // Usar sempre o valor do cache (que foi sincronizado com o banco)
-    const lVal = (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : (d.long_link ? META_LONG_DIA : 0);
-    const vVal = (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : (d.viral_link ? META_VIRAL_DIA : 0);
-    if(d.long_link)  totalLong  += lVal;
-    if(d.viral_link) totalViral += vVal;
+    if(isNewSystem(key)){
+      // Setembro+: contar links aprovados
+      const links = vlinkCache[key] || [];
+      totalLong  += links.filter(x=>x.editor==='rudney'   && x.status==='aprovado').length;
+      totalViral += links.filter(x=>x.editor==='teixeira' && x.status==='aprovado').length;
+    } else {
+      // Agosto: sistema antigo
+      const lVal = (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : (d.long_link ? META_LONG_DIA : 0);
+      const vVal = (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : (d.viral_link ? META_VIRAL_DIA : 0);
+      if(d.long_link)  totalLong  += lVal;
+      if(d.viral_link) totalViral += vVal;
+    }
   });
   const totalAll = totalLong + totalViral;
 
@@ -1591,6 +1633,7 @@ function renderKanban(){
 
     const card=document.createElement('div');
     card.className='day-card'+(isToday?' today':'')+(schedAlert?' sched-alert-card':'');
+    card.dataset.dayKey = key;
 
     let dotHTML='';
     if(hist){
@@ -1629,20 +1672,31 @@ function renderKanban(){
       </div>
       <div class="day-body">
         ${histBar}
-        <div class="editor-block">
-          <div class="editor-label"><i class="ti ti-video"></i>Rudney — vídeos longos</div>
-          <div class="link-row">
-            <input class="link-input" type="text" placeholder="Cole o link do Drive aqui..." value="${d.long_link||''}" oninput="saveField('${key}','long_link',this.value)"/>
-            ${longOpen}
-          </div>${longObs}
-        </div>
-        <div class="editor-block">
-          <div class="editor-label"><i class="ti ti-scissors"></i>Teixeira — cortes virais</div>
-          <div class="link-row">
-            <input class="link-input" type="text" placeholder="Cole o link do Drive aqui..." value="${d.viral_link||''}" oninput="saveField('${key}','viral_link',this.value)"/>
-            ${viralOpen}
-          </div>${viralObs}
-        </div>
+        ${isNewSystem(key) ? `
+          <div class="editor-block">
+            <div class="editor-label"><i class="ti ti-video"></i>Rudney — vídeos longos</div>
+            <div id="vlinks-${key}-rudney"></div>
+          </div>
+          <div class="editor-block">
+            <div class="editor-label"><i class="ti ti-scissors"></i>Teixeira — cortes virais</div>
+            <div id="vlinks-${key}-teixeira"></div>
+          </div>
+        ` : `
+          <div class="editor-block">
+            <div class="editor-label"><i class="ti ti-video"></i>Rudney — vídeos longos</div>
+            <div class="link-row">
+              <input class="link-input" type="text" placeholder="Cole o link do Drive aqui..." value="${d.long_link||''}" oninput="saveField('${key}','long_link',this.value)"/>
+              ${longOpen}
+            </div>${longObs}
+          </div>
+          <div class="editor-block">
+            <div class="editor-label"><i class="ti ti-scissors"></i>Teixeira — cortes virais</div>
+            <div class="link-row">
+              <input class="link-input" type="text" placeholder="Cole o link do Drive aqui..." value="${d.viral_link||''}" oninput="saveField('${key}','viral_link',this.value)"/>
+              ${viralOpen}
+            </div>${viralObs}
+          </div>
+        `}
         <div class="post-section">
           <div class="post-label${!linksOk&&isAdmin?' warn':''}">
             ${!linksOk&&isAdmin?'<i class="ti ti-lock" style="font-size:11px;"></i> Adicione os links para liberar':'Postagens agendadas'}
@@ -1681,6 +1735,11 @@ function renderKanban(){
         </div>`:''}
       </div>`;
     grid.appendChild(card);
+    // Para dias de setembro+, renderizar seções de vlinks após o card estar no DOM
+    if(isNewSystem(key)){
+      renderVlinkSection(key, 'rudney', card);
+      renderVlinkSection(key, 'teixeira', card);
+    }
   }
   updateMeta();
   populateDiaSelect();
@@ -2268,6 +2327,163 @@ async function recarregarPostagens(){
 // CONFIGURAÇÃO DO PROJETO
 // ══════════════════════════════════════════════════════════════════════
 let projetoConfig = null;
+
+
+// ══════════════════════════════════════════════════════════════════════
+// SISTEMA DE LINKS COM APROVAÇÃO (setembro em diante)
+// ══════════════════════════════════════════════════════════════════════
+const SET_START = '2026-09-01'; // a partir daqui usa o novo sistema
+
+function isNewSystem(key){
+  return key >= SET_START;
+}
+
+// Cache local de links por day_key
+const vlinkCache = {}; // {day_key: [{id, editor, link, tipo, status, obs}]}
+
+async function loadVlinks(key){
+  const {data} = await sb.from('tony_video_links')
+    .select('*').eq('day_key', key).order('created_at', {ascending:true});
+  vlinkCache[key] = data || [];
+}
+
+async function loadVlinksWeek(ws){
+  const keys = [];
+  for(let i=0;i<7;i++){
+    const d = addDays(ws,i);
+    if(d>=PROJECT_START && d<=PROJECT_END){
+      const k = dateKey(d);
+      if(k >= SET_START) keys.push(k);
+    }
+  }
+  if(!keys.length) return;
+  const {data} = await sb.from('tony_video_links')
+    .select('*').in('day_key', keys).order('created_at', {ascending:true});
+  keys.forEach(k => { vlinkCache[k] = []; });
+  if(data) data.forEach(r => {
+    if(!vlinkCache[r.day_key]) vlinkCache[r.day_key] = [];
+    vlinkCache[r.day_key].push(r);
+  });
+}
+
+async function addVlink(key, editor, tipo){
+  const payload = {
+    day_key: key, editor, tipo,
+    link: '', status: 'pendente', obs: '',
+    created_at: new Date().toISOString()
+  };
+  const {data, error} = await sb.from('tony_video_links').insert(payload).select().single();
+  if(!error && data){
+    if(!vlinkCache[key]) vlinkCache[key] = [];
+    vlinkCache[key].push(data);
+    renderVlinkSection(key, editor);
+    updateMetaVlinks();
+  }
+}
+
+async function updateVlinkField(id, key, field, value){
+  await sb.from('tony_video_links').update({[field]: value}).eq('id', id);
+  const list = vlinkCache[key] || [];
+  const item = list.find(x => x.id === id);
+  if(item) item[field] = value;
+}
+
+async function setVlinkStatus(id, key, status){
+  await sb.from('tony_video_links').update({status}).eq('id', id);
+  const list = vlinkCache[key] || [];
+  const item = list.find(x => x.id === id);
+  if(item){ item.status = status; }
+  // Re-renderizar ambos os editores para atualizar banners
+  const card = document.querySelector('[data-day-key="'+key+'"]');
+  if(card){
+    renderVlinkSection(key, 'rudney', card);
+    renderVlinkSection(key, 'teixeira', card);
+  }
+  updateMetaVlinks();
+}
+
+async function removeVlink(id, key, editor){
+  if(!confirm('Remover este link?')) return;
+  await sb.from('tony_video_links').delete().eq('id', id);
+  if(vlinkCache[key]) vlinkCache[key] = vlinkCache[key].filter(x => x.id !== id);
+  renderVlinkSection(key, editor);
+  updateMetaVlinks();
+}
+
+function renderVlinkSection(key, editor, cardEl){
+  if(!cardEl) cardEl = document.querySelector('[data-day-key="'+key+'"]');
+  if(!cardEl) return;
+  const sectionId = 'vlinks-'+key+'-'+editor;
+  const el = cardEl.querySelector('#'+sectionId);
+  if(!el) return;
+
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  const links = (vlinkCache[key] || []).filter(x => x.editor === editor);
+  const tipo = editor === 'rudney' ? 'longo' : 'viral';
+  const reprovados = links.filter(x => x.status === 'reprovado');
+
+  let html = '';
+
+  // Banner de reprovados (visível para editores)
+  if(!isAdmin && reprovados.length > 0){
+    html += `<div class="vlink-reprov-banner">
+      <i class="ti ti-alert-triangle"></i>
+      ${reprovados.length} vídeo${reprovados.length>1?'s':''} reprovado${reprovados.length>1?'s':''} — veja a observação abaixo
+    </div>`;
+  }
+
+  html += '<div class="vlink-list">';
+  links.forEach((item, idx) => {
+    const statusCls = item.status || 'pendente';
+    const numCls = statusCls;
+    const obsVisible = isAdmin && item.status === 'reprovado' ? 'visible' : '';
+    const obsDisplay = !isAdmin && item.status === 'reprovado' && item.obs
+      ? `<div class="vlink-obs-display"><i class="ti ti-message-circle"></i>${item.obs}</div>` : '';
+
+    html += `<div class="vlink-item ${statusCls}" id="vli-${item.id}">
+      <div class="vlink-row">
+        <span class="vlink-num ${numCls}">${idx+1}</span>
+        <input class="vlink-input" type="text" placeholder="Cole o link aqui..."
+          value="${(item.link||'').replace(/"/g,'&quot;')}"
+          onchange="updateVlinkField('${item.id}','${key}','link',this.value)"
+          oninput="updateVlinkField('${item.id}','${key}','link',this.value)"/>
+        ${item.link ? `<button class="vlink-open" onclick="window.open('${item.link}','_blank')" title="Abrir"><i class="ti ti-external-link"></i></button>` : ''}
+        ${isAdmin ? `
+          <button class="vlink-btn aprovar" onclick="setVlinkStatus('${item.id}','${key}','aprovado')" title="Aprovar">✓</button>
+          <button class="vlink-btn reprovar" onclick="setVlinkStatus('${item.id}','${key}','reprovado')" title="Reprovar">✗</button>
+        ` : ''}
+        <button class="vlink-btn remover" onclick="removeVlink('${item.id}','${key}','${editor}')" title="Remover"><i class="ti ti-x"></i></button>
+      </div>
+      ${isAdmin ? `<div class="vlink-obs-area ${obsVisible}" id="vlobs-${item.id}">
+        <textarea class="vlink-obs-input" rows="2" placeholder="Motivo da reprovação..."
+          onchange="updateVlinkField('${item.id}','${key}','obs',this.value)">${item.obs||''}</textarea>
+      </div>` : obsDisplay}
+    </div>`;
+  });
+  html += '</div>';
+
+  // Botão adicionar
+  html += `<button class="vlink-add-btn" onclick="addVlink('${key}','${editor}','${tipo}')">
+    <i class="ti ti-plus"></i> Adicionar link
+  </button>`;
+
+  el.innerHTML = html;
+
+  // Mostrar obs area para reprovados
+  if(isAdmin){
+    links.filter(x=>x.status==='reprovado').forEach(item=>{
+      const obsEl = cardEl.querySelector('#vlobs-'+item.id);
+      if(obsEl) obsEl.classList.add('visible');
+    });
+  }
+}
+
+function updateMetaVlinks(){
+  // Recalcular produzidos considerando links aprovados (setembro+)
+  // Os dias de agosto continuam usando long_link/viral_link
+  updateMeta();
+  updateSaldoBar();
+}
 
 async function loadProjetoConfig(){
   const {data} = await sb.from('tony_projeto_config').select('*').order('created_at',{ascending:false}).limit(1);
