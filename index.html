@@ -975,17 +975,17 @@ function setupInactivityDetection(){
 })();
 
 function subscribeRealtime(){
+
+  // ── Canal 1: tony_dashboard (sistema agosto) ─────────────────────
   sb.channel('dashboard-changes')
     .on('postgres_changes',{event:'*',schema:'public',table:'tony_dashboard'},
       async (payload)=>{
         const row=payload.new||payload.old;
         if(!row||!row.day_key) return;
-        // Atualiza cache sempre
         const prev = cache[row.day_key] || {};
-        cache[row.day_key] = row;
+        cache[row.day_key] = {...prev, ...row};
         updateScheduleBanner();
 
-        // Notificar admin quando editor sobe link
         if(currentUser && currentUser.role==='admin'){
           const dayFmt = new Date(row.day_key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
           if(row.long_updated_at && row.long_updated_at !== prev.long_updated_at){
@@ -995,28 +995,90 @@ function subscribeRealtime(){
             showToast('ti-scissors', `${row.viral_updated_by||'Editor'} subiu os virais`, `Dia ${dayFmt} — link do Drive disponível`);
           }
         }
-        // Só re-renderiza se o usuário NÃO estiver digitando
-        if(isUserTyping()){
-          // Agenda re-render para quando sair do campo
-          if(!window._pendingRender) window._pendingRender = true;
-          return;
-        }
-        if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
-        else if(currentUser) renderKanban();
+        reRenderSafe();
       })
     .subscribe();
+
+  // ── Canal 2: tony_video_links (sistema setembro+) ─────────────────
+  sb.channel('vlinks-changes')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'tony_video_links'},
+      async (payload)=>{
+        const row = payload.new;
+        if(!row||!row.day_key) return;
+        // Atualizar cache local
+        if(!vlinkCache[row.day_key]) vlinkCache[row.day_key] = [];
+        const exists = vlinkCache[row.day_key].find(x=>x.id===row.id);
+        if(!exists) vlinkCache[row.day_key].push(row);
+        // Re-renderizar só a seção afetada (mais rápido que renderKanban inteiro)
+        const card = document.querySelector('[data-day-key="'+row.day_key+'"]');
+        if(card){
+          renderVlinkSection(row.day_key, row.editor, card);
+          renderVlinkSection(row.day_key, row.editor==='rudney'?'teixeira':'rudney', card);
+        }
+        updateMeta(); updateSaldoBar();
+        // Notificar admin
+        if(currentUser && currentUser.role==='admin'){
+          const dayFmt = new Date(row.day_key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+          const editorName = row.editor==='rudney'?'Rudney':'Teixeira';
+          showToast('ti-link', `${editorName} adicionou um link`, `Dia ${dayFmt} — aguardando aprovação`);
+        }
+      })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tony_video_links'},
+      async (payload)=>{
+        const row = payload.new;
+        if(!row||!row.day_key) return;
+        if(!vlinkCache[row.day_key]) vlinkCache[row.day_key] = [];
+        const idx = vlinkCache[row.day_key].findIndex(x=>x.id===row.id);
+        if(idx>=0) vlinkCache[row.day_key][idx] = row;
+        else vlinkCache[row.day_key].push(row);
+        // Re-renderizar seção
+        const card = document.querySelector('[data-day-key="'+row.day_key+'"]');
+        if(card){
+          renderVlinkSection(row.day_key, row.editor, card);
+        }
+        updateMeta(); updateSaldoBar();
+        // Notificar editor se foi aprovado/reprovado
+        if(currentUser && currentUser.role!=='admin'){
+          if(row.status==='aprovado'){
+            showToast('ti-circle-check','Link aprovado','Seu vídeo foi aprovado!');
+          } else if(row.status==='reprovado'){
+            showToast('ti-alert-triangle','Link reprovado',row.obs||'Verifique a observação do admin.');
+          }
+        }
+      })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'tony_video_links'},
+      async (payload)=>{
+        const row = payload.old;
+        if(!row||!row.day_key) return;
+        if(vlinkCache[row.day_key]){
+          vlinkCache[row.day_key] = vlinkCache[row.day_key].filter(x=>x.id!==row.id);
+        }
+        const card = document.querySelector('[data-day-key="'+row.day_key+'"]');
+        if(card){
+          renderVlinkSection(row.day_key, row.editor, card);
+        }
+        updateMeta(); updateSaldoBar();
+      })
+    .subscribe();
+
   // Quando sair de qualquer campo, re-renderiza se havia pendência
   document.addEventListener('focusout', ()=>{
     if(window._pendingRender){
       window._pendingRender = false;
       setTimeout(()=>{
-        if(!isUserTyping()){
-          if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
-          else if(currentUser) renderKanban();
-        }
+        if(!isUserTyping()) reRenderSafe();
       }, 200);
     }
   });
+}
+
+function reRenderSafe(){
+  if(isUserTyping()){
+    window._pendingRender = true;
+    return;
+  }
+  if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
+  else if(currentUser) renderKanban();
 }
 
 function showWelcomePopup(){
