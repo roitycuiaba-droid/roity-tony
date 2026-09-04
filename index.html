@@ -2298,13 +2298,17 @@ function renderPostagens(){
   const totalLong = Object.values(videosUnicosMap).filter(t=>t==='Longo').length;
   const totalCurt = Object.values(videosUnicosMap).filter(t=>t==='Curto').length;
 
-  // Produzido no mês (do cache)
+  // Produzido no mês — percorre TODOS os dias do projeto no cache
+  // (cache completo garantido pelo loadAllProjectDays no startApp)
   let produzidoMes = 0;
+  const psStr = dateKey(PROJECT_START);
+  const peStr = dateKey(PROJECT_END);
   Object.values(cache).forEach(d => {
     if(!d.day_key) return;
+    if(d.day_key < psStr || d.day_key > peStr) return;
     const dp = new Date(d.day_key+'T12:00:00');
     if(dp.getMonth()!==mesAtual||dp.getFullYear()!==anoAtual) return;
-    if(d.long_link) produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
+    if(d.long_link)  produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
     if(d.viral_link) produzidoMes += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
   });
 
@@ -2398,21 +2402,15 @@ function renderPostagens(){
     else videosUnicos.add(p.id); // fallback: sem uid = cada registro = 1 vídeo
   });
   const totalVideosUnicos = videosUnicos.size;
-  const totalDistribuicoes = doMes.length; // total de linhas = distribuições
 
   const statsHtml = `
   <div class="post-stats-row">
     <div class="post-stat stat-producao">
-      <div class="post-stat-label">Vídeos únicos</div>
+      <div class="post-stat-label">Vídeos únicos postados</div>
       <div class="post-stat-val gold">${totalVideosUnicos}</div>
-      <div class="post-stat-sub">conteúdos distintos postados</div>
+      <div class="post-stat-sub">conteúdos distintos no mês</div>
     </div>
-    <div class="post-stat">
-      <div class="post-stat-label">Distribuições</div>
-      <div class="post-stat-val">${totalDistribuicoes}</div>
-      <div class="post-stat-sub">publicações em plataformas</div>
-    </div>
-    <div class="post-stat">
+    <div class="post-stat stat-producao">
       <div class="post-stat-label">Produzidos no mês</div>
       <div class="post-stat-val">${produzidoMes}</div>
       <div class="post-stat-sub">contabilizado via links dos editores</div>
@@ -2420,22 +2418,22 @@ function renderPostagens(){
     <div class="post-stat">
       <div class="post-stat-label">YouTube Shorts</div>
       <div class="post-stat-val">${totalYT}</div>
-      <div class="post-stat-sub">distribuições</div>
+      <div class="post-stat-sub">postagens registradas</div>
     </div>
     <div class="post-stat">
       <div class="post-stat-label">TikTok</div>
       <div class="post-stat-val">${totalTK}</div>
-      <div class="post-stat-sub">distribuições</div>
+      <div class="post-stat-sub">postagens registradas</div>
     </div>
     <div class="post-stat">
       <div class="post-stat-label">Instagram</div>
       <div class="post-stat-val">${totalIG}</div>
-      <div class="post-stat-sub">distribuições</div>
+      <div class="post-stat-sub">postagens registradas</div>
     </div>
     <div class="post-stat">
       <div class="post-stat-label">Longos / Curtos</div>
       <div class="post-stat-val">${totalLong} <span style="font-size:14px;color:var(--text3);">/</span> ${totalCurt}</div>
-      <div class="post-stat-sub">por tipo de vídeo</div>
+      <div class="post-stat-sub">vídeos únicos por tipo</div>
     </div>
   </div>`;
 
@@ -2655,11 +2653,14 @@ function gerarRelatorioPDF(){
   const totalCurt = Object.values(vMapPDF).filter(t=>t==='Curto').length;
 
   let produzidoMes = 0;
+  const psStrPDF = dateKey(PROJECT_START);
+  const peStrPDF = dateKey(PROJECT_END);
   Object.values(cache).forEach(d => {
     if(!d.day_key) return;
+    if(d.day_key < psStrPDF || d.day_key > peStrPDF) return;
     const dp = new Date(d.day_key+'T12:00:00');
     if(dp.getMonth()!==mesAtual||dp.getFullYear()!==anoAtual) return;
-    if(d.long_link) produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
+    if(d.long_link)  produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
     if(d.viral_link) produzidoMes += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
   });
 
