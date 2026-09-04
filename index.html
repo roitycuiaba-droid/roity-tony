@@ -737,7 +737,7 @@ const QUOTES=[
   'Quem domina a consistência, domina o mercado.',
   'Cada dia postado é uma semente plantada. A colheita vem para quem não para.',
 ];
-const PROJECT_START=new Date(2026,7,3);
+let PROJECT_START=new Date(2026,7,3);
 const PLATFORMS=['Instagram','TikTok','Shorts'];
 const PLAT_ICONS={Instagram:'ti-brand-instagram',TikTok:'ti-brand-tiktok',Shorts:'ti-brand-youtube'};
 const HISTORY={
@@ -1490,11 +1490,11 @@ function gotoToday(){
 }
 
 // Constantes do projeto
-const PROJECT_END   = new Date(2026, 8, 30); // 30/set/2026
-const META_LONG_DIA = 7;
-const META_VIRAL_DIA = 5;
-const META_LONG_TOTAL = 217;
-const META_VIRAL_TOTAL = 155;
+let PROJECT_END   = new Date(2026, 8, 30); // 30/set/2026
+let META_LONG_DIA = 7;
+let META_VIRAL_DIA = 5;
+let META_LONG_TOTAL = 217;
+let META_VIRAL_TOTAL = 155;
 const META_TOTAL = 372;
 
 // Calcula quantos dias do projeto estão na semana atual
@@ -2279,38 +2279,23 @@ async function loadProjetoConfig(){
 
 function aplicarConfig(cfg){
   if(!cfg) return;
-  // Atualizar constantes globais em runtime
-  if(cfg.data_inicio) window._PROJECT_START_OVERRIDE = new Date(cfg.data_inicio+'T12:00:00');
-  if(cfg.data_fim)    window._PROJECT_END_OVERRIDE   = new Date(cfg.data_fim+'T12:00:00');
-  if(cfg.meta_long_dia)   window._META_LONG_DIA_OVERRIDE   = Number(cfg.meta_long_dia);
-  if(cfg.meta_viral_dia)  window._META_VIRAL_DIA_OVERRIDE  = Number(cfg.meta_viral_dia);
-  if(cfg.meta_long_total) window._META_LONG_TOTAL_OVERRIDE = Number(cfg.meta_long_total);
-  if(cfg.meta_viral_total)window._META_VIRAL_TOTAL_OVERRIDE= Number(cfg.meta_viral_total);
+  // Atribuir diretamente nas variáveis globais (agora são let)
+  if(cfg.data_inicio) PROJECT_START = new Date(cfg.data_inicio+'T12:00:00');
+  if(cfg.data_fim)    PROJECT_END   = new Date(cfg.data_fim+'T12:00:00');
+  if(cfg.meta_long_dia)    META_LONG_DIA    = Number(cfg.meta_long_dia);
+  if(cfg.meta_viral_dia)   META_VIRAL_DIA   = Number(cfg.meta_viral_dia);
+  if(cfg.meta_long_total)  META_LONG_TOTAL  = Number(cfg.meta_long_total);
+  if(cfg.meta_viral_total) META_VIRAL_TOTAL = Number(cfg.meta_viral_total);
+  // Atualizar nome do projeto no topbar
   if(cfg.nome_projeto){
     const el = document.querySelector('.topbar-project');
     if(el) el.textContent = cfg.nome_projeto;
   }
-  // Atualizar variáveis globais usadas pelo sistema
-  if(window._PROJECT_START_OVERRIDE) {
-    Object.defineProperty(window,'PROJECT_START',{get:()=>window._PROJECT_START_OVERRIDE,configurable:true});
-  }
-  if(window._PROJECT_END_OVERRIDE) {
-    Object.defineProperty(window,'PROJECT_END',{get:()=>window._PROJECT_END_OVERRIDE,configurable:true});
-  }
-  if(window._META_LONG_DIA_OVERRIDE) {
-    Object.defineProperty(window,'META_LONG_DIA',{get:()=>window._META_LONG_DIA_OVERRIDE,configurable:true});
-  }
-  if(window._META_VIRAL_DIA_OVERRIDE) {
-    Object.defineProperty(window,'META_VIRAL_DIA',{get:()=>window._META_VIRAL_DIA_OVERRIDE,configurable:true});
-  }
-  if(window._META_LONG_TOTAL_OVERRIDE) {
-    Object.defineProperty(window,'META_LONG_TOTAL',{get:()=>window._META_LONG_TOTAL_OVERRIDE,configurable:true});
-  }
-  if(window._META_VIRAL_TOTAL_OVERRIDE) {
-    Object.defineProperty(window,'META_VIRAL_TOTAL',{get:()=>window._META_VIRAL_TOTAL_OVERRIDE,configurable:true});
-  }
-  // Recalcular META_TOTAL derivada
-  window._META_TOTAL_OVERRIDE = (window._META_LONG_TOTAL_OVERRIDE||META_LONG_TOTAL) + (window._META_VIRAL_TOTAL_OVERRIDE||META_VIRAL_TOTAL);
+  // Atualizar card de meta total no saldo bar
+  const elMeta = document.querySelector('.saldo-val.gold');
+  if(elMeta) elMeta.textContent = META_LONG_TOTAL + META_VIRAL_TOTAL;
+  const elSub = document.querySelector('.saldo-sub');
+  if(elSub) elSub.textContent = META_LONG_TOTAL+' longos + '+META_VIRAL_TOTAL+' virais';
 }
 
 function abrirConfig(){
@@ -2384,11 +2369,12 @@ async function salvarConfig(){
   aplicarConfig(projetoConfig);
   fecharConfig();
   // Recarregar tudo com as novas datas
-  currentWeekStart = getWeekStart(new Date(ini+'T12:00:00'));
+  currentWeekStart = getWeekStart(PROJECT_START);
   await Promise.all([loadAllProjectDays(), loadWeek(currentWeekStart)]);
   renderKanban();
   updateMeta();
   updateSaldoBar();
+  updateScheduleBanner();
   showToast('ti-check','Configuração salva','Projeto atualizado com sucesso.');
   if(btn){btn.disabled=false;btn.style.opacity='1';}
 }
