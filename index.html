@@ -1838,58 +1838,66 @@ function renderReposicoes(){
     const rOk = r.rudney_entregue;
     const tOk = r.teixeira_entregue;
     const allOk = rOk && tOk;
+    // ── Cores por estado do card ──────────────────────────────────────
+    const cardBg     = allOk ? 'rgba(26,122,64,0.22)'         : 'var(--bg2)';
+    const cardBorder = allOk ? '2px solid var(--success2)'    : '1.5px solid var(--danger2)';
+    const cardShadow = allOk ? 'rgba(26,122,64,0.04)'         : 'rgba(192,57,43,0.04)';
+    const cardAnim   = (pendente&&!allOk) ? 'pulse-danger 2s infinite' : 'none';
+    const headerBg   = allOk ? 'rgba(26,122,64,0.35)'         : 'rgba(192,57,43,0.15)';
+    const headerBdr  = allOk ? 'var(--success-b)'             : 'var(--danger-b)';
+    const titleClr   = allOk ? 'var(--success2)'              : 'var(--text)';
+    const iconCls    = allOk ? 'ti-circle-check'              : 'ti-alert-triangle';
+    const iconClr    = allOk ? 'var(--success2)'              : 'var(--danger2)';
+    const badgeClr   = allOk ? 'var(--success2)'              : 'var(--danger2)';
+    const badgeBg    = allOk ? 'rgba(26,122,64,0.25)'         : 'rgba(192,57,43,0.15)';
+    const badgeTxt   = allOk ? '✓ Entregue'                   : '⚠ Pendente';
+    const bodyBg     = allOk ? 'rgba(26,122,64,0.10)'         : 'transparent';
+    const blkBg      = allOk ? 'rgba(26,122,64,0.12)'         : 'rgba(255,255,255,0.03)';
+    const blkBdr     = allOk ? 'rgba(39,174,96,0.25)'         : 'var(--glass-b)';
+    const lbClr      = allOk ? 'var(--success2)'              : 'var(--text3)';
+    const inpBg      = allOk ? 'rgba(26,122,64,0.08)'         : 'rgba(255,255,255,0.04)';
+    const inpBdr     = allOk ? 'rgba(39,174,96,0.3)'          : 'var(--glass-b)';
+    const ftBdr      = allOk ? 'rgba(39,174,96,0.2)'          : 'var(--glass-b)';
+    const debtClr    = allOk ? 'background:rgba(26,122,64,0.2);border-color:rgba(39,174,96,0.4);color:var(--success2);' : '';
+    const obsStl     = allOk ? 'background:rgba(26,122,64,0.08);border-color:rgba(39,174,96,0.2);color:var(--success2);' : '';
 
-    return `<div class="day-card" style="
-        border:${allOk?'2px solid var(--success2)':'1.5px solid var(--danger2)'};
-        background:${allOk?'rgba(26,122,64,0.18)':'var(--bg2)'};
-        box-shadow:${allOk?'0 0 0 0 transparent':'inset 0 0 0 1000px rgba(192,57,43,0.04)'};
-        ${pendente&&!allOk?'animation:pulse-danger 2s infinite;':'animation:none;'}
-        border-radius:16px;overflow:hidden;">
-      <div class="day-header" style="
-        background:${allOk?'rgba(26,122,64,0.25)':'rgba(192,57,43,0.15)'};
-        border-bottom:1px solid ${allOk?'var(--success-b)':'var(--danger-b)'};">
-        <div class="day-title" style="display:flex;align-items:center;gap:6px;color:${allOk?'var(--success2)':'var(--text)'};">
-          <i class="ti ${allOk?'ti-circle-check':'ti-alert-triangle'}" style="color:${allOk?'var(--success2)':'var(--danger2)'};font-size:15px;"></i>
-          ${dia}
+    return `<div class="day-card" style="border:${cardBorder};background:${cardBg};box-shadow:inset 0 0 0 1000px ${cardShadow};animation:${cardAnim};border-radius:16px;overflow:hidden;">
+      <div class="day-header" style="background:${headerBg};border-bottom:1px solid ${headerBdr};">
+        <div class="day-title" style="display:flex;align-items:center;gap:6px;color:${titleClr};">
+          <i class="ti ${iconCls}" style="color:${iconClr};font-size:15px;"></i>${dia}
         </div>
-        <div class="day-badges">
-          <span style="font-size:11px;font-weight:800;color:${allOk?'var(--success2)':'var(--danger2)'};background:${allOk?'rgba(26,122,64,0.2)':'rgba(192,57,43,0.15)'};padding:3px 8px;border-radius:6px;">
-            ${allOk?'✓ Entregue':'⚠ Pendente'}
-          </span>
-        </div>
+        <div class="day-badges"><span style="font-size:11px;font-weight:800;color:${badgeClr};background:${badgeBg};padding:3px 8px;border-radius:6px;">${badgeTxt}</span></div>
       </div>
-      <div class="day-body" style="${allOk?'background:rgba(26,122,64,0.05);':''}">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">${r.semana_ref}</div>
+      <div class="day-body" style="background:${bodyBg};">
+        <div style="font-size:10px;color:${lbClr};opacity:.7;margin-bottom:2px;">${r.semana_ref}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-          ${r.longos_devidos>0?`<div class="rep-debt${rOk?' zero':''}"><i class="ti ti-video"></i>${r.longos_devidos} longos${rOk?' ✓':''}</div>`:''}
-          ${r.virais_devidos>0?`<div class="rep-debt${tOk?' zero':''}"><i class="ti ti-scissors"></i>${r.virais_devidos} virais${tOk?' ✓':''}</div>`:''}
+          ${r.longos_devidos>0?`<div class="rep-debt${rOk?' zero':''}" style="${rOk?debtClr:''}"><i class="ti ti-video"></i>${r.longos_devidos} longos${rOk?' ✓':''}</div>`:''}
+          ${r.virais_devidos>0?`<div class="rep-debt${tOk?' zero':''}" style="${tOk?debtClr:''}"><i class="ti ti-scissors"></i>${r.virais_devidos} virais${tOk?' ✓':''}</div>`:''}
         </div>
-        ${r.observacao?`<div class="rep-obs"><i class="ti ti-message"></i> ${r.observacao}</div>`:''}
-        ${r.longos_devidos>0?`<div class="editor-block" style="margin-top:4px;">
-          <div class="editor-label"><i class="ti ti-video"></i>Rudney — longos</div>
+        ${r.observacao?`<div class="rep-obs" style="${obsStl}"><i class="ti ti-message"></i> ${r.observacao}</div>`:''}
+        ${r.longos_devidos>0?`<div class="editor-block" style="margin-top:4px;background:${blkBg};border:1px solid ${blkBdr};border-radius:10px;padding:8px 10px;">
+          <div class="editor-label" style="color:${lbClr};"><i class="ti ti-video"></i>Rudney — longos</div>
           <div class="link-row">
-            <input class="link-input" type="text" placeholder="Link do Drive (reposição longos)..." value="${r.rudney_link||''}" ${!isAdmin&&rOk?'readonly':''} oninput="saveRepField('${r.id}','rudney_link',this.value)"/>
+            <input class="link-input" type="text" placeholder="Link do Drive (reposição longos)..." value="${r.rudney_link||''}" style="background:${inpBg};border-color:${inpBdr};" ${!isAdmin&&rOk?'readonly':''} oninput="saveRepField('${r.id}','rudney_link',this.value)"/>
             ${r.rudney_link?`<button class="open-btn" onclick="window.open('${r.rudney_link}','_blank')"><i class="ti ti-external-link"></i></button>`:''}
           </div>
           ${isAdmin&&!rOk?`<button class="rep-check-btn" style="margin-top:5px;width:100%;" onclick="marcarEntregue('${r.id}','rudney')" ${!r.rudney_link?'disabled':''}><i class="ti ti-check"></i> Confirmar entrega</button>`:''}
-          ${rOk?`<div class="rep-entregue-info"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.rudney_entregue_at)}</div>`:''}
+          ${rOk?`<div class="rep-entregue-info" style="color:var(--success2);"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.rudney_entregue_at)}</div>`:''}
         </div>`:''}
-        ${r.virais_devidos>0?`<div class="editor-block" style="margin-top:4px;">
-          <div class="editor-label"><i class="ti ti-scissors"></i>Teixeira — virais</div>
+        ${r.virais_devidos>0?`<div class="editor-block" style="margin-top:4px;background:${blkBg};border:1px solid ${blkBdr};border-radius:10px;padding:8px 10px;">
+          <div class="editor-label" style="color:${lbClr};"><i class="ti ti-scissors"></i>Teixeira — virais</div>
           <div class="link-row">
-            <input class="link-input" type="text" placeholder="Link do Drive (reposição virais)..." value="${r.teixeira_link||''}" ${!isAdmin&&tOk?'readonly':''} oninput="saveRepField('${r.id}','teixeira_link',this.value)"/>
+            <input class="link-input" type="text" placeholder="Link do Drive (reposição virais)..." value="${r.teixeira_link||''}" style="background:${inpBg};border-color:${inpBdr};" ${!isAdmin&&tOk?'readonly':''} oninput="saveRepField('${r.id}','teixeira_link',this.value)"/>
             ${r.teixeira_link?`<button class="open-btn" onclick="window.open('${r.teixeira_link}','_blank')"><i class="ti ti-external-link"></i></button>`:''}
           </div>
           ${isAdmin&&!tOk?`<button class="rep-check-btn" style="margin-top:5px;width:100%;" onclick="marcarEntregue('${r.id}','teixeira')" ${!r.teixeira_link?'disabled':''}><i class="ti ti-check"></i> Confirmar entrega</button>`:''}
-          ${tOk?`<div class="rep-entregue-info"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.teixeira_entregue_at)}</div>`:''}
+          ${tOk?`<div class="rep-entregue-info" style="color:var(--success2);"><i class="ti ti-circle-check"></i>Entregue em ${tsFmt(r.teixeira_entregue_at)}</div>`:''}
         </div>`:''}
-        ${isAdmin?`<div style="margin-top:6px;padding-top:8px;border-top:1px solid var(--glass-b);display:flex;justify-content:flex-end;gap:6px;">
-          <button onclick="editRep('${r.id}')" style="background:var(--glass);border:1px solid var(--glass-b);border-radius:7px;color:var(--text2);font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
-            <i class="ti ti-edit"></i> Editar
-          </button>
+        ${isAdmin?`<div style="margin-top:6px;padding-top:8px;border-top:1px solid ${ftBdr};display:flex;justify-content:flex-end;gap:6px;">
+          <button onclick="editRep('${r.id}')" style="background:${allOk?'rgba(26,122,64,0.15)':'var(--glass)'};border:1px solid ${allOk?'rgba(39,174,96,0.3)':'var(--glass-b)'};border-radius:7px;color:${allOk?'var(--success2)':'var(--text2)'};font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
+            <i class="ti ti-edit"></i> Editar</button>
           <button onclick="deleteRep('${r.id}')" style="background:var(--danger-bg);border:1px solid var(--danger-b);border-radius:7px;color:var(--danger2);font-size:11px;padding:5px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;">
-            <i class="ti ti-trash"></i> Apagar
-          </button>
+            <i class="ti ti-trash"></i> Apagar</button>
         </div>`:''}
       </div>
     </div>`;
@@ -2275,12 +2283,20 @@ function renderPostagens(){
     return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
   });
 
-  const totalPost = doMes.reduce((a,p) => a+(p.quantidade||0), 0);
-  const totalIG   = doMes.filter(p=>p.plataforma==='Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalTK   = doMes.filter(p=>p.plataforma==='TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalYT   = doMes.filter(p=>p.plataforma==='YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalLong = doMes.filter(p=>p.tipo==='Longo').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalCurt = doMes.filter(p=>p.tipo==='Curto').reduce((a,p)=>a+(p.quantidade||0),0);
+  // Distribuições por plataforma (cada postagem numa rede conta)
+  const totalIG = doMes.filter(p=>p.plataforma==='Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalTK = doMes.filter(p=>p.plataforma==='TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalYT = doMes.filter(p=>p.plataforma==='YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalPost = totalIG + totalTK + totalYT;
+
+  // Longos e Curtos: contar por vídeo único (via video_uid), não por distribuição
+  const videosUnicosMap = {};
+  doMes.forEach(p=>{
+    const uid = p.video_uid || p.id;
+    if(!videosUnicosMap[uid]) videosUnicosMap[uid] = p.tipo;
+  });
+  const totalLong = Object.values(videosUnicosMap).filter(t=>t==='Longo').length;
+  const totalCurt = Object.values(videosUnicosMap).filter(t=>t==='Curto').length;
 
   // Produzido no mês (do cache)
   let produzidoMes = 0;
@@ -2628,12 +2644,15 @@ function gerarRelatorioPDF(){
     return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
   });
 
-  const totalPost = doMes.reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalIG   = doMes.filter(p=>p.plataforma==='Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalTK   = doMes.filter(p=>p.plataforma==='TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalYT   = doMes.filter(p=>p.plataforma==='YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalLong = doMes.filter(p=>p.tipo==='Longo').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalCurt = doMes.filter(p=>p.tipo==='Curto').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalIG = doMes.filter(p=>p.plataforma==='Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalTK = doMes.filter(p=>p.plataforma==='TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalYT = doMes.filter(p=>p.plataforma==='YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalPost = totalIG + totalTK + totalYT;
+  // Longos/Curtos por vídeo único
+  const vMapPDF = {};
+  doMes.forEach(p=>{ const uid=p.video_uid||p.id; if(!vMapPDF[uid]) vMapPDF[uid]=p.tipo; });
+  const totalLong = Object.values(vMapPDF).filter(t=>t==='Longo').length;
+  const totalCurt = Object.values(vMapPDF).filter(t=>t==='Curto').length;
 
   let produzidoMes = 0;
   Object.values(cache).forEach(d => {
