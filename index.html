@@ -362,6 +362,28 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   .kpi-grid{grid-template-columns:1fr 1fr;}
 }
 
+/* ── MODAL DE CONFIGURAÇÃO DO PROJETO ── */
+
+/* ── MODAL DE CONFIGURAÇÃO DO PROJETO ── */
+.config-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.config-modal{background:var(--bg2);border:1px solid var(--glass-gold-b);border-radius:18px;padding:2rem;width:min(500px,92vw);max-height:90vh;overflow-y:auto;}
+.config-title{font-size:14px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:1.5rem;display:flex;align-items:center;gap:8px;}
+.config-title i{font-size:18px;}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem;}
+.config-field{display:flex;flex-direction:column;gap:5px;}
+.config-field.full{grid-column:1/-1;}
+.config-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;}
+.config-input{background:rgba(255,255,255,0.04);border:1px solid var(--glass-b);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:inherit;transition:border-color .15s;}
+.config-input:focus{outline:none;border-color:var(--gold);}
+.config-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--glass-b);}
+.config-save-btn{background:linear-gradient(135deg,var(--gold),#9a7030);border:none;border-radius:9px;padding:10px 20px;font-size:12px;font-weight:800;color:#05070f;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;}
+.config-save-btn:hover{opacity:.88;}
+.config-cancel-btn{background:var(--glass);border:1px solid var(--glass-b);border-radius:9px;padding:10px 18px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;}
+.config-cancel-btn:hover{border-color:var(--glass-gold-b);}
+.config-gear-btn{background:rgba(255,255,255,0.05);border:1px solid var(--glass-b);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text3);font-size:14px;transition:all .15s;display:flex;align-items:center;gap:4px;}
+.config-gear-btn:hover{border-color:var(--glass-gold-b);color:var(--gold);}
+.config-preview{font-size:11px;color:var(--text3);margin-top:6px;}
+
 /* ── ABA DE POSTAGENS ── */
 /* ── MULTI-LINK FORM ── */
 
@@ -510,6 +532,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="sync-pill"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Sincronizado</span></div>
       <div class="user-pill"><i class="ti ti-user"></i><span id="user-label"></span></div>
       <button class="logout-btn" onclick="refreshData()" title="Atualizar dados"><i class="ti ti-refresh"></i></button>
+      <button class="config-gear-btn" onclick="abrirConfig()" title="Configurar projeto" id="btn-config" style="display:none;"><i class="ti ti-settings"></i></button>
       <button class="logout-btn" onclick="logout()"><i class="ti ti-logout"></i> Sair</button>
     </div>
   </div>
@@ -824,6 +847,7 @@ async function startApp(){
   await loadExtraForDash();
   await loadReposicoes();
   await loadPostagens();
+  await loadProjetoConfig();
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='flex';
 
@@ -836,6 +860,9 @@ async function startApp(){
   // Postagens só admin registra, mas todos podem ver
   const tabPost=document.getElementById('tab-postagens');
   if(tabPost) tabPost.style.display='flex';
+  // Mostrar botão de config só para admin
+  const btnCfg=document.getElementById('btn-config');
+  if(btnCfg) btnCfg.style.display=currentUser.role==='admin'?'flex':'none';
 
   // Restaurar aba salva ou padrão
   const savedTab=sessionStorage.getItem('roity_tab')||'kanban';
@@ -2236,6 +2263,141 @@ async function recarregarPostagens(){
   if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; }
 }
 
+
+// ══════════════════════════════════════════════════════════════════════
+// CONFIGURAÇÃO DO PROJETO
+// ══════════════════════════════════════════════════════════════════════
+let projetoConfig = null;
+
+async function loadProjetoConfig(){
+  const {data} = await sb.from('tony_projeto_config').select('*').order('created_at',{ascending:false}).limit(1);
+  if(data && data.length > 0){
+    projetoConfig = data[0];
+    aplicarConfig(projetoConfig);
+  }
+}
+
+function aplicarConfig(cfg){
+  if(!cfg) return;
+  // Atualizar constantes globais em runtime
+  if(cfg.data_inicio) window._PROJECT_START_OVERRIDE = new Date(cfg.data_inicio+'T12:00:00');
+  if(cfg.data_fim)    window._PROJECT_END_OVERRIDE   = new Date(cfg.data_fim+'T12:00:00');
+  if(cfg.meta_long_dia)   window._META_LONG_DIA_OVERRIDE   = Number(cfg.meta_long_dia);
+  if(cfg.meta_viral_dia)  window._META_VIRAL_DIA_OVERRIDE  = Number(cfg.meta_viral_dia);
+  if(cfg.meta_long_total) window._META_LONG_TOTAL_OVERRIDE = Number(cfg.meta_long_total);
+  if(cfg.meta_viral_total)window._META_VIRAL_TOTAL_OVERRIDE= Number(cfg.meta_viral_total);
+  if(cfg.nome_projeto){
+    const el = document.querySelector('.topbar-project');
+    if(el) el.textContent = cfg.nome_projeto;
+  }
+  // Atualizar variáveis globais usadas pelo sistema
+  if(window._PROJECT_START_OVERRIDE) {
+    Object.defineProperty(window,'PROJECT_START',{get:()=>window._PROJECT_START_OVERRIDE,configurable:true});
+  }
+  if(window._PROJECT_END_OVERRIDE) {
+    Object.defineProperty(window,'PROJECT_END',{get:()=>window._PROJECT_END_OVERRIDE,configurable:true});
+  }
+  if(window._META_LONG_DIA_OVERRIDE) {
+    Object.defineProperty(window,'META_LONG_DIA',{get:()=>window._META_LONG_DIA_OVERRIDE,configurable:true});
+  }
+  if(window._META_VIRAL_DIA_OVERRIDE) {
+    Object.defineProperty(window,'META_VIRAL_DIA',{get:()=>window._META_VIRAL_DIA_OVERRIDE,configurable:true});
+  }
+  if(window._META_LONG_TOTAL_OVERRIDE) {
+    Object.defineProperty(window,'META_LONG_TOTAL',{get:()=>window._META_LONG_TOTAL_OVERRIDE,configurable:true});
+  }
+  if(window._META_VIRAL_TOTAL_OVERRIDE) {
+    Object.defineProperty(window,'META_VIRAL_TOTAL',{get:()=>window._META_VIRAL_TOTAL_OVERRIDE,configurable:true});
+  }
+  // Recalcular META_TOTAL derivada
+  window._META_TOTAL_OVERRIDE = (window._META_LONG_TOTAL_OVERRIDE||META_LONG_TOTAL) + (window._META_VIRAL_TOTAL_OVERRIDE||META_VIRAL_TOTAL);
+}
+
+function abrirConfig(){
+  const overlay = document.getElementById('config-overlay');
+  if(!overlay) return;
+  // Preencher com valores atuais
+  const cfg = projetoConfig || {};
+  document.getElementById('cfg-nome').value       = cfg.nome_projeto || 'Projeto Tony Cozendey';
+  document.getElementById('cfg-inicio').value     = cfg.data_inicio  || '2026-08-03';
+  document.getElementById('cfg-fim').value        = cfg.data_fim     || '2026-09-30';
+  document.getElementById('cfg-long-dia').value   = cfg.meta_long_dia   || META_LONG_DIA;
+  document.getElementById('cfg-viral-dia').value  = cfg.meta_viral_dia  || META_VIRAL_DIA;
+  document.getElementById('cfg-long-total').value = cfg.meta_long_total || META_LONG_TOTAL;
+  document.getElementById('cfg-viral-total').value= cfg.meta_viral_total|| META_VIRAL_TOTAL;
+  atualizarPreviewConfig();
+  overlay.style.display = 'flex';
+}
+
+function fecharConfig(){
+  const overlay = document.getElementById('config-overlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
+function atualizarPreviewConfig(){
+  const ini  = document.getElementById('cfg-inicio')?.value;
+  const fim  = document.getElementById('cfg-fim')?.value;
+  const ld   = document.getElementById('cfg-long-dia')?.value;
+  const vd   = document.getElementById('cfg-viral-dia')?.value;
+  const lt   = document.getElementById('cfg-long-total')?.value;
+  const vt   = document.getElementById('cfg-viral-total')?.value;
+  const prev = document.getElementById('cfg-preview');
+  if(!prev) return;
+  if(ini && fim){
+    const d1 = new Date(ini+'T12:00:00');
+    const d2 = new Date(fim+'T12:00:00');
+    const dias = Math.round((d2-d1)/(24*3600*1000))+1;
+    const total = (Number(lt)||0)+(Number(vt)||0);
+    prev.textContent = `${dias} dias de projeto · ${ld||0} longos + ${vd||0} virais/dia · Meta total: ${total} vídeos`;
+  }
+}
+
+async function salvarConfig(){
+  const nome  = document.getElementById('cfg-nome')?.value;
+  const ini   = document.getElementById('cfg-inicio')?.value;
+  const fim   = document.getElementById('cfg-fim')?.value;
+  const ld    = parseInt(document.getElementById('cfg-long-dia')?.value)||7;
+  const vd    = parseInt(document.getElementById('cfg-viral-dia')?.value)||5;
+  const lt    = parseInt(document.getElementById('cfg-long-total')?.value)||217;
+  const vt    = parseInt(document.getElementById('cfg-viral-total')?.value)||155;
+  if(!ini||!fim){alert('Preencha as datas.');return;}
+
+  const btn = document.querySelector('.config-save-btn');
+  if(btn){btn.disabled=true;btn.style.opacity='0.6';}
+
+  const payload = {
+    nome_projeto:nome, data_inicio:ini, data_fim:fim,
+    meta_long_dia:ld, meta_viral_dia:vd,
+    meta_long_total:lt, meta_viral_total:vt,
+    created_at:new Date().toISOString()
+  };
+
+  const {data,error} = await sb.from('tony_projeto_config').insert(payload).select().single();
+  if(error){
+    // Fallback: upsert se insert falhar
+    await sb.from('tony_projeto_config').upsert({...payload,id:projetoConfig?.id||1},{onConflict:'id'});
+    projetoConfig = {...payload,id:1};
+  } else {
+    projetoConfig = data;
+  }
+
+  aplicarConfig(projetoConfig);
+  fecharConfig();
+  // Recarregar tudo com as novas datas
+  currentWeekStart = getWeekStart(new Date(ini+'T12:00:00'));
+  await Promise.all([loadAllProjectDays(), loadWeek(currentWeekStart)]);
+  renderKanban();
+  updateMeta();
+  updateSaldoBar();
+  showToast('ti-check','Configuração salva','Projeto atualizado com sucesso.');
+  if(btn){btn.disabled=false;btn.style.opacity='1';}
+}
+
+// Escutar mudanças nos campos de preview
+['cfg-inicio','cfg-fim','cfg-long-total','cfg-viral-total','cfg-long-dia','cfg-viral-dia'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target.id===id) atualizarPreviewConfig(); });
+});
+
 async function loadPostagens(){
   const {data} = await sb.from('tony_postagens').select('*').order('data_post',{ascending:false});
   postagens = data || [];
@@ -2789,5 +2951,49 @@ window.addEventListener('DOMContentLoaded',async()=>{
 });
 
 </script>
+
+<!-- MODAL CONFIGURAÇÃO DO PROJETO -->
+<div class="config-overlay" id="config-overlay" style="display:none;" onclick="if(event.target===this)fecharConfig()">
+  <div class="config-modal">
+    <div class="config-title"><i class="ti ti-settings"></i>Configurar Projeto</div>
+    <div class="config-grid">
+      <div class="config-field full">
+        <div class="config-label">Nome do projeto</div>
+        <input class="config-input" id="cfg-nome" type="text" placeholder="Ex: Tony Cozendey — Set/2026"/>
+      </div>
+      <div class="config-field">
+        <div class="config-label">Data de início</div>
+        <input class="config-input" id="cfg-inicio" type="date"/>
+      </div>
+      <div class="config-field">
+        <div class="config-label">Data de término</div>
+        <input class="config-input" id="cfg-fim" type="date"/>
+      </div>
+      <div class="config-field">
+        <div class="config-label">Meta longos por dia</div>
+        <input class="config-input" id="cfg-long-dia" type="number" min="1" max="20" placeholder="7"/>
+      </div>
+      <div class="config-field">
+        <div class="config-label">Meta virais por dia</div>
+        <input class="config-input" id="cfg-viral-dia" type="number" min="1" max="20" placeholder="5"/>
+      </div>
+      <div class="config-field">
+        <div class="config-label">Meta total longos</div>
+        <input class="config-input" id="cfg-long-total" type="number" min="1" placeholder="217"/>
+      </div>
+      <div class="config-field">
+        <div class="config-label">Meta total virais</div>
+        <input class="config-input" id="cfg-viral-total" type="number" min="1" placeholder="155"/>
+      </div>
+      <div class="config-field full">
+        <div class="config-preview" id="cfg-preview"></div>
+      </div>
+    </div>
+    <div class="config-actions">
+      <button class="config-cancel-btn" onclick="fecharConfig()">Cancelar</button>
+      <button class="config-save-btn" onclick="salvarConfig()"><i class="ti ti-device-floppy"></i> Salvar e aplicar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
