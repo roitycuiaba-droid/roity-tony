@@ -1591,34 +1591,59 @@ function renderDashboard(){
   const totalIG = postagensMes.filter(p => p.plataforma === 'Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
   const totalPlat = totalYT + totalTK + totalIG;
 
-  // Meta e saldo devedor
-  const metaTotal = META_LONG_TOTAL + META_VIRAL_TOTAL;
-  let saldoDevedor = 0;
-  let saldoLong = 0, saldoViral = 0;
-  reposicoes.forEach(r => {
-    if(!r.rudney_entregue)  saldoLong  += (r.longos_devidos || 0);
-    if(!r.teixeira_entregue) saldoViral += (r.virais_devidos || 0);
-  });
-  saldoDevedor = saldoLong + saldoViral;
+  // ── META MENSAL (zera a cada mês) ────────────────────────────────
+  // Meta = sempre 372 por mês (217 longos + 155 virais)
+  const metaTotal   = META_LONG_TOTAL + META_VIRAL_TOTAL; // 372
+  const metaLongos  = META_LONG_TOTAL;  // 217
+  const metaVirais  = META_VIRAL_TOTAL; // 155
 
-  // Prazo
-  const diasRestantes = Math.max(0, Math.ceil((PROJECT_END - hoje) / (24*3600*1000)));
+  // ── PRODUZIDOS DO MÊS (via links aprovados) ───────────────────────
+  // produzidosMes já calculado acima (filtrado por pkStr..ukStr)
+  // Aqui usamos produzidosMes como o "produzidos do mês selecionado"
+  const produzidosMesLong = (() => {
+    let c = 0;
+    Object.values(cache).forEach(d => {
+      if(!d.day_key || d.day_key < pkStr || d.day_key > ukStr) return;
+      if(isNewSystem(d.day_key)){
+        const links = vlinkCache[d.day_key] || [];
+        c += links.filter(x => x.status === 'aprovado' && x.editor === 'rudney').length;
+      } else {
+        if(d.long_link) c += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
+      }
+    });
+    return c;
+  })();
 
-  // Produzidos totais (todos os meses, para % da meta)
-  let produzidosTotal = 0;
-  Object.values(cache).forEach(d => {
-    if(!d.day_key) return;
-    if(d.day_key < dateKey(PROJECT_START) || d.day_key > dateKey(PROJECT_END)) return;
-    if(isNewSystem(d.day_key)){
-      const links = vlinkCache[d.day_key] || [];
-      produzidosTotal += links.filter(x => x.status === 'aprovado').length;
-    } else {
-      if(d.long_link)  produzidosTotal += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
-      if(d.viral_link) produzidosTotal += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
-    }
-  });
+  const produzidosMesViral = (() => {
+    let c = 0;
+    Object.values(cache).forEach(d => {
+      if(!d.day_key || d.day_key < pkStr || d.day_key > ukStr) return;
+      if(isNewSystem(d.day_key)){
+        const links = vlinkCache[d.day_key] || [];
+        c += links.filter(x => x.status === 'aprovado' && x.editor === 'teixeira').length;
+      } else {
+        if(d.viral_link) c += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
+      }
+    });
+    return c;
+  })();
 
+  const produzidosTotal = produzidosMesLong + produzidosMesViral;
   const pctMeta = metaTotal > 0 ? Math.round(produzidosTotal / metaTotal * 100) : 0;
+
+  // ── POSTADOS DO MÊS (via aba de postagens) ────────────────────────
+  // totalVideosUnicos, totalLong, totalCurt, totalYT, totalTK, totalIG
+  // já calculados acima com filtro do mês — corretos
+
+  // ── SALDO DEVEDOR DO MÊS ─────────────────────────────────────────
+  // Saldo = (meta do mês) - (produzidos do mês)
+  // Se positivo = ainda falta produzir; se negativo = superou a meta
+  const saldoLong    = Math.max(0, metaLongos - produzidosMesLong);
+  const saldoViral   = Math.max(0, metaVirais - produzidosMesViral);
+  const saldoDevedor = saldoLong + saldoViral;
+
+  // ── PRAZO ─────────────────────────────────────────────────────────
+  const diasRestantes = Math.max(0, Math.ceil((PROJECT_END - hoje) / (24*3600*1000)));
   const pctPlat = totalPlat > 0;
   const ytPct  = totalPlat > 0 ? Math.round(totalYT/totalPlat*100) : 0;
   const tkPct  = totalPlat > 0 ? Math.round(totalTK/totalPlat*100) : 0;
@@ -1665,23 +1690,23 @@ function renderDashboard(){
         <div class="dash-kpi-val gold">${metaTotal}</div>
         <div class="dash-kpi-sub">${META_LONG_TOTAL} longos + ${META_VIRAL_TOTAL} virais</div>
         <div class="dash-progress-wrap">
-          <div class="dash-progress-label"><span>Produzidos: ${produzidosTotal}</span><span>${pctMeta}%</span></div>
+          <div class="dash-progress-label"><span>Produzidos no mês: ${produzidosTotal}</span><span>${pctMeta}%</span></div>
           <div class="dash-progress-track"><div class="dash-progress-fill ${pctMeta>=100?'green':''}" style="width:${Math.min(pctMeta,100)}%"></div></div>
         </div>
       </div>
 
-      <div class="dash-kpi ${saldoDevedor>0?'danger':'success'}">
-        <div class="dash-kpi-icon" style="color:${saldoDevedor>0?'var(--danger2)':'var(--success2)'}"><i class="ti ti-${saldoDevedor>0?'alert-triangle':'circle-check'}"></i></div>
+      <div class="dash-kpi ${produzidosTotal>=metaTotal?'success':''}">
+        <div class="dash-kpi-icon" style="color:var(--gold)"><i class="ti ti-video"></i></div>
         <div class="dash-kpi-label">Produzidos em ${mesLabelCap.split(' ')[0]}</div>
-        <div class="dash-kpi-val ${saldoDevedor>0?'red':'green'}">${produzidosMes}</div>
-        <div class="dash-kpi-sub">via links aprovados no mês</div>
+        <div class="dash-kpi-val ${produzidosTotal>=metaTotal?'green':''}">${produzidosTotal}</div>
+        <div class="dash-kpi-sub">de ${metaTotal} (${produzidosMesLong} longos + ${produzidosMesViral} virais)</div>
       </div>
 
       <div class="dash-kpi ${saldoDevedor>0?'danger':'success'}">
-        <div class="dash-kpi-icon" style="color:${saldoDevedor>0?'var(--danger2)':'var(--success2)'}"><i class="ti ti-${saldoDevedor>0?'alert-circle':'check'}"></i></div>
-        <div class="dash-kpi-label">Saldo devedor</div>
+        <div class="dash-kpi-icon" style="color:${saldoDevedor>0?'var(--danger2)':'var(--success2)'}"><i class="ti ti-${saldoDevedor>0?'alert-circle':'circle-check'}"></i></div>
+        <div class="dash-kpi-label">Faltam produzir</div>
         <div class="dash-kpi-val ${saldoDevedor>0?'red':'green'}">${saldoDevedor}</div>
-        <div class="dash-kpi-sub">${saldoLong} longos + ${saldoViral} virais</div>
+        <div class="dash-kpi-sub">${saldoLong} longos + ${saldoViral} virais restantes no mês</div>
       </div>
 
       <div class="dash-kpi purple">
@@ -1745,7 +1770,7 @@ function renderDashboard(){
       <div class="dash-status-icon">${statusOk?'<i class="ti ti-circle-check" style="color:var(--success2)"></i>':'<i class="ti ti-loader" style="color:var(--gold)"></i>'}</div>
       <div class="dash-status-text">
         <div class="dash-status-title ${statusOk?'green':'gold'}">${statusAcima?'PRODUÇÃO ACIMA DA META':statusOk?'META ATINGIDA':'EM ANDAMENTO'}</div>
-        <div class="dash-status-desc">${produzidosTotal} produzidos de ${metaTotal} · Restam ${Math.max(0,metaTotal-produzidosTotal)} vídeos para finalizar o ciclo</div>
+        <div class="dash-status-desc">${produzidosTotal} produzidos de ${metaTotal} em ${mesLabelCap} · ${saldoDevedor>0?'Restam '+saldoDevedor+' vídeos no mês':'Meta mensal atingida!'}</div>
       </div>
       <div class="dash-status-pct ${statusOk?'green':'gold'}">${pctMeta}%</div>
     </div>
