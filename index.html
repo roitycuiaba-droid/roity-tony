@@ -1486,7 +1486,11 @@ function switchTab(tab){
   if(krf) krf.style.display=(tab==='kanban'&&currentUser&&currentUser.role==='admin')?'block':'none';
 
   sessionStorage.setItem('roity_tab',tab);
-  if(tab==='dashboard'){try{renderDashboard();updateSaldoBar();}catch(e){}}
+  if(tab==='dashboard'){try{
+    const m = window._dashMes !== undefined ? window._dashMes : new Date().getMonth();
+    const a = window._dashAno !== undefined ? window._dashAno : new Date().getFullYear();
+    trocarMesDash(m + '_' + a).then(()=>updateSaldoBar());
+  }catch(e){}}
   if(tab==='kanban'){try{renderKanban();renderReposicoes();}catch(e){}}
   if(tab==='postagens'){try{renderPostagens();}catch(e){}}
 }
@@ -1529,8 +1533,8 @@ function renderDashboard(){
   const hoje = new Date(); hoje.setHours(0,0,0,0);
 
   // ── Mês selecionado no dashboard ────────────────────────────────
-  if(!window._dashMes) window._dashMes = hoje.getMonth();
-  if(!window._dashAno) window._dashAno = hoje.getFullYear();
+  if(window._dashMes === undefined) window._dashMes = hoje.getMonth();
+  if(window._dashAno === undefined) window._dashAno = hoje.getFullYear();
   const mes = window._dashMes;
   const ano = window._dashAno;
 
@@ -1749,19 +1753,68 @@ function renderDashboard(){
   </div>`;
 }
 
-function trocarMesDash(val){
+async function trocarMesDash(val){
   const [m,a] = val.split('_').map(Number);
   window._dashMes = m;
   window._dashAno = a;
+
+  // Buscar dados do mês selecionado do banco (cache + vlinks)
+  const primeiro = new Date(a, m, 1);
+  const ultimo   = new Date(a, m + 1, 0);
+  const pStr = dateKey(primeiro);
+  const uStr = dateKey(ultimo);
+
+  // Buscar tony_dashboard para os dias do mês
+  const {data: dashData} = await sb.from('tony_dashboard')
+    .select('*')
+    .gte('day_key', pStr)
+    .lte('day_key', uStr);
+  if(dashData) dashData.forEach(r => { cache[r.day_key] = r; });
+
+  // Buscar tony_video_links para os dias do mês (setembro+)
+  if(pStr >= SET_START || uStr >= SET_START){
+    const {data: vData} = await sb.from('tony_video_links')
+      .select('*')
+      .gte('day_key', pStr)
+      .lte('day_key', uStr)
+      .order('created_at', {ascending: true});
+    // Limpar cache do mês e repovoar
+    const cur = new Date(primeiro);
+    while(cur <= ultimo){
+      const k = dateKey(new Date(cur));
+      if(k >= SET_START) vlinkCache[k] = [];
+      cur.setDate(cur.getDate() + 1);
+    }
+    if(vData) vData.forEach(r => {
+      if(!vlinkCache[r.day_key]) vlinkCache[r.day_key] = [];
+      vlinkCache[r.day_key].push(r);
+    });
+  }
+
+  // Buscar postagens do mês
+  const {data: postData} = await sb.from('tony_postagens')
+    .select('*')
+    .gte('data_post', pStr)
+    .lte('data_post', uStr)
+    .order('data_post', {ascending: true});
+  // Remover postagens do mês do array global e repovoar com os novos dados
+  postagens = postagens.filter(p => {
+    const d = new Date(p.data_post + 'T12:00:00');
+    return !(d.getMonth() === m && d.getFullYear() === a);
+  });
+  if(postData) postagens = postagens.concat(postData);
+
   renderDashboard();
 }
 
 async function recarregarDashboard(){
   const btn = document.querySelector('.dash-refresh-btn');
-  if(btn){ btn.style.opacity='.5'; btn.style.pointerEvents='none'; }
-  await Promise.all([loadAllProjectDays(), loadPostagens()]);
-  renderDashboard();
-  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; }
+  if(btn){ btn.style.opacity='.5'; btn.style.pointerEvents='none'; btn.innerHTML='<i class="ti ti-loader-2"></i> Carregando...'; }
+  // Buscar mês atual do dashboard
+  const m = window._dashMes !== undefined ? window._dashMes : new Date().getMonth();
+  const a = window._dashAno !== undefined ? window._dashAno : new Date().getFullYear();
+  await trocarMesDash(m + '_' + a);
+  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; btn.innerHTML='<i class="ti ti-refresh"></i> Atualizar'; }
 }
 
 
