@@ -388,6 +388,19 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 /* ── MULTI-LINK FORM ── */
 
 
+/* ── LINK GERAL DA PASTA DO DIA ── */
+
+/* ── LINK GERAL DA PASTA DO DIA ── */
+.folder-link-block{background:rgba(201,169,110,0.05);border:1px solid rgba(201,169,110,0.15);border-radius:10px;padding:8px 11px;margin-bottom:6px;}
+.folder-link-label{font-size:9px;font-weight:700;color:var(--gold-dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.folder-link-label i{font-size:12px;color:var(--gold);}
+.folder-link-row{display:flex;gap:5px;align-items:center;}
+.folder-link-input{flex:1;font-size:11px;padding:6px 9px;border:1px solid rgba(201,169,110,0.2);border-radius:7px;background:rgba(255,255,255,0.03);color:var(--text);font-family:inherit;min-width:0;transition:border-color .15s;}
+.folder-link-input:focus{outline:none;border-color:var(--gold);}
+.folder-link-input::placeholder{color:var(--text3);}
+.folder-open-btn{background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);border-radius:7px;padding:6px 9px;cursor:pointer;color:var(--gold);font-size:13px;transition:all .12s;white-space:nowrap;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:4px;}
+.folder-open-btn:hover{background:rgba(201,169,110,0.18);}
+
 /* ── SISTEMA DE LINKS COM APROVAÇÃO (setembro+) ── */
 .vlink-list{display:flex;flex-direction:column;gap:5px;margin-top:4px;}
 .vlink-item{border-radius:8px;border:1px solid var(--glass-b);background:rgba(255,255,255,0.03);overflow:hidden;transition:border-color .15s;}
@@ -515,6 +528,81 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .del-post-btn:hover{color:var(--danger2);}
 .link-post-btn{background:none;border:none;cursor:pointer;color:var(--gold-dim);font-size:14px;padding:3px 5px;transition:color .1s;}
 .link-post-btn:hover{color:var(--gold);}
+
+
+/* ══ DASHBOARD VISUAL NOVO ══ */
+.dash-new { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+
+/* Seletor de mês */
+.dash-month-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dash-month-sel { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-gold-b); border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--gold); font-family: inherit; cursor: pointer; }
+.dash-month-sel:focus { outline: none; }
+.dash-month-label { font-size: 11px; color: var(--text3); }
+.dash-refresh-btn { background: none; border: 1px solid var(--glass-b); border-radius: 8px; padding: 7px 12px; font-size: 12px; color: var(--text3); cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; transition: all .15s; }
+.dash-refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* KPI row principal */
+.dash-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.dash-kpi { background: var(--bg2); border: 1px solid var(--glass-b); border-radius: 14px; padding: 1.1rem 1.2rem; position: relative; overflow: hidden; }
+.dash-kpi.gold { border-color: rgba(201,169,110,0.35); background: linear-gradient(135deg, rgba(201,169,110,0.08), var(--bg2)); }
+.dash-kpi.danger { border-color: rgba(192,57,43,0.4); background: linear-gradient(135deg, rgba(192,57,43,0.08), var(--bg2)); }
+.dash-kpi.success { border-color: rgba(39,174,96,0.35); background: linear-gradient(135deg, rgba(39,174,96,0.07), var(--bg2)); }
+.dash-kpi.purple { border-color: rgba(142,68,173,0.35); background: linear-gradient(135deg, rgba(142,68,173,0.07), var(--bg2)); }
+.dash-kpi-icon { font-size: 22px; margin-bottom: 6px; }
+.dash-kpi-label { font-size: 9px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
+.dash-kpi-val { font-size: 2.4rem; font-weight: 900; line-height: 1; color: var(--text); }
+.dash-kpi-val.gold { color: var(--gold); }
+.dash-kpi-val.red { color: var(--danger2); }
+.dash-kpi-val.green { color: var(--success2); }
+.dash-kpi-sub { font-size: 10px; color: var(--text3); margin-top: 5px; }
+.dash-kpi-pct { position: absolute; top: 10px; right: 12px; font-size: 11px; font-weight: 800; color: var(--gold); }
+
+/* Barra de progresso */
+.dash-progress-wrap { margin-top: 8px; }
+.dash-progress-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--text3); margin-bottom: 4px; }
+.dash-progress-track { background: rgba(255,255,255,0.07); border-radius: 99px; height: 5px; overflow: hidden; }
+.dash-progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold), #e8c07a); transition: width .4s ease; }
+.dash-progress-fill.red { background: linear-gradient(90deg, #cc3333, #e05252); }
+.dash-progress-fill.green { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+
+/* Grid de postagens */
+.dash-mid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dash-plat-card { background: var(--bg2); border: 1px solid var(--glass-b); border-radius: 14px; padding: 1rem 1.2rem; }
+.dash-plat-title { font-size: 10px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.dash-plat-title i { font-size: 14px; color: var(--gold); }
+.dash-plat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.dash-plat-name { font-size: 12px; color: var(--text2); width: 110px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.dash-plat-name i { font-size: 14px; }
+.dash-plat-track { flex: 1; background: rgba(255,255,255,0.06); border-radius: 99px; height: 6px; overflow: hidden; }
+.dash-plat-fill { height: 100%; border-radius: 99px; }
+.dash-plat-fill.yt { background: #cc0000; }
+.dash-plat-fill.tk { background: #e0003c; }
+.dash-plat-fill.ig { background: linear-gradient(90deg, #8b3fc0, #e0003c); }
+.dash-plat-count { font-size: 12px; font-weight: 800; color: var(--text); min-width: 28px; text-align: right; }
+.dash-plat-pct { font-size: 10px; color: var(--text3); min-width: 36px; text-align: right; }
+
+/* Cards tipo de vídeo */
+.dash-tipo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.dash-tipo-item { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px 12px; }
+.dash-tipo-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.dash-tipo-val { font-size: 22px; font-weight: 900; color: var(--text); }
+
+/* Status geral */
+.dash-status-bar { background: var(--bg2); border: 1px solid var(--glass-b); border-radius: 14px; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+.dash-status-icon { font-size: 24px; }
+.dash-status-text { flex: 1; }
+.dash-status-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.dash-status-title.green { color: var(--success2); }
+.dash-status-title.gold { color: var(--gold); }
+.dash-status-title.red { color: var(--danger2); }
+.dash-status-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.dash-status-pct { font-size: 2rem; font-weight: 900; }
+.dash-status-pct.green { color: var(--success2); }
+.dash-status-pct.gold { color: var(--gold); }
+
+/* Semana atual info */
+.dash-week-info { font-size: 10px; color: var(--text3); background: rgba(255,255,255,0.03); border-radius: 8px; padding: 6px 12px; border: 1px solid var(--glass-b); }
+.dash-week-info strong { color: var(--text2); }
 
 </style>
 </head>
@@ -1187,7 +1275,7 @@ function fmtTimestamp(iso){
 }
 
 function getDay(key){
-  if(!cache[key])cache[key]={day_key:key,long_link:'',viral_link:'',long_obs:'',viral_obs:'',platforms:{}};
+  if(!cache[key])cache[key]={day_key:key,long_link:'',viral_link:'',long_obs:'',viral_obs:'',folder_link:'',platforms:{}};
   return cache[key];
 }
 
@@ -1198,7 +1286,7 @@ async function upsertDay(key, changedField){
   const upsertData = {
     day_key:key,long_link:d.long_link||'',viral_link:d.viral_link||'',
     long_obs:d.long_obs||'',viral_obs:d.viral_obs||'',
-    admin_notes:d.admin_notes||'',
+    admin_notes:d.admin_notes||'',folder_link:d.folder_link||'',
     platforms:d.platforms||{},updated_at:now,
     prod_longos:(d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):(d.long_link?META_LONG_DIA:0),
     prod_virais:(d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):(d.viral_link?META_VIRAL_DIA:0)
@@ -1324,7 +1412,15 @@ function isDayComplete(key){
   if(!d||!d.long_link||!d.viral_link)return false;
   return PLATFORMS.every(p=>d.platforms&&d.platforms[p]==='done');
 }
-function hasLinks(key){const d=cache[key];return !!(d&&d.long_link&&d.viral_link);}
+function hasLinks(key){
+  if(isNewSystem(key)){
+    // Setembro+: tem links se houver pelo menos 1 link em qualquer editor
+    const links = vlinkCache[key] || [];
+    return links.length > 0;
+  }
+  const d=cache[key];
+  return !!(d&&d.long_link&&d.viral_link);
+}
 
 async function togglePlat(key,plat){
   if(currentUser.role!=='admin'||!hasLinks(key))return;
@@ -1427,141 +1523,247 @@ function updateScheduleBanner(){
 
 
 function renderDashboard(){
-  const today=new Date();today.setHours(0,0,0,0);
-  const todayKey=dateKey(today);
-  const tomorrowKey=dateKey(addDays(today,1));
+  const container = document.getElementById('view-dashboard-content');
+  if(!container) return;
 
-  // KPIs
-  let totalDays=0,completeDays=0,failDays=0,partialDays=0;
-  const d=new Date(PROJECT_START);
-  while(d<=today){
-    const k=dateKey(d);
-    const hist=HISTORY[k];
-    const live=cache[k];
-    totalDays++;
-    if(hist){
-      if(hist.status==='ok')completeDays++;
-      else if(hist.status==='fail')failDays++;
-      else if(hist.status==='partial')partialDays++;
-    } else if(live&&isDayComplete(k)){completeDays++;}
-    d.setDate(d.getDate()+1);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  // ── Mês selecionado no dashboard ────────────────────────────────
+  if(!window._dashMes) window._dashMes = hoje.getMonth();
+  if(!window._dashAno) window._dashAno = hoje.getFullYear();
+  const mes = window._dashMes;
+  const ano = window._dashAno;
+
+  // Primeiro e último dia do mês selecionado
+  const primeiroDia = new Date(ano, mes, 1);
+  const ultimoDia   = new Date(ano, mes + 1, 0);
+  const pkStr = dateKey(primeiroDia);
+  const ukStr = dateKey(ultimoDia);
+
+  const mesLabel = primeiroDia.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  const mesLabelCap = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
+
+  // ── Semana atual ─────────────────────────────────────────────────
+  const wStart = getWeekStart(hoje);
+  const wEnd   = addDays(wStart, 6);
+  const wNum   = Math.floor((wStart - getWeekStart(PROJECT_START))/(7*24*3600*1000)) + 1;
+  const wLabel = `Semana ${wNum} — ${wStart.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} a ${wEnd.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`;
+
+  // ── KPIs de produção (filtrado pelo mês) ──────────────────────────
+  let produzidosMes = 0;
+  Object.values(cache).forEach(d => {
+    if(!d.day_key) return;
+    if(d.day_key < pkStr || d.day_key > ukStr) return;
+    if(isNewSystem(d.day_key)){
+      // Set+: links aprovados
+      const links = vlinkCache[d.day_key] || [];
+      produzidosMes += links.filter(x => x.status === 'aprovado').length;
+    } else {
+      // Ago: prod_longos + prod_virais
+      if(d.long_link)  produzidosMes += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
+      if(d.viral_link) produzidosMes += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
+    }
+  });
+
+  // ── KPIs de postagem (filtrado pelo mês) ─────────────────────────
+  const postagensMes = postagens.filter(p => {
+    const d = new Date(p.data_post + 'T12:00:00');
+    return d.getMonth() === mes && d.getFullYear() === ano;
+  });
+
+  // Vídeos únicos postados
+  const videosUnicosMap = {};
+  postagensMes.forEach(p => {
+    const uid = p.video_uid || p.id;
+    if(!videosUnicosMap[uid]) videosUnicosMap[uid] = p.tipo;
+  });
+  const totalVideosUnicos = Object.keys(videosUnicosMap).length;
+  const totalLong = Object.values(videosUnicosMap).filter(t => t === 'Longo').length;
+  const totalCurt = Object.values(videosUnicosMap).filter(t => t === 'Curto').length;
+
+  // Por plataforma
+  const totalYT = postagensMes.filter(p => p.plataforma === 'YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalTK = postagensMes.filter(p => p.plataforma === 'TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalIG = postagensMes.filter(p => p.plataforma === 'Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalPlat = totalYT + totalTK + totalIG;
+
+  // Meta e saldo devedor
+  const metaTotal = META_LONG_TOTAL + META_VIRAL_TOTAL;
+  let saldoDevedor = 0;
+  let saldoLong = 0, saldoViral = 0;
+  reposicoes.forEach(r => {
+    if(!r.rudney_entregue)  saldoLong  += (r.longos_devidos || 0);
+    if(!r.teixeira_entregue) saldoViral += (r.virais_devidos || 0);
+  });
+  saldoDevedor = saldoLong + saldoViral;
+
+  // Prazo
+  const diasRestantes = Math.max(0, Math.ceil((PROJECT_END - hoje) / (24*3600*1000)));
+
+  // Produzidos totais (todos os meses, para % da meta)
+  let produzidosTotal = 0;
+  Object.values(cache).forEach(d => {
+    if(!d.day_key) return;
+    if(d.day_key < dateKey(PROJECT_START) || d.day_key > dateKey(PROJECT_END)) return;
+    if(isNewSystem(d.day_key)){
+      const links = vlinkCache[d.day_key] || [];
+      produzidosTotal += links.filter(x => x.status === 'aprovado').length;
+    } else {
+      if(d.long_link)  produzidosTotal += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
+      if(d.viral_link) produzidosTotal += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
+    }
+  });
+
+  const pctMeta = metaTotal > 0 ? Math.round(produzidosTotal / metaTotal * 100) : 0;
+  const pctPlat = totalPlat > 0;
+  const ytPct  = totalPlat > 0 ? Math.round(totalYT/totalPlat*100) : 0;
+  const tkPct  = totalPlat > 0 ? Math.round(totalTK/totalPlat*100) : 0;
+  const igPct  = totalPlat > 0 ? Math.round(totalIG/totalPlat*100) : 0;
+  const maxPlat = Math.max(totalYT, totalTK, totalIG, 1);
+
+  // Status geral
+  const statusOk = pctMeta >= 100;
+  const statusAcima = pctMeta > 100;
+
+  // Gerar opções de meses: ago/2026 até dez/2027
+  let mesOpts = '';
+  for(let a = 2026; a <= 2027; a++){
+    for(let m = (a===2026?7:0); m <= 11; m++){
+      const d = new Date(a, m, 1);
+      const lbl = d.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+      const sel = (m===mes && a===ano) ? 'selected' : '';
+      mesOpts += `<option value="${m}_${a}" ${sel}>${lbl.charAt(0).toUpperCase()+lbl.slice(1)}</option>`;
+    }
   }
 
-  // Editor status
-  function editorStatus(field){
-    const checks=[today,addDays(today,1),addDays(today,2)];
-    const missing=checks.filter(dt=>{const k=dateKey(dt);const r=cache[k];return !r||!r[field];});
-    if(missing.length===0)return 'ok';
-    if(missing.length<=1)return 'warn';
-    return 'late';
-  }
-  const rudneyS=editorStatus('long_link');
-  const teixeiraS=editorStatus('viral_link');
+  container.innerHTML = `
+  <div class="dash-new">
 
-  // Tomorrow schedule
-  const tmr=cache[tomorrowKey];
-  const platStatus=PLATFORMS.map(p=>({p,done:!!(tmr&&tmr.platforms&&tmr.platforms[p]==='done')}));
-  const allSched=platStatus.every(x=>x.done);
-
-  // Recent history dots
-  const recentDays=[];
-  for(let i=9;i>=0;i--){
-    const dt=addDays(today,-i);
-    if(dt<PROJECT_START)continue;
-    const k=dateKey(dt);
-    const hist=HISTORY[k];
-    const live=cache[k];
-    let st='pending';
-    if(hist)st=hist.status;
-    else if(live&&isDayComplete(k))st='ok';
-    else if(live&&(live.long_link||live.viral_link))st='partial';
-    recentDays.push({k,dt,st});
-  }
-
-  const statusBadge=(s)=>{
-    if(s==='ok')return '<span class="status-badge ok"><i class="ti ti-check"></i>Em dia</span>';
-    if(s==='warn')return '<span class="status-badge warn"><i class="ti ti-clock"></i>1 dia faltando</span>';
-    return '<span class="status-badge late"><i class="ti ti-alert-triangle"></i>Atrasado</span>';
-  };
-
-  const dotClass=(s)=>{
-    if(s==='ok')return 'week-dot ok';
-    if(s==='fail')return 'week-dot fail';
-    if(s==='partial')return 'week-dot partial';
-    return 'week-dot pending';
-  };
-
-  const pct=totalDays>0?Math.round((completeDays/totalDays)*100):0;
-
-  document.getElementById('view-dashboard-content').innerHTML=`
-    <div class="dash-greeting">
-      <h2>${getGreeting()}, <span>Gustavo!</span></h2>
-      <p>Aqui está o resumo completo do Projeto Tony Cozendey.</p>
+    <!-- Seletor de mês -->
+    <div class="dash-month-bar">
+      <select class="dash-month-sel" onchange="trocarMesDash(this.value)">
+        ${mesOpts}
+      </select>
+      <div class="dash-week-info">
+        <strong>${wLabel}</strong> &nbsp;·&nbsp; Registros até ${hoje.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})}
+      </div>
+      <button class="dash-refresh-btn" onclick="recarregarDashboard()">
+        <i class="ti ti-refresh"></i> Atualizar
+      </button>
     </div>
 
-    <div class="kpi-grid">
-      <div class="kpi-card gold-border">
-        <div class="kpi-label"><i class="ti ti-calendar-check" style="color:var(--gold);"></i>Dias completos</div>
-        <div class="kpi-value gold">${completeDays}</div>
-        <div class="kpi-sub">de ${totalDays} dias desde o início</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label"><i class="ti ti-percentage" style="color:var(--gold);"></i>Taxa de sucesso</div>
-        <div class="kpi-value ${pct>=70?'green':pct>=40?'':'red'}">${pct}%</div>
-        <div class="kpi-sub">dias com tudo concluído</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label"><i class="ti ti-x" style="color:var(--danger2);"></i>Dias falhos</div>
-        <div class="kpi-value red">${failDays}</div>
-        <div class="kpi-sub">${partialDays} parciais</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label"><i class="ti ti-calendar-event" style="color:var(--gold);"></i>Início do projeto</div>
-        <div class="kpi-value" style="font-size:18px;padding-top:4px;">03/08</div>
-        <div class="kpi-sub">${totalDays} dias rodando</div>
-      </div>
-    </div>
-
-    <div class="dash-row">
-      <div class="dash-card">
-        <div class="dash-card-title"><i class="ti ti-users"></i>Status dos editores</div>
-        <div class="editor-status-row">
-          <div><div class="editor-status-name">Rudney</div><div class="editor-status-role">Vídeos longos</div></div>
-          ${statusBadge(rudneyS)}
-        </div>
-        <div class="editor-status-row">
-          <div><div class="editor-status-name">Teixeira</div><div class="editor-status-role">Cortes virais</div></div>
-          ${statusBadge(teixeiraS)}
+    <!-- KPIs principais -->
+    <div class="dash-kpi-row">
+      <div class="dash-kpi gold">
+        <div class="dash-kpi-pct">${pctMeta}%</div>
+        <div class="dash-kpi-icon" style="color:var(--gold)"><i class="ti ti-target"></i></div>
+        <div class="dash-kpi-label">Meta total</div>
+        <div class="dash-kpi-val gold">${metaTotal}</div>
+        <div class="dash-kpi-sub">${META_LONG_TOTAL} longos + ${META_VIRAL_TOTAL} virais</div>
+        <div class="dash-progress-wrap">
+          <div class="dash-progress-label"><span>Produzidos: ${produzidosTotal}</span><span>${pctMeta}%</span></div>
+          <div class="dash-progress-track"><div class="dash-progress-fill ${pctMeta>=100?'green':''}" style="width:${Math.min(pctMeta,100)}%"></div></div>
         </div>
       </div>
 
-      <div class="dash-card">
-        <div class="dash-card-title"><i class="ti ti-brand-instagram"></i>Postagens de amanhã</div>
-        ${platStatus.map(x=>`
-          <div class="plat-sched-row">
-            <div class="plat-sched-name"><i class="ti ${PLAT_ICONS[x.p]}"></i>${x.p}</div>
-            ${x.done
-              ?'<span class="status-badge ok"><i class="ti ti-check"></i>Agendado</span>'
-              :'<span class="status-badge late"><i class="ti ti-x"></i>Pendente</span>'}
-          </div>`).join('')}
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--glass-b);font-size:11px;color:${allSched?'var(--success2)':'var(--danger2)'};">
-          <i class="ti ${allSched?'ti-circle-check':'ti-alert-triangle'}"></i>
-          ${allSched?'Tudo agendado para amanhã':'Agende nas plataformas faltantes'}
+      <div class="dash-kpi ${saldoDevedor>0?'danger':'success'}">
+        <div class="dash-kpi-icon" style="color:${saldoDevedor>0?'var(--danger2)':'var(--success2)'}"><i class="ti ti-${saldoDevedor>0?'alert-triangle':'circle-check'}"></i></div>
+        <div class="dash-kpi-label">Produzidos em ${mesLabelCap.split(' ')[0]}</div>
+        <div class="dash-kpi-val ${saldoDevedor>0?'red':'green'}">${produzidosMes}</div>
+        <div class="dash-kpi-sub">via links aprovados no mês</div>
+      </div>
+
+      <div class="dash-kpi ${saldoDevedor>0?'danger':'success'}">
+        <div class="dash-kpi-icon" style="color:${saldoDevedor>0?'var(--danger2)':'var(--success2)'}"><i class="ti ti-${saldoDevedor>0?'alert-circle':'check'}"></i></div>
+        <div class="dash-kpi-label">Saldo devedor</div>
+        <div class="dash-kpi-val ${saldoDevedor>0?'red':'green'}">${saldoDevedor}</div>
+        <div class="dash-kpi-sub">${saldoLong} longos + ${saldoViral} virais</div>
+      </div>
+
+      <div class="dash-kpi purple">
+        <div class="dash-kpi-icon" style="color:#a569bd"><i class="ti ti-clock"></i></div>
+        <div class="dash-kpi-label">Prazo</div>
+        <div class="dash-kpi-val" style="color:#a569bd">${diasRestantes}</div>
+        <div class="dash-kpi-sub">dias restantes · até ${PROJECT_END.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})}</div>
+      </div>
+    </div>
+
+    <!-- Postagens do mês + por plataforma -->
+    <div class="dash-mid-row">
+
+      <div class="dash-plat-card">
+        <div class="dash-plat-title"><i class="ti ti-chart-bar"></i>Vídeos únicos postados em ${mesLabelCap.split(' ')[0]}</div>
+        <div style="font-size:2.8rem;font-weight:900;color:var(--text);line-height:1;margin-bottom:4px;">${totalVideosUnicos}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">conteúdos distintos no mês</div>
+        <div class="dash-tipo-row">
+          <div class="dash-tipo-item">
+            <div class="dash-tipo-label">Longos</div>
+            <div class="dash-tipo-val">${totalLong}</div>
+            <div class="dash-progress-track" style="margin-top:6px;"><div class="dash-progress-fill" style="width:${totalVideosUnicos>0?Math.round(totalLong/totalVideosUnicos*100):0}%"></div></div>
+          </div>
+          <div class="dash-tipo-item">
+            <div class="dash-tipo-label">Curtos</div>
+            <div class="dash-tipo-val">${totalCurt}</div>
+            <div class="dash-progress-track" style="margin-top:6px;"><div class="dash-progress-fill" style="width:${totalVideosUnicos>0?Math.round(totalCurt/totalVideosUnicos*100):0}%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-plat-card">
+        <div class="dash-plat-title"><i class="ti ti-device-mobile"></i>Distribuição por plataforma</div>
+        <div class="dash-plat-row">
+          <div class="dash-plat-name"><i class="ti ti-brand-youtube" style="color:#cc0000"></i>YouTube Shorts</div>
+          <div class="dash-plat-track"><div class="dash-plat-fill yt" style="width:${Math.round(totalYT/maxPlat*100)}%"></div></div>
+          <div class="dash-plat-count">${totalYT}</div>
+          <div class="dash-plat-pct">${ytPct}%</div>
+        </div>
+        <div class="dash-plat-row">
+          <div class="dash-plat-name"><i class="ti ti-brand-tiktok" style="color:#e0003c"></i>TikTok</div>
+          <div class="dash-plat-track"><div class="dash-plat-fill tk" style="width:${Math.round(totalTK/maxPlat*100)}%"></div></div>
+          <div class="dash-plat-count">${totalTK}</div>
+          <div class="dash-plat-pct">${tkPct}%</div>
+        </div>
+        <div class="dash-plat-row">
+          <div class="dash-plat-name"><i class="ti ti-brand-instagram" style="color:#a569bd"></i>Instagram</div>
+          <div class="dash-plat-track"><div class="dash-plat-fill ig" style="width:${Math.round(totalIG/maxPlat*100)}%"></div></div>
+          <div class="dash-plat-count">${totalIG}</div>
+          <div class="dash-plat-pct">${igPct}%</div>
+        </div>
+        <div style="border-top:1px solid var(--glass-b);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;color:var(--text3);">
+          <span>Total de postagens registradas</span>
+          <span style="font-weight:800;color:var(--text)">${totalPlat}</span>
         </div>
       </div>
     </div>
 
-    <div class="dash-card" style="margin-bottom:1.25rem;">
-      <div class="dash-card-title"><i class="ti ti-history"></i>Histórico recente (últimos ${recentDays.length} dias)</div>
-      <div class="week-dots">
-        ${recentDays.map(x=>`
-          <div class="${dotClass(x.st)}${dateKey(today)===x.k?' today':''}" title="${x.dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})} — ${x.st==='ok'?'Completo':x.st==='fail'?'Falhou':x.st==='partial'?'Parcial':'Pendente'}">
-            ${x.dt.getDate()}
-          </div>`).join('')}
+    <!-- Status geral -->
+    <div class="dash-status-bar">
+      <div class="dash-status-icon">${statusOk?'<i class="ti ti-circle-check" style="color:var(--success2)"></i>':'<i class="ti ti-loader" style="color:var(--gold)"></i>'}</div>
+      <div class="dash-status-text">
+        <div class="dash-status-title ${statusOk?'green':'gold'}">${statusAcima?'PRODUÇÃO ACIMA DA META':statusOk?'META ATINGIDA':'EM ANDAMENTO'}</div>
+        <div class="dash-status-desc">${produzidosTotal} produzidos de ${metaTotal} · Restam ${Math.max(0,metaTotal-produzidosTotal)} vídeos para finalizar o ciclo</div>
       </div>
+      <div class="dash-status-pct ${statusOk?'green':'gold'}">${pctMeta}%</div>
     </div>
-  `;
+
+  </div>`;
 }
+
+function trocarMesDash(val){
+  const [m,a] = val.split('_').map(Number);
+  window._dashMes = m;
+  window._dashAno = a;
+  renderDashboard();
+}
+
+async function recarregarDashboard(){
+  const btn = document.querySelector('.dash-refresh-btn');
+  if(btn){ btn.style.opacity='.5'; btn.style.pointerEvents='none'; }
+  await Promise.all([loadAllProjectDays(), loadPostagens()]);
+  renderDashboard();
+  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; }
+}
+
 
 async function changeWeek(dir){
   const next=addDays(currentWeekStart,dir*7);
@@ -1711,7 +1913,8 @@ function renderKanban(){
 
     const platBtns=PLATFORMS.map(p=>{
       const done=d.platforms&&d.platforms[p]==='done';
-      const locked=isAdmin&&!linksOk;
+      // Setembro+: nunca bloqueia os botões de plataforma por falta de link
+      const locked=isAdmin&&!linksOk&&!isNewSystem(key);
       return `<button class="plat-btn${done?' done':''}" onclick="togglePlat('${key}','${p}')" ${(!isAdmin||locked)?'disabled':''}>
         <i class="ti ${PLAT_ICONS[p]}"></i>${p}${done?' <i class="ti ti-check"></i>':''}
       </button>`;
@@ -1735,6 +1938,15 @@ function renderKanban(){
       <div class="day-body">
         ${histBar}
         ${isNewSystem(key) ? `
+          <div class="folder-link-block">
+            <div class="folder-link-label"><i class="ti ti-folder"></i>Link da pasta geral do dia</div>
+            <div class="folder-link-row">
+              <input class="folder-link-input" type="text" placeholder="Cole o link da pasta do Drive com todos os vídeos..."
+                value="${d.folder_link||''}"
+                oninput="saveField('${key}','folder_link',this.value)"/>
+              ${d.folder_link?`<button class="folder-open-btn" onclick="window.open('${d.folder_link}','_blank')"><i class="ti ti-folder-open"></i> Abrir pasta</button>`:''}
+            </div>
+          </div>
           <div class="editor-block">
             <div class="editor-label"><i class="ti ti-video"></i>Rudney — vídeos longos</div>
             <div id="vlinks-${key}-rudney"></div>
@@ -1760,8 +1972,8 @@ function renderKanban(){
           </div>
         `}
         <div class="post-section">
-          <div class="post-label${!linksOk&&isAdmin?' warn':''}">
-            ${!linksOk&&isAdmin?'<i class="ti ti-lock" style="font-size:11px;"></i> Adicione os links para liberar':'Postagens agendadas'}
+          <div class="post-label${!linksOk&&isAdmin&&!isNewSystem(key)?' warn':''}">
+            ${!linksOk&&isAdmin&&!isNewSystem(key)?'<i class="ti ti-lock" style="font-size:11px;"></i> Adicione os links para liberar':'Postagens agendadas'}
           </div>
           <div class="plat-row">${platBtns}</div>
         </div>
@@ -2646,8 +2858,8 @@ async function salvarConfig(){
 
   aplicarConfig(projetoConfig);
   fecharConfig();
-  // Recarregar tudo com as novas datas
-  currentWeekStart = getWeekStart(PROJECT_START);
+  // Recarregar tudo mas manter semana atual do usuário
+  if(!currentWeekStart) currentWeekStart = getWeekStart(new Date());
   await Promise.all([loadAllProjectDays(), loadWeek(currentWeekStart)]);
   renderKanban();
   updateMeta();
