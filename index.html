@@ -662,25 +662,29 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
   <!-- SCHEDULE ALERT BANNER -->
   <!-- SALDO DO CONTRATO -->
   <div class="saldo-bar" id="saldo-bar" style="display:none;">
+    <div class="saldo-card" style="flex-direction:row;align-items:center;gap:8px;padding:4px 10px;">
+      <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Mês</div>
+      <select id="sc-mes-sel" style="background:rgba(255,255,255,0.05);border:1px solid var(--glass-gold-b);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--gold);font-family:inherit;cursor:pointer;" onchange="trocarMesSaldo(this.value)"></select>
+    </div>
     <div class="saldo-card gold">
-      <div class="saldo-lbl"><i class="ti ti-target" style="color:var(--gold);font-size:12px;"></i>Meta total</div>
-      <div class="saldo-val gold">372</div>
-      <div class="saldo-sub">217 longos + 155 virais</div>
+      <div class="saldo-lbl"><i class="ti ti-target" style="color:var(--gold);font-size:12px;"></i>Meta do mês</div>
+      <div class="saldo-val gold" id="sc-meta-val">372</div>
+      <div class="saldo-sub" id="sc-meta-sub">217 longos + 155 virais</div>
     </div>
     <div class="saldo-card" id="sc-produzidos">
       <div class="saldo-lbl"><i class="ti ti-video" style="color:#5dade2;font-size:12px;"></i>Produzidos</div>
       <div class="saldo-val" id="sc-prod-val">—</div>
-      <div class="saldo-sub" id="sc-prod-sub">de 372</div>
+      <div class="saldo-sub" id="sc-prod-sub">de 372 (0%)</div>
     </div>
     <div class="saldo-card" id="sc-devedor">
-      <div class="saldo-lbl"><i class="ti ti-alert-triangle" style="color:var(--danger2);font-size:12px;"></i>Saldo devedor</div>
+      <div class="saldo-lbl"><i class="ti ti-alert-triangle" style="color:var(--danger2);font-size:12px;"></i>Faltam produzir</div>
       <div class="saldo-val red" id="sc-dev-val">—</div>
-      <div class="saldo-sub" id="sc-dev-sub">vídeos em aberto</div>
+      <div class="saldo-sub" id="sc-dev-sub">no mês</div>
     </div>
     <div class="saldo-card" id="sc-prazo">
       <div class="saldo-lbl"><i class="ti ti-clock" style="color:var(--gold);font-size:12px;"></i>Prazo</div>
       <div class="countdown"><div class="countdown-num" id="sc-dias">—</div><div class="countdown-lbl">dias<br>restantes</div></div>
-      <div class="saldo-sub">até 02/set/2026</div>
+      <div class="saldo-sub" id="sc-prazo-sub">até 02/set/2026</div>
     </div>
   </div>
 
@@ -1423,7 +1427,9 @@ function hasLinks(key){
 }
 
 async function togglePlat(key,plat){
-  if(currentUser.role!=='admin'||!hasLinks(key))return;
+  if(currentUser.role!=='admin') return;
+  // Setembro+: sempre libera. Agosto: precisa ter links
+  if(!isNewSystem(key) && !hasLinks(key)) return;
   const d=getDay(key);
   if(!d.platforms)d.platforms={};
   d.platforms[plat]=d.platforms[plat]==='done'?'':'done';
@@ -1867,7 +1873,7 @@ function gotoToday(){
 }
 
 // Constantes do projeto
-let PROJECT_END   = new Date(2026, 8, 30); // 30/set/2026
+let PROJECT_END   = new Date(2027, 6, 31); // 31/jul/2027 — navegação estendida
 let META_LONG_DIA = 7;
 let META_VIRAL_DIA = 5;
 let META_LONG_TOTAL = 217;
@@ -2193,44 +2199,114 @@ function updateRepBadge(){
   // badge removido — aba de reposições unificada no kanban
 }
 
-function updateSaldoBar(){
-  if(!currentUser)return;
-  if(currentUser.role==='admin') document.getElementById('saldo-bar').style.display='flex';
-  const prazo=new Date('2026-09-02T00:00:00');
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  const dias=Math.max(0,Math.ceil((prazo-hoje)/(1000*60*60*24)));
-  const el=document.getElementById('sc-dias');
-  if(el)el.textContent=dias;
-  const totalDevLongos=reposicoes.filter(r=>!r.rudney_entregue).reduce((a,r)=>a+(r.longos_devidos||0),0);
-  const totalDevVirais=reposicoes.filter(r=>!r.teixeira_entregue).reduce((a,r)=>a+(r.virais_devidos||0),0);
-  const totalDev=totalDevLongos+totalDevVirais;
-  const devVal=document.getElementById('sc-dev-val');
-  const devSub=document.getElementById('sc-dev-sub');
-  const scDev=document.getElementById('sc-devedor');
-  if(devVal)devVal.textContent=totalDev;
-  if(devSub)devSub.textContent=totalDevLongos+' longos + '+totalDevVirais+' virais';
-  if(scDev){
-    if(totalDev>0){scDev.classList.remove('success');scDev.classList.add('danger');if(devVal)devVal.className='saldo-val red';}
-    else{scDev.classList.remove('danger');scDev.classList.add('success');if(devVal)devVal.className='saldo-val green';}
-  }
-  let prod=0;
-  const psKey=dateKey(PROJECT_START);
-  const peKey=dateKey(PROJECT_END);
-  Object.values(cache).forEach(d=>{
-    if(!d.day_key) return;
-    // Só contar dias dentro do período do projeto
-    if(d.day_key < psKey || d.day_key > peKey) return;
-    if(d.long_link){
-      prod += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
+// Mês selecionado na saldo-bar
+if(!window._saldoMes) window._saldoMes = new Date().getMonth();
+if(!window._saldoAno) window._saldoAno = new Date().getFullYear();
+
+function populateMesSaldoSel(){
+  const sel = document.getElementById('sc-mes-sel');
+  if(!sel) return;
+  const m = window._saldoMes;
+  const a = window._saldoAno;
+  let opts = '';
+  for(let yr = 2026; yr <= 2027; yr++){
+    for(let mo = (yr===2026?7:0); mo <= 11; mo++){
+      const d = new Date(yr, mo, 1);
+      const lbl = d.toLocaleString('pt-BR',{month:'short',year:'numeric'});
+      const sel2 = (mo===m && yr===a) ? 'selected' : '';
+      opts += `<option value="${mo}_${yr}" ${sel2}>${lbl.charAt(0).toUpperCase()+lbl.slice(1)}</option>`;
     }
-    if(d.viral_link){
-      prod += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
+  }
+  sel.innerHTML = opts;
+}
+
+function trocarMesSaldo(val){
+  const [m,a] = val.split('_').map(Number);
+  window._saldoMes = m;
+  window._saldoAno = a;
+  // Sincronizar com dashboard se estiver na aba dashboard
+  window._dashMes = m;
+  window._dashAno = a;
+  updateSaldoBar();
+}
+
+function updateSaldoBar(){
+  if(!currentUser) return;
+  if(currentUser.role==='admin') document.getElementById('saldo-bar').style.display='flex';
+
+  // Garantir que o mês está inicializado
+  if(window._saldoMes === undefined) window._saldoMes = new Date().getMonth();
+  if(window._saldoAno === undefined) window._saldoAno = new Date().getFullYear();
+  const mes = window._saldoMes;
+  const ano = window._saldoAno;
+
+  // Popula o seletor
+  populateMesSaldoSel();
+
+  // Datas do mês selecionado
+  const primeiroDia = new Date(ano, mes, 1);
+  const ultimoDia   = new Date(ano, mes + 1, 0);
+  const pkStr = dateKey(primeiroDia);
+  const ukStr = dateKey(ultimoDia);
+
+  // Prazo = último dia do mês selecionado
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const dias = Math.max(0, Math.ceil((ultimoDia - hoje) / (1000*60*60*24)));
+  const el = document.getElementById('sc-dias');
+  if(el) el.textContent = dias;
+  const prazoSub = document.getElementById('sc-prazo-sub');
+  if(prazoSub) prazoSub.textContent = 'até ' + ultimoDia.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  // Meta mensal (sempre 372)
+  const metaTotal  = META_LONG_TOTAL + META_VIRAL_TOTAL;
+  const metaLongos = META_LONG_TOTAL;
+  const metaVirais = META_VIRAL_TOTAL;
+  const metaVal = document.getElementById('sc-meta-val');
+  const metaSub = document.getElementById('sc-meta-sub');
+  if(metaVal) metaVal.textContent = metaTotal;
+  if(metaSub) metaSub.textContent = metaLongos + ' longos + ' + metaVirais + ' virais';
+
+  // Produzidos no mês (só dias do mês selecionado)
+  let prodLong = 0, prodViral = 0;
+  Object.values(cache).forEach(d => {
+    if(!d.day_key) return;
+    if(d.day_key < pkStr || d.day_key > ukStr) return;
+    if(isNewSystem(d.day_key)){
+      const links = vlinkCache[d.day_key] || [];
+      prodLong  += links.filter(x => x.status === 'aprovado' && x.editor === 'rudney').length;
+      prodViral += links.filter(x => x.status === 'aprovado' && x.editor === 'teixeira').length;
+    } else {
+      if(d.long_link)  prodLong  += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
+      if(d.viral_link) prodViral += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
     }
   });
-  const pv=document.getElementById('sc-prod-val');
-  const ps=document.getElementById('sc-prod-sub');
-  if(pv)pv.textContent=prod;
-  if(ps)ps.textContent='de '+META_TOTAL+' ('+Math.round(prod/META_TOTAL*100)+'%)';
+  const prod = prodLong + prodViral;
+  const pct  = metaTotal > 0 ? Math.round(prod / metaTotal * 100) : 0;
+
+  const pv = document.getElementById('sc-prod-val');
+  const ps = document.getElementById('sc-prod-sub');
+  if(pv) pv.textContent = prod;
+  if(ps) ps.textContent = 'de ' + metaTotal + ' (' + pct + '%)';
+
+  // Faltam produzir = meta - produzidos (mínimo zero)
+  const faltamLong  = Math.max(0, metaLongos - prodLong);
+  const faltamViral = Math.max(0, metaVirais - prodViral);
+  const faltam = faltamLong + faltamViral;
+
+  const devVal = document.getElementById('sc-dev-val');
+  const devSub = document.getElementById('sc-dev-sub');
+  const scDev  = document.getElementById('sc-devedor');
+  if(devVal) devVal.textContent = faltam;
+  if(devSub) devSub.textContent = faltamLong + ' longos + ' + faltamViral + ' virais';
+  if(scDev){
+    if(faltam > 0){
+      scDev.classList.remove('success'); scDev.classList.add('danger');
+      if(devVal) devVal.className = 'saldo-val red';
+    } else {
+      scDev.classList.remove('danger'); scDev.classList.add('success');
+      if(devVal) devVal.className = 'saldo-val green';
+    }
+  }
 }
 
 function renderReposicoes(){
@@ -2728,16 +2804,41 @@ async function addVlink(key, editor, tipo){
   if(!error && data){
     if(!vlinkCache[key]) vlinkCache[key] = [];
     vlinkCache[key].push(data);
-    renderVlinkSection(key, editor);
+    const card = document.querySelector('[data-day-key="'+key+'"]');
+    renderVlinkSection(key, editor, card);
     updateMetaVlinks();
+    // Focar no novo input automaticamente
+    setTimeout(()=>{
+      const newItem = document.querySelector('#vli-'+data.id+' .vlink-input');
+      if(newItem) newItem.focus();
+    }, 60);
+  } else if(error){
+    console.error('Erro ao adicionar link:', error);
+    showToast('ti-alert-circle','Erro ao adicionar link','Verifique sua conexão e tente novamente.');
   }
 }
 
-async function updateVlinkField(id, key, field, value){
-  await sb.from('tony_video_links').update({[field]: value}).eq('id', id);
-  const list = vlinkCache[key] || [];
-  const item = list.find(x => x.id === id);
+const vlinkSaveTimers = {};
+function updateVlinkField(id, key, field, value){
+  // Atualizar cache local imediatamente (link não some na tela)
+  if(!vlinkCache[key]) vlinkCache[key] = [];
+  const item = vlinkCache[key].find(x => x.id === id);
   if(item) item[field] = value;
+  // Debounce: salvar no banco 800ms após parar de digitar
+  const tKey = id + '_' + field;
+  if(vlinkSaveTimers[tKey]) clearTimeout(vlinkSaveTimers[tKey]);
+  vlinkSaveTimers[tKey] = setTimeout(async () => {
+    setSyncing(true);
+    const { error } = await sb.from('tony_video_links')
+      .update({[field]: value, updated_at: new Date().toISOString()})
+      .eq('id', id);
+    setSyncing(false);
+    if(error){
+      console.error('Erro ao salvar link:', error.message);
+      // Retry automático após 2s
+      setTimeout(() => sb.from('tony_video_links').update({[field]: value}).eq('id', id), 2000);
+    }
+  }, 800);
 }
 
 async function setVlinkStatus(id, key, status){
@@ -2768,6 +2869,10 @@ function renderVlinkSection(key, editor, cardEl){
   const sectionId = 'vlinks-'+key+'-'+editor;
   const el = cardEl.querySelector('#'+sectionId);
   if(!el) return;
+  // Não re-renderizar se o usuário está digitando nesta seção
+  if(el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'){
+    return;
+  }
 
   const isAdmin = currentUser && currentUser.role === 'admin';
   const links = (vlinkCache[key] || []).filter(x => x.editor === editor);
@@ -2797,8 +2902,8 @@ function renderVlinkSection(key, editor, cardEl){
         <span class="vlink-num ${numCls}">${idx+1}</span>
         <input class="vlink-input" type="text" placeholder="Cole o link aqui..."
           value="${(item.link||'').replace(/"/g,'&quot;')}"
-          onchange="updateVlinkField('${item.id}','${key}','link',this.value)"
-          oninput="updateVlinkField('${item.id}','${key}','link',this.value)"/>
+          oninput="updateVlinkField('${item.id}','${key}','link',this.value)"
+          onblur="updateVlinkField('${item.id}','${key}','link',this.value)"/>
         ${item.link ? `<button class="vlink-open" onclick="window.open('${item.link}','_blank')" title="Abrir"><i class="ti ti-external-link"></i></button>` : ''}
         ${isAdmin ? `
           <button class="vlink-btn aprovar" onclick="setVlinkStatus('${item.id}','${key}','aprovado')" title="Aprovar">✓</button>
