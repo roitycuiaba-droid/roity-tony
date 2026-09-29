@@ -1169,8 +1169,8 @@ function reRenderSafe(){
     window._pendingRender = true;
     return;
   }
-  if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanban();}
-  else if(currentUser) renderKanban();
+  if(currentUser&&currentUser.role==='admin'){renderDashboard();renderKanbanComVlinks();}
+  else if(currentUser) renderKanbanComVlinks();
 }
 
 function showWelcomePopup(){
@@ -1225,6 +1225,8 @@ async function loadWeek(ws){
   if(data)data.forEach(r=>{cache[r.day_key]=r;});
   // Garantir que dias sem registro no banco existam no cache
   keys.forEach(k=>{ if(!cache[k]) cache[k]={day_key:k}; });
+  // NÃO limpar vlinkCache aqui — isso fazia os links summirem!
+  // vlinkCache é gerenciado por loadVlinksWeek separadamente
 }
 
 async function loadExtraForDash(){
@@ -1951,6 +1953,11 @@ function updateMeta(){
   if(lbl) lbl.textContent = (isPeriodoFinal ? 'Período final · ' : '') +
     ws2.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+' – '+
     we.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+}
+
+async function renderKanbanComVlinks(){
+  await loadVlinksWeek(currentWeekStart);
+  renderKanban();
 }
 
 function renderKanban(){
@@ -2787,10 +2794,14 @@ async function loadVlinksWeek(ws){
   if(!keys.length) return;
   const {data} = await sb.from('tony_video_links')
     .select('*').in('day_key', keys).order('created_at', {ascending:true});
+  // Sobrescrever apenas os dias desta semana com dados frescos do banco
   keys.forEach(k => { vlinkCache[k] = []; });
   if(data) data.forEach(r => {
     if(!vlinkCache[r.day_key]) vlinkCache[r.day_key] = [];
-    vlinkCache[r.day_key].push(r);
+    // Evitar duplicatas (manter o mais recente do banco)
+    const exists = vlinkCache[r.day_key].find(x => x.id === r.id);
+    if(!exists) vlinkCache[r.day_key].push(r);
+    else Object.assign(exists, r); // atualizar com dados frescos
   });
 }
 
