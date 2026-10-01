@@ -1119,11 +1119,15 @@ function subscribeRealtime(){
       async (payload)=>{
         const row = payload.new;
         if(!row||!row.day_key) return;
+        // SE eu mesmo salvei este registro, só atualiza cache — NÃO re-renderiza
+        // Isso evita o loop: digito → salvo → Realtime → recriai card → apaga o que digitei
+        const euSalvei = vlinkSavingIds && vlinkSavingIds.has(row.id);
         if(!vlinkCache[row.day_key]) vlinkCache[row.day_key] = [];
         const idx = vlinkCache[row.day_key].findIndex(x=>x.id===row.id);
-        if(idx>=0) vlinkCache[row.day_key][idx] = row;
+        if(idx>=0) vlinkCache[row.day_key][idx] = {...vlinkCache[row.day_key][idx], ...row};
         else vlinkCache[row.day_key].push(row);
-        // Re-renderizar seção
+        if(euSalvei) return; // não re-renderizar — foi eu que salvei
+        // Re-renderizar só se veio de outro usuário
         const card = document.querySelector('[data-day-key="'+row.day_key+'"]');
         if(card){
           renderVlinkSection(row.day_key, row.editor, card);
@@ -2830,15 +2834,19 @@ async function addVlink(key, editor, tipo){
 }
 
 const vlinkSaveTimers = {};
+const vlinkSavingIds = new Set(); // IDs sendo salvos por mim — ignorar echo do Realtime
+
 function updateVlinkField(id, key, field, value){
-  // Atualizar cache local imediatamente (link não some na tela)
+  // Atualizar cache local imediatamente
   if(!vlinkCache[key]) vlinkCache[key] = [];
   const item = vlinkCache[key].find(x => x.id === id);
   if(item) item[field] = value;
+
   // Debounce: salvar no banco 800ms após parar de digitar
   const tKey = id + '_' + field;
   if(vlinkSaveTimers[tKey]) clearTimeout(vlinkSaveTimers[tKey]);
   vlinkSaveTimers[tKey] = setTimeout(async () => {
+    vlinkSavingIds.add(id); // marcar que EU estou salvando este ID
     setSyncing(true);
     const { error } = await sb.from('tony_video_links')
       .update({[field]: value, updated_at: new Date().toISOString()})
@@ -2846,10 +2854,38 @@ function updateVlinkField(id, key, field, value){
     setSyncing(false);
     if(error){
       console.error('Erro ao salvar link:', error.message);
-      // Retry automático após 2s
-      setTimeout(() => sb.from('tony_video_links').update({[field]: value}).eq('id', id), 2000);
+      vlinkSavingIds.delete(id);
+      // Retry
+      setTimeout(async () => {
+        await sb.from('tony_video_links').update({[field]: value}).eq('id', id);
+        vlinkSavingIds.delete(id);
+      }, 2000);
+    } else {
+      // Remover da lista após 1s (tempo suficiente para o Realtime chegar e ser ignorado)
+      setTimeout(() => vlinkSavingIds.delete(id), 1000);
     }
   }, 800);
+}
+
+// Salvar imediatamente ao sair do campo (blur) — garante persistência mesmo fechando a aba
+function saveVlinkOnBlur(id, key, field, value){
+  updateVlinkField(id, key, field, value);
+  // Também salvar imediatamente sem esperar debounce
+  const tKey = id + '_' + field;
+  if(vlinkSaveTimers[tKey]){
+    clearTimeout(vlinkSaveTimers[tKey]);
+    delete vlinkSaveTimers[tKey];
+  }
+  vlinkSavingIds.add(id);
+  setSyncing(true);
+  sb.from('tony_video_links')
+    .update({[field]: value, updated_at: new Date().toISOString()})
+    .eq('id', id)
+    .then(({error}) => {
+      setSyncing(false);
+      setTimeout(() => vlinkSavingIds.delete(id), 1000);
+      if(error) console.error('Erro blur save:', error.message);
+    });
 }
 
 async function setVlinkStatus(id, key, status){
@@ -2880,8 +2916,8 @@ function renderVlinkSection(key, editor, cardEl){
   const sectionId = 'vlinks-'+key+'-'+editor;
   const el = cardEl.querySelector('#'+sectionId);
   if(!el) return;
-  // Não re-renderizar se o usuário está digitando nesta seção
-  if(el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'){
+  // NUNCA re-renderizar se o foco está em qualquer campo da seção
+  if(el.contains(document.activeElement)){
     return;
   }
 
@@ -2914,7 +2950,7 @@ function renderVlinkSection(key, editor, cardEl){
         <input class="vlink-input" type="text" placeholder="Cole o link aqui..."
           value="${(item.link||'').replace(/"/g,'&quot;')}"
           oninput="updateVlinkField('${item.id}','${key}','link',this.value)"
-          onblur="updateVlinkField('${item.id}','${key}','link',this.value)"/>
+          onblur="saveVlinkOnBlur('${item.id}','${key}','link',this.value)"/>
         ${item.link ? `<button class="vlink-open" onclick="window.open('${item.link}','_blank')" title="Abrir"><i class="ti ti-external-link"></i></button>` : ''}
         ${isAdmin ? `
           <button class="vlink-btn aprovar" onclick="setVlinkStatus('${item.id}','${key}','aprovado')" title="Aprovar">✓</button>
