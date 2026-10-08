@@ -3858,9 +3858,9 @@ window.addEventListener('DOMContentLoaded',async()=>{
 
 <!-- MODAL: Novo/Editar Contato -->
 <div id="crm-modal-contato" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); z-index:999; align-items:center; justify-content:center;">
-  <div class="crm-modal-box">
-    <h3 id="crm-modal-title" style="margin:0 0 1.5rem; font-size:1.05rem; font-weight:800; color:#fff;">Novo Contato</h3>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
+  <div class="crm-modal-box" style="max-width:520px; width:95%;">
+    <h3 id="crm-modal-title" style="margin:0 0 1.25rem; font-size:1.05rem; font-weight:800; color:#fff;">Novo Contato</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:.65rem;">
       <div style="grid-column:span 2;">
         <label class="crm-label">Nome *</label>
         <input id="crm-f-nome" placeholder="Nome completo" class="crm-input">
@@ -3871,7 +3871,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
       </div>
       <div>
         <label class="crm-label">WhatsApp</label>
-        <input id="crm-f-whatsapp" placeholder="(65) 99999-9999" class="crm-input">
+        <input id="crm-f-whatsapp" placeholder="65999999999" class="crm-input">
       </div>
       <div>
         <label class="crm-label">Instagram</label>
@@ -3879,7 +3879,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
       </div>
       <div>
         <label class="crm-label">Etapa</label>
-        <select id="crm-f-etapa" class="crm-input">
+        <select id="crm-f-etapa" class="crm-input" onchange="crmShowValorVendido(this.value)">
           <option value="em_espera">Em espera</option>
           <option value="abordado">Abordado</option>
           <option value="vai_ser_vendido">Vai ser vendido</option>
@@ -3893,7 +3893,42 @@ window.addEventListener('DOMContentLoaded',async()=>{
           <option value="rudney">Rudney</option>
           <option value="hugo">Hugo</option>
           <option value="otacilio">Otacilio</option>
+          <option value="tiago">Tiago</option>
+          <option value="kalyston">Kalyston</option>
         </select>
+      </div>
+      <!-- Tipo e Potencial -->
+      <div>
+        <label class="crm-label">Tipo</label>
+        <select id="crm-f-tipo" class="crm-input">
+          <option value="">—</option>
+          <option value="B2C">B2C</option>
+          <option value="B2B">B2B</option>
+        </select>
+      </div>
+      <div>
+        <label class="crm-label">Potencial</label>
+        <select id="crm-f-potencial" class="crm-input">
+          <option value="">—</option>
+          <option value="Pequeno">Pequeno</option>
+          <option value="Médio">Médio</option>
+          <option value="Grande">Grande</option>
+        </select>
+      </div>
+      <!-- Faixa de valor -->
+      <div style="grid-column:span 2;">
+        <label class="crm-label">Faixa de Valor</label>
+        <select id="crm-f-faixa" class="crm-input">
+          <option value="">—</option>
+          <option value="Baixo valor">Baixo valor (&lt;R$2k)</option>
+          <option value="Médio valor">Médio valor (R$2k–10k)</option>
+          <option value="Grande valor">Grande valor (&gt;R$10k)</option>
+        </select>
+      </div>
+      <!-- Valor vendido (só aparece quando etapa=vendido) -->
+      <div id="crm-f-valor-wrap" style="grid-column:span 2; display:none;">
+        <label class="crm-label">Valor Vendido (R$)</label>
+        <input id="crm-f-valor" type="number" min="0" step="100" placeholder="Ex: 2500" class="crm-input">
       </div>
       <div style="grid-column:span 2;">
         <label class="crm-label">Observação</label>
@@ -3902,7 +3937,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
     </div>
     <input type="hidden" id="crm-f-id">
     <div id="crm-modal-erro" style="display:none; margin-top:.75rem; padding:.5rem .75rem; background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.3); border-radius:7px; font-size:.8rem; color:#fca5a5;"></div>
-    <div style="display:flex; gap:.75rem; margin-top:1.5rem; justify-content:flex-end;">
+    <div style="display:flex; gap:.75rem; margin-top:1.25rem; justify-content:flex-end;">
       <button onclick="crmFecharModal('crm-modal-contato')" class="crm-btn-ghost">Cancelar</button>
       <button onclick="crmSalvarContato()" class="crm-btn-primary">Salvar</button>
     </div>
