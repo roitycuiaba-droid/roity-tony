@@ -3660,7 +3660,18 @@ window.addEventListener('DOMContentLoaded',async()=>{
       // Verifica se a sessão não expirou e o usuário existe
       if(s.id && s.token && s.exp && s.exp > Date.now() && USERS[s.id]){
         currentUser = {id:s.id, ...USERS[s.id]};
-        document.getElementById('user-label').textContent = currentUser.name+(currentUser.role==='admin'?' (Admin)':'');
+        const role = currentUser.role;
+
+        // *** CRÍTICO: vendedor / viewer_crm → CRM, não o app de editores ***
+        if(role === 'vendedor' || role === 'viewer_crm'){
+          document.getElementById('loading').style.display='flex';
+          document.getElementById('login-screen').style.display='none';
+          await startCRM();
+          return;
+        }
+
+        // editor / admin → app principal
+        document.getElementById('user-label').textContent = currentUser.name+(role==='admin'?' (Admin)':'');
         currentWeekStart = getWeekStart(new Date());
         await loadWeek(currentWeekStart);
         await loadExtraForDash();
@@ -3674,10 +3685,14 @@ window.addEventListener('DOMContentLoaded',async()=>{
 
         // Esconder dashboard tab para editores
         const tabDash=document.getElementById('tab-dash');
-        if(tabDash) tabDash.style.display=currentUser.role==='admin'?'flex':'none';
+        if(tabDash) tabDash.style.display=role==='admin'?'flex':'none';
+
+        // CRM tab só admin
+        const tabCRM=document.getElementById('tab-crm');
+        if(tabCRM) tabCRM.style.display=role==='admin'?'flex':'none';
 
         // Definir aba inicial
-        const startTab=(currentUser.role==='editor'&&savedTab==='dashboard')?'kanban':savedTab;
+        const startTab=(role==='editor'&&savedTab==='dashboard')?'kanban':savedTab;
         switchTab(startTab);
         updateScheduleBanner();
         subscribeRealtime();
@@ -3739,22 +3754,18 @@ window.addEventListener('DOMContentLoaded',async()=>{
 <!-- ===== CRM APP (vendedor / viewer_crm) ===== -->
 <div id="crm-app" style="display:none; min-height:100vh; background:linear-gradient(135deg,#060a14 0%,#0b1120 40%,#0a0e1a 100%); color:#e8e8ef; font-family:'Inter',sans-serif;">
 
-  <!-- CRM Header — liquid glass -->
-  <div id="crm-header" style="background:rgba(255,255,255,0.04); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-bottom:1px solid rgba(255,255,255,0.08); padding:0 1.5rem; display:flex; align-items:center; justify-content:space-between; height:60px; position:sticky; top:0; z-index:100; box-shadow:0 1px 32px rgba(0,0,0,0.4);">
-    <div style="display:flex; align-items:center; gap:.75rem;">
-      <div style="width:34px; height:34px; background:linear-gradient(135deg,#1e40af,#2563eb); border-radius:9px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(37,99,235,.5);">
-        <i class="ti ti-chart-bar" style="color:#fff; font-size:1.05rem;"></i>
-      </div>
-      <span style="font-weight:800; font-size:1rem; letter-spacing:.3px; background:linear-gradient(90deg,#fff,#93c5fd); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Roity CRM</span>
-    </div>
-    <nav style="display:flex; align-items:center; gap:.25rem;">
-      <span id="crm-user-label" style="font-size:.78rem; color:rgba(255,255,255,.35); padding-right:.75rem; border-right:1px solid rgba(255,255,255,.1); margin-right:.25rem; display:none;"></span>
+  <!-- CRM Header — limpo, sem logo -->
+  <div id="crm-header" style="background:rgba(255,255,255,0.03); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,0.07); padding:0 1.5rem; display:flex; align-items:center; justify-content:space-between; height:52px; position:sticky; top:0; z-index:100;">
+    <nav style="display:flex; align-items:center; gap:.15rem;">
       <button onclick="crmShowSection('pipeline')" class="crm-nav-btn" id="crm-nav-pipeline">Pipeline</button>
       <button onclick="crmShowSection('contatos')" class="crm-nav-btn" id="crm-nav-contatos">Contatos</button>
       <button onclick="crmShowSection('lembretes')" class="crm-nav-btn" id="crm-nav-lembretes">Lembretes</button>
       <button onclick="crmShowSection('dash')" class="crm-nav-btn" id="crm-nav-dash">Dashboard</button>
-      <button onclick="logout()" class="crm-exit-btn">Sair</button>
     </nav>
+    <div style="display:flex; align-items:center; gap:.75rem;">
+      <span id="crm-user-label" style="font-size:.78rem; color:rgba(255,255,255,.3); display:none;"></span>
+      <button onclick="logout()" class="crm-exit-btn">Sair</button>
+    </div>
   </div>
 
   <!-- CRM Body -->
@@ -3938,12 +3949,12 @@ window.addEventListener('DOMContentLoaded',async()=>{
 }
 .crm-glass-card{
   background:rgba(255,255,255,.04);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.07);
   border-radius:14px;
   padding:1.25rem;
-  box-shadow:0 4px 32px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
+  box-shadow:0 2px 16px rgba(0,0,0,.2);
 }
 .crm-nav-btn{
   background:none; border:none; border-radius:7px;
@@ -3964,10 +3975,11 @@ window.addEventListener('DOMContentLoaded',async()=>{
   border:none; border-radius:8px; color:#fff; font-weight:700;
   cursor:pointer; padding:.5rem 1.1rem; font-size:.85rem;
   display:flex; align-items:center; gap:.4rem;
-  box-shadow:0 0 18px rgba(37,99,235,.4);
+  box-shadow:0 2px 10px rgba(37,99,235,.25);
   transition:box-shadow .18s, opacity .18s;
 }
-.crm-btn-primary:hover{box-shadow:0 0 28px rgba(37,99,235,.7); opacity:.9;}
+.crm-btn-primary:hover{box-shadow:0 4px 18px rgba(37,99,235,.4); opacity:.9;}
+.crm-btn-primary:disabled{opacity:.5; cursor:not-allowed;}
 .crm-btn-ghost{
   background:none; border:1px solid rgba(255,255,255,.12); border-radius:8px;
   color:rgba(255,255,255,.5); cursor:pointer; padding:.5rem 1rem; font-size:.85rem;
@@ -3981,13 +3993,12 @@ window.addEventListener('DOMContentLoaded',async()=>{
 }
 .crm-btn-outline:hover{background:rgba(255,255,255,.09); color:#fff;}
 .crm-col{
-  background:rgba(255,255,255,.03);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.025);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.06);
   border-radius:14px; min-height:300px;
   display:flex; flex-direction:column;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
 }
 .crm-col-header{
   padding:.8rem 1rem; font-weight:700; font-size:.78rem;
@@ -4000,29 +4011,26 @@ window.addEventListener('DOMContentLoaded',async()=>{
   gap:.5rem; min-height:220px;
 }
 .crm-card{
-  background:rgba(255,255,255,.05);
-  backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
   border-radius:10px; padding:.8rem .9rem;
   cursor:pointer; transition:all .18s;
 }
 .crm-card:hover{
-  background:rgba(255,255,255,.09);
-  border-color:rgba(37,99,235,.5);
-  transform:translateY(-2px);
-  box-shadow:0 6px 24px rgba(0,0,0,.35);
+  background:rgba(255,255,255,.07);
+  border-color:rgba(37,99,235,.4);
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
 }
 .crm-card-name{font-weight:700; font-size:.85rem; color:#fff; margin-bottom:.2rem;}
 .crm-card-empresa{font-size:.74rem; color:rgba(255,255,255,.4); margin-bottom:.4rem;}
 .crm-card-meta{display:flex; align-items:center; justify-content:space-between; font-size:.72rem; color:rgba(255,255,255,.3);}
 .crm-badge{display:inline-block; padding:.15rem .55rem; border-radius:20px; font-size:.7rem; font-weight:700; letter-spacing:.3px;}
 .crm-kpi{
-  background:rgba(255,255,255,.04);
-  backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);
   border-radius:14px; padding:1.25rem;
   display:flex; flex-direction:column; gap:.4rem;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
 }
 .crm-kpi-val{font-size:2.1rem; font-weight:900; line-height:1; letter-spacing:-1px;}
 .crm-kpi-label{font-size:.76rem; color:rgba(255,255,255,.4); font-weight:500;}
@@ -4037,13 +4045,13 @@ window.addEventListener('DOMContentLoaded',async()=>{
 .crm-lembrete-card.urgente{border-color:rgba(234,179,8,.4); box-shadow:0 0 16px rgba(234,179,8,.1);}
 .crm-lembrete-card.passado{opacity:.5;}
 .crm-modal-box{
-  background:rgba(8,12,24,.85);
-  backdrop-filter:blur(32px);
-  -webkit-backdrop-filter:blur(32px);
-  border:1px solid rgba(255,255,255,.1);
-  border-radius:18px; padding:2rem;
+  background:rgba(8,12,24,.92);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:16px; padding:2rem;
   width:500px; max-width:96vw;
-  box-shadow:0 20px 80px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
 }
 .crm-label{font-size:.75rem; color:rgba(255,255,255,.45); display:block; margin-bottom:.3rem; font-weight:600; letter-spacing:.3px;}
 .crm-input{
@@ -4164,7 +4172,12 @@ function crmShowSection(sec){
 
 /* ===== PIPELINE ===== */
 function crmRenderPipeline(){
-  const board=document.getElementById('crm-pipeline-board');
+  // Admin usa o board dentro de #view-crm-content; vendedor usa o do #crm-app
+  // Pega o que está visível
+  const boards=document.querySelectorAll('#crm-pipeline-board');
+  const board=boards.length>1
+    ? (document.getElementById('view-crm-content')?.contains(boards[1]) ? boards[1] : boards[0])
+    : boards[0];
   if(!board) return;
   let contatos=crmContatos;
   if(currentUser.role==='vendedor'){
@@ -4204,11 +4217,18 @@ function crmCardHTML(c){
 
 /* ===== TABELA CONTATOS ===== */
 function crmAtualizarContagem(){
+  // Filtra por vendedor se for vendedor
+  const arr = currentUser&&currentUser.role==='vendedor'
+    ? crmContatos.filter(c=>c.vendedor===currentUser.username)
+    : crmContatos;
   const el=document.getElementById('crm-contatos-count');
-  if(el) el.textContent=`${crmContatos.length} contato${crmContatos.length!==1?'s':''}`;
+  if(el) el.textContent=`${arr.length} contato${arr.length!==1?'s':''}`;
 }
 function crmRenderTabela(lista){
-  const tbody=document.getElementById('crm-contatos-tbody');
+  const tbodies=document.querySelectorAll('#crm-contatos-tbody');
+  const tbody=tbodies.length>1
+    ? (document.getElementById('view-crm-content')?.contains(tbodies[1]) ? tbodies[1] : tbodies[0])
+    : tbodies[0];
   if(!tbody) return;
   const arr=lista||crmContatos;
   if(!arr.length){
@@ -4409,8 +4429,9 @@ function crmAdminSection(sec){
     const btn=document.getElementById('cadm-'+s);
     if(btn) btn.classList.toggle('active',s===sec);
   });
+  crmCurrentSection=sec; // sincronizar estado global
   if(sec==='pipeline') crmRenderPipeline();
-  if(sec==='contatos') crmRenderTabela();
+  if(sec==='contatos'){crmRenderTabela();crmAtualizarContagem();}
   if(sec==='lembretes') crmRenderLembretes();
   if(sec==='dash') crmRenderDash();
 }
@@ -4456,14 +4477,22 @@ async function crmSalvarContato(){
     vendedor:document.getElementById('crm-f-vendedor').value,
   };
   if(id) obj.id=id;
+  // Desabilitar botão durante salvamento
+  const btnSalvar=document.querySelector('#crm-modal-contato .crm-btn-primary');
+  if(btnSalvar){btnSalvar.disabled=true;btnSalvar.textContent='Salvando...';}
   try{
     await crmUpsertContato(obj);
     crmFecharModal('crm-modal-contato');
     await crmFetchContatos();
+    // Atualizar TODAS as views (pipeline, tabela, contagem, dash se ativo)
     crmRenderPipeline();
-    if(document.getElementById('crm-contatos-tbody')) crmRenderTabela();
+    crmRenderTabela();
+    crmAtualizarContagem();
+    crmRenderDash(); // sempre atualiza o dash (background)
   }catch(e){
     if(errEl){errEl.textContent='Erro ao salvar: '+e.message;errEl.style.display='block';}
+  }finally{
+    if(btnSalvar){btnSalvar.disabled=false;btnSalvar.textContent='Salvar';}
   }
 }
 async function crmConfirmarDelete(id){
