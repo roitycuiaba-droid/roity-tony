@@ -3737,47 +3737,54 @@ window.addEventListener('DOMContentLoaded',async()=>{
   </div>
 </div>
 <!-- ===== CRM APP (vendedor / viewer_crm) ===== -->
-<div id="crm-app" style="display:none; min-height:100vh; background:#0f1117; color:#e8e8ef; font-family:'Inter',sans-serif;">
+<div id="crm-app" style="display:none; min-height:100vh; background:linear-gradient(135deg,#060a14 0%,#0b1120 40%,#0a0e1a 100%); color:#e8e8ef; font-family:'Inter',sans-serif;">
 
-  <!-- CRM Header -->
-  <div id="crm-header" style="background:#1a1d2e; border-bottom:1px solid #2a2d3e; padding:0 1rem; display:flex; align-items:center; justify-content:space-between; height:56px; position:sticky; top:0; z-index:100;">
+  <!-- CRM Header — liquid glass -->
+  <div id="crm-header" style="background:rgba(255,255,255,0.04); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-bottom:1px solid rgba(255,255,255,0.08); padding:0 1.5rem; display:flex; align-items:center; justify-content:space-between; height:60px; position:sticky; top:0; z-index:100; box-shadow:0 1px 32px rgba(0,0,0,0.4);">
     <div style="display:flex; align-items:center; gap:.75rem;">
-      <div style="width:32px; height:32px; background:linear-gradient(135deg,#f5c842,#e89c20); border-radius:8px; display:flex; align-items:center; justify-content:center;">
-        <i class="ti ti-chart-bar" style="color:#0f1117; font-size:1rem;"></i>
+      <div style="width:34px; height:34px; background:linear-gradient(135deg,#1e40af,#2563eb); border-radius:9px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(37,99,235,.5);">
+        <i class="ti ti-chart-bar" style="color:#fff; font-size:1.05rem;"></i>
       </div>
-      <span style="font-weight:700; font-size:1rem; color:#f5c842; letter-spacing:.5px;">Roity CRM</span>
+      <span style="font-weight:800; font-size:1rem; letter-spacing:.3px; background:linear-gradient(90deg,#fff,#93c5fd); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Roity CRM</span>
     </div>
-    <div style="display:flex; align-items:center; gap:1rem;">
-      <span id="crm-user-label" style="font-size:.85rem; color:#888; display:none;"></span>
+    <nav style="display:flex; align-items:center; gap:.25rem;">
+      <span id="crm-user-label" style="font-size:.78rem; color:rgba(255,255,255,.35); padding-right:.75rem; border-right:1px solid rgba(255,255,255,.1); margin-right:.25rem; display:none;"></span>
       <button onclick="crmShowSection('pipeline')" class="crm-nav-btn" id="crm-nav-pipeline">Pipeline</button>
       <button onclick="crmShowSection('contatos')" class="crm-nav-btn" id="crm-nav-contatos">Contatos</button>
       <button onclick="crmShowSection('lembretes')" class="crm-nav-btn" id="crm-nav-lembretes">Lembretes</button>
       <button onclick="crmShowSection('dash')" class="crm-nav-btn" id="crm-nav-dash">Dashboard</button>
-      <button onclick="logout()" style="background:none; border:1px solid #333; border-radius:6px; color:#888; cursor:pointer; padding:.3rem .7rem; font-size:.78rem; transition:all .2s;" onmouseover="this.style.borderColor='#f5c842';this.style.color='#f5c842'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">Sair</button>
-    </div>
+      <button onclick="logout()" class="crm-exit-btn">Sair</button>
+    </nav>
   </div>
 
-  <!-- CRM Sections -->
-  <div style="padding:1.5rem; max-width:1400px; margin:0 auto;">
+  <!-- CRM Body -->
+  <div style="padding:1.75rem 2rem; max-width:1440px; margin:0 auto;">
 
     <!-- PIPELINE -->
     <div id="crm-section-pipeline">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
-        <h2 style="margin:0; font-size:1.2rem; font-weight:700; color:#e8e8ef;">Pipeline de Vendas</h2>
-        <button onclick="crmAbrirNovoContato()" style="background:linear-gradient(135deg,#f5c842,#e89c20); border:none; border-radius:8px; color:#0f1117; font-weight:700; cursor:pointer; padding:.5rem 1.1rem; font-size:.85rem; display:flex; align-items:center; gap:.4rem;"><i class="ti ti-plus"></i> Novo Contato</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <div>
+          <h2 style="margin:0 0 .2rem; font-size:1.25rem; font-weight:800; color:#fff;">Pipeline de Vendas</h2>
+          <p style="margin:0; font-size:.8rem; color:rgba(255,255,255,.35);">Arraste ou clique em um card para editar</p>
+        </div>
+        <button onclick="crmAbrirNovoContato()" class="crm-btn-primary"><i class="ti ti-plus"></i> Novo Contato</button>
       </div>
-      <div id="crm-pipeline-board" style="display:grid; grid-template-columns:repeat(5,1fr); gap:1rem; align-items:start; overflow-x:auto; padding-bottom:1rem;">
-        <!-- colunas renderizadas por JS -->
-      </div>
+      <div id="crm-pipeline-board" style="display:grid; grid-template-columns:repeat(5,1fr); gap:.875rem; align-items:start; overflow-x:auto; padding-bottom:1rem;"></div>
     </div>
 
     <!-- CONTATOS -->
     <div id="crm-section-contatos" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:.75rem;">
-        <h2 style="margin:0; font-size:1.2rem; font-weight:700; color:#e8e8ef;">Todos os Contatos</h2>
+        <div>
+          <h2 style="margin:0 0 .2rem; font-size:1.25rem; font-weight:800; color:#fff;">Todos os Contatos</h2>
+          <p id="crm-contatos-count" style="margin:0; font-size:.8rem; color:rgba(255,255,255,.35);">—</p>
+        </div>
         <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
-          <input id="crm-search" placeholder="Buscar contato…" oninput="crmFiltrarContatos()" style="background:#1a1d2e; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.4rem .75rem; font-size:.85rem; width:200px;">
-          <select id="crm-filter-etapa" onchange="crmFiltrarContatos()" style="background:#1a1d2e; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.4rem .75rem; font-size:.85rem;">
+          <div style="position:relative;">
+            <i class="ti ti-search" style="position:absolute; left:.65rem; top:50%; transform:translateY(-50%); color:rgba(255,255,255,.3); font-size:.85rem;"></i>
+            <input id="crm-search" placeholder="Buscar…" oninput="crmFiltrarContatos()" style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:8px; color:#e8e8ef; padding:.45rem .75rem .45rem 2rem; font-size:.82rem; width:190px; backdrop-filter:blur(8px);">
+          </div>
+          <select id="crm-filter-etapa" onchange="crmFiltrarContatos()" style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:8px; color:#e8e8ef; padding:.45rem .75rem; font-size:.82rem; backdrop-filter:blur(8px);">
             <option value="">Todas etapas</option>
             <option value="em_espera">Em espera</option>
             <option value="abordado">Abordado</option>
@@ -3785,28 +3792,28 @@ window.addEventListener('DOMContentLoaded',async()=>{
             <option value="vendido">Vendido</option>
             <option value="nao_foi_vendido">Não foi vendido</option>
           </select>
-          <label style="background:#1a1d2e; border:1px solid #2a2d3e; border-radius:7px; color:#f5c842; cursor:pointer; padding:.4rem .75rem; font-size:.85rem; display:flex; align-items:center; gap:.4rem;">
+          <label class="crm-btn-outline" style="cursor:pointer; display:flex; align-items:center; gap:.4rem;">
             <i class="ti ti-upload"></i> Importar CSV/XLSX
             <input type="file" accept=".csv,.xlsx,.xls" onchange="crmImportarPlanilha(event)" style="display:none;">
           </label>
-          <button onclick="crmAbrirNovoContato()" style="background:linear-gradient(135deg,#f5c842,#e89c20); border:none; border-radius:7px; color:#0f1117; font-weight:700; cursor:pointer; padding:.4rem .9rem; font-size:.85rem;">+ Novo</button>
+          <button onclick="crmAbrirNovoContato()" class="crm-btn-primary" style="padding:.45rem 1rem;">+ Novo</button>
         </div>
       </div>
-      <div style="background:#1a1d2e; border-radius:12px; overflow:hidden; border:1px solid #2a2d3e;">
-        <table style="width:100%; border-collapse:collapse; font-size:.85rem;">
+      <div class="crm-glass-card" style="overflow:hidden; padding:0;">
+        <table style="width:100%; border-collapse:collapse; font-size:.82rem;">
           <thead>
-            <tr style="background:#12142a; color:#888;">
-              <th style="padding:.75rem 1rem; text-align:left; font-weight:600;">Nome</th>
-              <th style="padding:.75rem 1rem; text-align:left; font-weight:600;">Empresa</th>
-              <th style="padding:.75rem 1rem; text-align:left; font-weight:600;">WhatsApp</th>
-              <th style="padding:.75rem 1rem; text-align:left; font-weight:600;">Etapa</th>
-              <th style="padding:.75rem 1rem; text-align:left; font-weight:600;">Vendedor</th>
-              <th style="padding:.75rem 1rem; text-align:left; font-weight:600;">Data</th>
-              <th style="padding:.75rem 1rem; text-align:left; font-weight:600;">Ações</th>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Nome</th>
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Empresa</th>
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">WhatsApp</th>
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Etapa</th>
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Vendedor</th>
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Data</th>
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;"></th>
             </tr>
           </thead>
           <tbody id="crm-contatos-tbody">
-            <tr><td colspan="7" style="padding:2rem; text-align:center; color:#555;">Carregando...</td></tr>
+            <tr><td colspan="7" style="padding:2.5rem; text-align:center; color:rgba(255,255,255,.2);">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -3814,50 +3821,54 @@ window.addEventListener('DOMContentLoaded',async()=>{
 
     <!-- LEMBRETES -->
     <div id="crm-section-lembretes" style="display:none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
-        <h2 style="margin:0; font-size:1.2rem; font-weight:700; color:#e8e8ef;">Lembretes & Reuniões</h2>
-        <button onclick="crmAbrirNovoLembrete()" style="background:linear-gradient(135deg,#f5c842,#e89c20); border:none; border-radius:8px; color:#0f1117; font-weight:700; cursor:pointer; padding:.5rem 1.1rem; font-size:.85rem; display:flex; align-items:center; gap:.4rem;"><i class="ti ti-bell-plus"></i> Novo Lembrete</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <div>
+          <h2 style="margin:0 0 .2rem; font-size:1.25rem; font-weight:800; color:#fff;">Lembretes & Reuniões</h2>
+          <p style="margin:0; font-size:.8rem; color:rgba(255,255,255,.35);">Notificações 30 min antes + na hora</p>
+        </div>
+        <button onclick="crmAbrirNovoLembrete()" class="crm-btn-primary"><i class="ti ti-bell-plus"></i> Novo Lembrete</button>
       </div>
       <div id="crm-lembretes-list" style="display:flex; flex-direction:column; gap:.75rem;">
-        <div style="color:#555; text-align:center; padding:2rem;">Carregando...</div>
+        <div style="color:rgba(255,255,255,.2); text-align:center; padding:2rem;">Carregando...</div>
       </div>
     </div>
 
     <!-- DASHBOARD -->
     <div id="crm-section-dash" style="display:none;">
-      <h2 style="margin:0 0 1.25rem; font-size:1.2rem; font-weight:700; color:#e8e8ef;">Dashboard de Vendas</h2>
-      <div id="crm-dash-content">
-        <!-- renderizado por JS -->
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="margin:0 0 .2rem; font-size:1.25rem; font-weight:800; color:#fff;">Dashboard de Vendas</h2>
+        <p style="margin:0; font-size:.8rem; color:rgba(255,255,255,.35);">Visão geral da operação</p>
       </div>
+      <div id="crm-dash-content"></div>
     </div>
 
   </div>
 </div>
 
 <!-- MODAL: Novo/Editar Contato -->
-<div id="crm-modal-contato" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:999; align-items:center; justify-content:center;">
-  <div style="background:#1a1d2e; border-radius:14px; border:1px solid #2a2d3e; padding:1.75rem; width:480px; max-width:95vw; position:relative;">
-    <h3 id="crm-modal-title" style="margin:0 0 1.25rem; font-size:1.1rem; font-weight:700; color:#f5c842;">Novo Contato</h3>
+<div id="crm-modal-contato" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); z-index:999; align-items:center; justify-content:center;">
+  <div class="crm-modal-box">
+    <h3 id="crm-modal-title" style="margin:0 0 1.5rem; font-size:1.05rem; font-weight:800; color:#fff;">Novo Contato</h3>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
       <div style="grid-column:span 2;">
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Nome *</label>
-        <input id="crm-f-nome" placeholder="Nome completo" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">Nome *</label>
+        <input id="crm-f-nome" placeholder="Nome completo" class="crm-input">
       </div>
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Empresa</label>
-        <input id="crm-f-empresa" placeholder="Nome da empresa" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">Empresa</label>
+        <input id="crm-f-empresa" placeholder="Nome da empresa" class="crm-input">
       </div>
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">WhatsApp</label>
-        <input id="crm-f-whatsapp" placeholder="(65) 99999-9999" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">WhatsApp</label>
+        <input id="crm-f-whatsapp" placeholder="(65) 99999-9999" class="crm-input">
       </div>
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Instagram</label>
-        <input id="crm-f-instagram" placeholder="@usuario" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">Instagram</label>
+        <input id="crm-f-instagram" placeholder="@usuario" class="crm-input">
       </div>
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Etapa</label>
-        <select id="crm-f-etapa" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">Etapa</label>
+        <select id="crm-f-etapa" class="crm-input">
           <option value="em_espera">Em espera</option>
           <option value="abordado">Abordado</option>
           <option value="vai_ser_vendido">Vai ser vendido</option>
@@ -3866,71 +3877,181 @@ window.addEventListener('DOMContentLoaded',async()=>{
         </select>
       </div>
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Vendedor</label>
-        <select id="crm-f-vendedor" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">Vendedor</label>
+        <select id="crm-f-vendedor" class="crm-input">
           <option value="rudney">Rudney</option>
           <option value="hugo">Hugo</option>
           <option value="otacilio">Otacilio</option>
         </select>
       </div>
       <div style="grid-column:span 2;">
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Observação</label>
-        <textarea id="crm-f-obs" rows="2" placeholder="Anotações sobre o contato..." style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; resize:vertical; box-sizing:border-box;"></textarea>
+        <label class="crm-label">Observação</label>
+        <textarea id="crm-f-obs" rows="2" placeholder="Anotações sobre o contato..." class="crm-input" style="resize:vertical;"></textarea>
       </div>
     </div>
     <input type="hidden" id="crm-f-id">
-    <div style="display:flex; gap:.75rem; margin-top:1.25rem; justify-content:flex-end;">
-      <button onclick="crmFecharModal('crm-modal-contato')" style="background:none; border:1px solid #333; border-radius:7px; color:#888; cursor:pointer; padding:.5rem 1rem; font-size:.85rem;">Cancelar</button>
-      <button onclick="crmSalvarContato()" style="background:linear-gradient(135deg,#f5c842,#e89c20); border:none; border-radius:7px; color:#0f1117; font-weight:700; cursor:pointer; padding:.5rem 1.2rem; font-size:.85rem;">Salvar</button>
+    <div id="crm-modal-erro" style="display:none; margin-top:.75rem; padding:.5rem .75rem; background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.3); border-radius:7px; font-size:.8rem; color:#fca5a5;"></div>
+    <div style="display:flex; gap:.75rem; margin-top:1.5rem; justify-content:flex-end;">
+      <button onclick="crmFecharModal('crm-modal-contato')" class="crm-btn-ghost">Cancelar</button>
+      <button onclick="crmSalvarContato()" class="crm-btn-primary">Salvar</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL: Novo/Editar Lembrete -->
-<div id="crm-modal-lembrete" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:999; align-items:center; justify-content:center;">
-  <div style="background:#1a1d2e; border-radius:14px; border:1px solid #2a2d3e; padding:1.75rem; width:440px; max-width:95vw; position:relative;">
-    <h3 id="crm-modal-lembrete-title" style="margin:0 0 1.25rem; font-size:1.1rem; font-weight:700; color:#f5c842;">Novo Lembrete</h3>
+<div id="crm-modal-lembrete" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); z-index:999; align-items:center; justify-content:center;">
+  <div class="crm-modal-box">
+    <h3 id="crm-modal-lembrete-title" style="margin:0 0 1.5rem; font-size:1.05rem; font-weight:800; color:#fff;">Novo Lembrete</h3>
     <div style="display:flex; flex-direction:column; gap:.75rem;">
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Título *</label>
-        <input id="crm-l-titulo" placeholder="Ex: Reunião com cliente X" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">Título *</label>
+        <input id="crm-l-titulo" placeholder="Ex: Reunião com cliente X" class="crm-input">
       </div>
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Data e hora *</label>
-        <input type="datetime-local" id="crm-l-dt" style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; box-sizing:border-box;">
+        <label class="crm-label">Data e hora *</label>
+        <input type="datetime-local" id="crm-l-dt" class="crm-input">
       </div>
       <div>
-        <label style="font-size:.78rem; color:#888; display:block; margin-bottom:.3rem;">Descrição</label>
-        <textarea id="crm-l-desc" rows="2" placeholder="Detalhes..." style="width:100%; background:#12142a; border:1px solid #2a2d3e; border-radius:7px; color:#e8e8ef; padding:.5rem .75rem; font-size:.85rem; resize:vertical; box-sizing:border-box;"></textarea>
+        <label class="crm-label">Descrição</label>
+        <textarea id="crm-l-desc" rows="2" placeholder="Detalhes..." class="crm-input" style="resize:vertical;"></textarea>
       </div>
     </div>
     <input type="hidden" id="crm-l-id">
-    <div style="display:flex; gap:.75rem; margin-top:1.25rem; justify-content:flex-end;">
-      <button onclick="crmFecharModal('crm-modal-lembrete')" style="background:none; border:1px solid #333; border-radius:7px; color:#888; cursor:pointer; padding:.5rem 1rem; font-size:.85rem;">Cancelar</button>
-      <button onclick="crmSalvarLembrete()" style="background:linear-gradient(135deg,#f5c842,#e89c20); border:none; border-radius:7px; color:#0f1117; font-weight:700; cursor:pointer; padding:.5rem 1.2rem; font-size:.85rem;">Salvar</button>
+    <div id="crm-lembrete-erro" style="display:none; margin-top:.75rem; padding:.5rem .75rem; background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.3); border-radius:7px; font-size:.8rem; color:#fca5a5;"></div>
+    <div style="display:flex; gap:.75rem; margin-top:1.5rem; justify-content:flex-end;">
+      <button onclick="crmFecharModal('crm-modal-lembrete')" class="crm-btn-ghost">Cancelar</button>
+      <button onclick="crmSalvarLembrete()" class="crm-btn-primary">Salvar</button>
     </div>
   </div>
 </div>
 
 <!-- CRM CSS -->
 <style>
-.crm-nav-btn{background:none;border:none;border-radius:6px;color:#888;cursor:pointer;padding:.35rem .75rem;font-size:.82rem;transition:all .2s;}
-.crm-nav-btn:hover,.crm-nav-btn.active{background:#2a2d3e;color:#f5c842;}
-.crm-col{background:#1a1d2e;border-radius:12px;border:1px solid #2a2d3e;min-height:280px;display:flex;flex-direction:column;}
-.crm-col-header{padding:.75rem 1rem;font-weight:700;font-size:.82rem;letter-spacing:.5px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;}
-.crm-col-body{padding:.5rem;flex:1;display:flex;flex-direction:column;gap:.5rem;min-height:200px;}
-.crm-card{background:#12142a;border-radius:9px;border:1px solid #2a2d3e;padding:.75rem;cursor:pointer;transition:border-color .2s,transform .2s;}
-.crm-card:hover{border-color:#f5c842;transform:translateY(-1px);}
-.crm-card-name{font-weight:600;font-size:.85rem;color:#e8e8ef;margin-bottom:.25rem;}
-.crm-card-empresa{font-size:.75rem;color:#888;margin-bottom:.35rem;}
-.crm-card-meta{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;color:#666;}
-.crm-badge{display:inline-block;padding:.15rem .55rem;border-radius:20px;font-size:.7rem;font-weight:600;}
-.crm-kpi{background:#1a1d2e;border-radius:12px;border:1px solid #2a2d3e;padding:1.25rem;display:flex;flex-direction:column;gap:.4rem;}
-.crm-kpi-val{font-size:2rem;font-weight:800;line-height:1;}
-.crm-kpi-label{font-size:.78rem;color:#888;}
-.crm-lembrete-card{background:#1a1d2e;border-radius:10px;border:1px solid #2a2d3e;padding:.9rem 1rem;display:flex;align-items:center;gap:1rem;}
-.crm-lembrete-card.urgente{border-color:#ef4444;}
-.crm-lembrete-card.proximo{border-color:#f5c842;}
+/* Liquid glass palette — Roity azul-marinho premium */
+:root {
+  --crm-blue:    #2563eb;
+  --crm-blue-l:  #3b82f6;
+  --crm-glass:   rgba(255,255,255,0.05);
+  --crm-border:  rgba(255,255,255,0.09);
+  --crm-text:    #e8e8ef;
+  --crm-muted:   rgba(255,255,255,0.38);
+}
+.crm-glass-card{
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  padding:1.25rem;
+  box-shadow:0 4px 32px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.crm-nav-btn{
+  background:none; border:none; border-radius:7px;
+  color:rgba(255,255,255,.5); cursor:pointer;
+  padding:.38rem .8rem; font-size:.82rem; font-weight:500;
+  transition:all .18s;
+}
+.crm-nav-btn:hover{background:rgba(255,255,255,.07); color:#fff;}
+.crm-nav-btn.active{background:rgba(37,99,235,.25); color:#93c5fd; border:1px solid rgba(37,99,235,.4);}
+.crm-exit-btn{
+  background:none; border:1px solid rgba(255,255,255,.1); border-radius:7px;
+  color:rgba(255,255,255,.35); cursor:pointer; padding:.35rem .8rem; font-size:.78rem;
+  transition:all .18s; margin-left:.5rem;
+}
+.crm-exit-btn:hover{border-color:rgba(239,68,68,.5); color:#fca5a5;}
+.crm-btn-primary{
+  background:linear-gradient(135deg,#1e40af,#2563eb);
+  border:none; border-radius:8px; color:#fff; font-weight:700;
+  cursor:pointer; padding:.5rem 1.1rem; font-size:.85rem;
+  display:flex; align-items:center; gap:.4rem;
+  box-shadow:0 0 18px rgba(37,99,235,.4);
+  transition:box-shadow .18s, opacity .18s;
+}
+.crm-btn-primary:hover{box-shadow:0 0 28px rgba(37,99,235,.7); opacity:.9;}
+.crm-btn-ghost{
+  background:none; border:1px solid rgba(255,255,255,.12); border-radius:8px;
+  color:rgba(255,255,255,.5); cursor:pointer; padding:.5rem 1rem; font-size:.85rem;
+  transition:all .18s;
+}
+.crm-btn-ghost:hover{border-color:rgba(255,255,255,.25); color:#fff;}
+.crm-btn-outline{
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:8px;
+  color:rgba(255,255,255,.6); padding:.45rem .85rem; font-size:.82rem;
+  transition:all .18s;
+}
+.crm-btn-outline:hover{background:rgba(255,255,255,.09); color:#fff;}
+.crm-col{
+  background:rgba(255,255,255,.03);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px; min-height:300px;
+  display:flex; flex-direction:column;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+.crm-col-header{
+  padding:.8rem 1rem; font-weight:700; font-size:.78rem;
+  letter-spacing:.6px; text-transform:uppercase;
+  border-radius:14px 14px 0 0;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.crm-col-body{
+  padding:.5rem; flex:1; display:flex; flex-direction:column;
+  gap:.5rem; min-height:220px;
+}
+.crm-card{
+  background:rgba(255,255,255,.05);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px; padding:.8rem .9rem;
+  cursor:pointer; transition:all .18s;
+}
+.crm-card:hover{
+  background:rgba(255,255,255,.09);
+  border-color:rgba(37,99,235,.5);
+  transform:translateY(-2px);
+  box-shadow:0 6px 24px rgba(0,0,0,.35);
+}
+.crm-card-name{font-weight:700; font-size:.85rem; color:#fff; margin-bottom:.2rem;}
+.crm-card-empresa{font-size:.74rem; color:rgba(255,255,255,.4); margin-bottom:.4rem;}
+.crm-card-meta{display:flex; align-items:center; justify-content:space-between; font-size:.72rem; color:rgba(255,255,255,.3);}
+.crm-badge{display:inline-block; padding:.15rem .55rem; border-radius:20px; font-size:.7rem; font-weight:700; letter-spacing:.3px;}
+.crm-kpi{
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:1.25rem;
+  display:flex; flex-direction:column; gap:.4rem;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.crm-kpi-val{font-size:2.1rem; font-weight:900; line-height:1; letter-spacing:-1px;}
+.crm-kpi-label{font-size:.76rem; color:rgba(255,255,255,.4); font-weight:500;}
+.crm-lembrete-card{
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px; padding:.9rem 1.1rem;
+  display:flex; align-items:center; gap:1rem;
+  transition:all .18s;
+}
+.crm-lembrete-card.urgente{border-color:rgba(234,179,8,.4); box-shadow:0 0 16px rgba(234,179,8,.1);}
+.crm-lembrete-card.passado{opacity:.5;}
+.crm-modal-box{
+  background:rgba(8,12,24,.85);
+  backdrop-filter:blur(32px);
+  -webkit-backdrop-filter:blur(32px);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:18px; padding:2rem;
+  width:500px; max-width:96vw;
+  box-shadow:0 20px 80px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.crm-label{font-size:.75rem; color:rgba(255,255,255,.45); display:block; margin-bottom:.3rem; font-weight:600; letter-spacing:.3px;}
+.crm-input{
+  width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  border-radius:8px; color:#e8e8ef; padding:.55rem .8rem; font-size:.85rem;
+  box-sizing:border-box; transition:border-color .18s; outline:none;
+}
+.crm-input:focus{border-color:rgba(37,99,235,.6); background:rgba(37,99,235,.06);}
 </style>
 
 <!-- CRM JAVASCRIPT -->
@@ -3941,51 +4062,61 @@ let crmLembretes=[];
 let crmLembretesTimers=[];
 let crmCurrentSection='pipeline';
 const CRM_ETAPAS=[
-  {id:'em_espera',    label:'Em espera',      cor:'#3b82f6'},
-  {id:'abordado',     label:'Abordado',       cor:'#8b5cf6'},
-  {id:'vai_ser_vendido',label:'Vai ser vendido',cor:'#f5c842'},
-  {id:'vendido',      label:'Vendido',        cor:'#22c55e'},
-  {id:'nao_foi_vendido',label:'Não foi vendido',cor:'#ef4444'},
+  {id:'em_espera',      label:'Em espera',       cor:'#3b82f6'},
+  {id:'abordado',       label:'Abordado',         cor:'#8b5cf6'},
+  {id:'vai_ser_vendido',label:'Vai ser vendido',  cor:'#f59e0b'},
+  {id:'vendido',        label:'Vendido',          cor:'#22c55e'},
+  {id:'nao_foi_vendido',label:'Não foi vendido',  cor:'#ef4444'},
 ];
 const CRM_VENDEDORES={rudney:'Rudney',hugo:'Hugo',otacilio:'Otacilio'};
 
-/* ===== SUPABASE CRM ===== */
+/* ===== SUPABASE CRM — usa cliente sb já inicializado ===== */
 async function crmFetchContatos(){
   try{
-    const resp=await fetch(`${SUPABASE_URL}/rest/v1/roity_contatos?order=created_at.desc`,{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
-    if(resp.ok) crmContatos=await resp.json();
-    else crmContatos=[];
+    const {data,error}=await sb.from('roity_contatos').select('*').order('created_at',{ascending:false});
+    crmContatos=error?[]:(data||[]);
   }catch(e){crmContatos=[];}
 }
 async function crmFetchLembretes(){
   try{
-    const resp=await fetch(`${SUPABASE_URL}/rest/v1/roity_lembretes?order=dt_lembrete.asc`,{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
-    if(resp.ok) crmLembretes=await resp.json();
-    else crmLembretes=[];
+    const {data,error}=await sb.from('roity_lembretes').select('*').order('dt_lembrete',{ascending:true});
+    crmLembretes=error?[]:(data||[]);
   }catch(e){crmLembretes=[];}
 }
 async function crmUpsertContato(contato){
-  const method=contato.id?'PATCH':'POST';
-  const url=contato.id?`${SUPABASE_URL}/rest/v1/roity_contatos?id=eq.${contato.id}`:`${SUPABASE_URL}/rest/v1/roity_contatos`;
-  const body={...contato};
-  delete body.id;
-  const resp=await fetch(url,{method,headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(body)});
-  if(!resp.ok) throw new Error(await resp.text());
-  return await resp.json();
+  if(contato.id){
+    const id=contato.id;
+    const body={...contato};delete body.id;
+    body.updated_at=new Date().toISOString();
+    const {data,error}=await sb.from('roity_contatos').update(body).eq('id',id).select();
+    if(error) throw new Error(error.message);
+    return data;
+  } else {
+    const {data,error}=await sb.from('roity_contatos').insert(contato).select();
+    if(error) throw new Error(error.message);
+    return data;
+  }
 }
 async function crmDeleteContato(id){
-  await fetch(`${SUPABASE_URL}/rest/v1/roity_contatos?id=eq.${id}`,{method:'DELETE',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
+  const {error}=await sb.from('roity_contatos').delete().eq('id',id);
+  if(error) throw new Error(error.message);
 }
 async function crmUpsertLembrete(lem){
-  const method=lem.id?'PATCH':'POST';
-  const url=lem.id?`${SUPABASE_URL}/rest/v1/roity_lembretes?id=eq.${lem.id}`:`${SUPABASE_URL}/rest/v1/roity_lembretes`;
-  const body={...lem};delete body.id;
-  const resp=await fetch(url,{method,headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(body)});
-  if(!resp.ok) throw new Error(await resp.text());
-  return await resp.json();
+  if(lem.id){
+    const id=lem.id;
+    const body={...lem};delete body.id;
+    const {data,error}=await sb.from('roity_lembretes').update(body).eq('id',id).select();
+    if(error) throw new Error(error.message);
+    return data;
+  } else {
+    const {data,error}=await sb.from('roity_lembretes').insert(lem).select();
+    if(error) throw new Error(error.message);
+    return data;
+  }
 }
 async function crmDeleteLembrete(id){
-  await fetch(`${SUPABASE_URL}/rest/v1/roity_lembretes?id=eq.${id}`,{method:'DELETE',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
+  const {error}=await sb.from('roity_lembretes').delete().eq('id',id);
+  if(error) throw new Error(error.message);
 }
 
 /* ===== startCRM ===== */
@@ -3997,37 +4128,36 @@ async function startCRM(){
 
   const role=currentUser.role;
   if(role==='vendedor'||role==='viewer_crm'){
-    // Standalone CRM app
     document.getElementById('app').style.display='none';
     document.getElementById('crm-app').style.display='block';
     const lbl=document.getElementById('crm-user-label');
-    if(lbl){lbl.textContent=currentUser.name+(role==='viewer_crm'?' (Visualizador)':'');lbl.style.display='block';}
-    // vendedor só vê pipeline/lembretes, viewer_crm vê tudo
+    if(lbl){lbl.textContent=currentUser.name+(role==='viewer_crm'?' · Visualizador':'');lbl.style.display='block';}
     if(role==='viewer_crm'){
       document.getElementById('crm-nav-pipeline').style.display='none';
+      document.getElementById('crm-nav-contatos').style.display='none';
       document.getElementById('crm-nav-lembretes').style.display='none';
       crmShowSection('dash');
     } else {
       crmShowSection('pipeline');
     }
   } else {
-    // admin: renderiza dentro da tab CRM do app principal
+    // admin: tab dentro do app principal
     crmRenderAdmin();
   }
   crmAgendarNotificacoes();
 }
 
-/* ===== NAVEGAÇÃO CRM ===== */
+/* ===== NAVEGAÇÃO ===== */
 function crmShowSection(sec){
   ['pipeline','contatos','lembretes','dash'].forEach(s=>{
     const el=document.getElementById('crm-section-'+s);
     if(el) el.style.display=s===sec?'block':'none';
     const btn=document.getElementById('crm-nav-'+s);
-    if(btn){btn.classList.toggle('active',s===sec);}
+    if(btn) btn.classList.toggle('active',s===sec);
   });
   crmCurrentSection=sec;
   if(sec==='pipeline') crmRenderPipeline();
-  if(sec==='contatos') crmRenderTabela();
+  if(sec==='contatos'){crmRenderTabela(); crmAtualizarContagem();}
   if(sec==='lembretes') crmRenderLembretes();
   if(sec==='dash') crmRenderDash();
 }
@@ -4036,10 +4166,9 @@ function crmShowSection(sec){
 function crmRenderPipeline(){
   const board=document.getElementById('crm-pipeline-board');
   if(!board) return;
-  // filtrar por vendedor se não for admin
   let contatos=crmContatos;
   if(currentUser.role==='vendedor'){
-    contatos=crmContatos.filter(c=>c.vendedor===currentUser.username||c.vendedor===currentUser.name.toLowerCase());
+    contatos=crmContatos.filter(c=>c.vendedor===currentUser.username);
   }
   board.innerHTML='';
   CRM_ETAPAS.forEach(etapa=>{
@@ -4047,12 +4176,12 @@ function crmRenderPipeline(){
     const col=document.createElement('div');
     col.className='crm-col';
     col.innerHTML=`
-      <div class="crm-col-header" style="background:${etapa.cor}22; border-bottom:2px solid ${etapa.cor};">
-        <span style="color:${etapa.cor};">${etapa.label}</span>
-        <span style="background:${etapa.cor}33; color:${etapa.cor}; border-radius:20px; padding:.1rem .5rem; font-size:.75rem;">${cards.length}</span>
+      <div class="crm-col-header" style="background:${etapa.cor}15; border-bottom:2px solid ${etapa.cor}40;">
+        <span style="color:${etapa.cor}; text-shadow:0 0 10px ${etapa.cor}60;">${etapa.label}</span>
+        <span style="background:${etapa.cor}20; color:${etapa.cor}; border-radius:20px; padding:.1rem .55rem; font-size:.74rem; font-weight:800;">${cards.length}</span>
       </div>
-      <div class="crm-col-body" id="col-${etapa.id}">
-        ${cards.length===0?'<div style="color:#444; font-size:.78rem; text-align:center; padding:1rem;">Nenhum contato</div>':''}
+      <div class="crm-col-body">
+        ${cards.length===0?'<div style="color:rgba(255,255,255,.15); font-size:.78rem; text-align:center; padding:1.5rem 1rem; border:1px dashed rgba(255,255,255,.08); border-radius:8px; margin:.25rem;">Vazio</div>':''}
         ${cards.map(c=>crmCardHTML(c)).join('')}
       </div>`;
     board.appendChild(col);
@@ -4060,40 +4189,46 @@ function crmRenderPipeline(){
 }
 
 function crmCardHTML(c){
-  const etapa=CRM_ETAPAS.find(e=>e.id===c.etapa)||CRM_ETAPAS[0];
   const vendNome=CRM_VENDEDORES[c.vendedor]||c.vendedor||'—';
   const data=c.created_at?new Date(c.created_at).toLocaleDateString('pt-BR'):'';
   return `<div class="crm-card" onclick="crmAbrirEditarContato('${c.id}')">
     <div class="crm-card-name">${escHTML(c.nome||'')}</div>
     ${c.empresa?`<div class="crm-card-empresa">${escHTML(c.empresa)}</div>`:''}
     <div class="crm-card-meta">
-      <span style="color:#666;">${vendNome}</span>
-      <span style="color:#555;">${data}</span>
+      <span>${vendNome}</span>
+      <span>${data}</span>
     </div>
-    ${c.whatsapp?`<div style="margin-top:.4rem;"><a href="https://wa.me/55${c.whatsapp.replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()" style="color:#22c55e; font-size:.72rem; text-decoration:none;"><i class="ti ti-brand-whatsapp"></i> ${escHTML(c.whatsapp)}</a></div>`:''}
+    ${c.whatsapp?`<div style="margin-top:.45rem;"><a href="https://wa.me/55${c.whatsapp.replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()" style="color:#22c55e; font-size:.72rem; text-decoration:none; display:flex; align-items:center; gap:.25rem;"><i class="ti ti-brand-whatsapp"></i>${escHTML(c.whatsapp)}</a></div>`:''}
   </div>`;
 }
 
 /* ===== TABELA CONTATOS ===== */
+function crmAtualizarContagem(){
+  const el=document.getElementById('crm-contatos-count');
+  if(el) el.textContent=`${crmContatos.length} contato${crmContatos.length!==1?'s':''}`;
+}
 function crmRenderTabela(lista){
   const tbody=document.getElementById('crm-contatos-tbody');
   if(!tbody) return;
   const arr=lista||crmContatos;
-  if(!arr.length){tbody.innerHTML='<tr><td colspan="7" style="padding:2rem; text-align:center; color:#555;">Nenhum contato cadastrado</td></tr>';return;}
+  if(!arr.length){
+    tbody.innerHTML='<tr><td colspan="7" style="padding:3rem; text-align:center; color:rgba(255,255,255,.2);">Nenhum contato cadastrado</td></tr>';
+    return;
+  }
   tbody.innerHTML=arr.map(c=>{
     const etapa=CRM_ETAPAS.find(e=>e.id===c.etapa)||CRM_ETAPAS[0];
     const vendNome=CRM_VENDEDORES[c.vendedor]||c.vendedor||'—';
     const data=c.created_at?new Date(c.created_at).toLocaleDateString('pt-BR'):'';
-    return `<tr style="border-top:1px solid #2a2d3e;">
-      <td style="padding:.65rem 1rem; color:#e8e8ef; font-weight:500;">${escHTML(c.nome||'')}</td>
-      <td style="padding:.65rem 1rem; color:#888;">${escHTML(c.empresa||'—')}</td>
-      <td style="padding:.65rem 1rem;">${c.whatsapp?`<a href="https://wa.me/55${c.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:#22c55e; text-decoration:none;">${escHTML(c.whatsapp)}</a>`:'—'}</td>
-      <td style="padding:.65rem 1rem;"><span class="crm-badge" style="background:${etapa.cor}22; color:${etapa.cor};">${etapa.label}</span></td>
-      <td style="padding:.65rem 1rem; color:#888;">${vendNome}</td>
-      <td style="padding:.65rem 1rem; color:#666;">${data}</td>
-      <td style="padding:.65rem 1rem;">
-        <button onclick="crmAbrirEditarContato('${c.id}')" title="Editar" style="background:none; border:none; color:#888; cursor:pointer; padding:.2rem .4rem; border-radius:5px;" onmouseover="this.style.color='#f5c842'" onmouseout="this.style.color='#888'"><i class="ti ti-pencil"></i></button>
-        <button onclick="crmConfirmarDelete('${c.id}')" title="Excluir" style="background:none; border:none; color:#888; cursor:pointer; padding:.2rem .4rem; border-radius:5px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#888'"><i class="ti ti-trash"></i></button>
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,.05); transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+      <td style="padding:.7rem 1.1rem; color:#fff; font-weight:600;">${escHTML(c.nome||'')}</td>
+      <td style="padding:.7rem 1.1rem; color:rgba(255,255,255,.45);">${escHTML(c.empresa||'—')}</td>
+      <td style="padding:.7rem 1.1rem;">${c.whatsapp?`<a href="https://wa.me/55${c.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:#22c55e; text-decoration:none; font-size:.82rem;">${escHTML(c.whatsapp)}</a>`:'<span style="color:rgba(255,255,255,.2);">—</span>'}</td>
+      <td style="padding:.7rem 1.1rem;"><span class="crm-badge" style="background:${etapa.cor}18; color:${etapa.cor}; border:1px solid ${etapa.cor}30;">${etapa.label}</span></td>
+      <td style="padding:.7rem 1.1rem; color:rgba(255,255,255,.45);">${vendNome}</td>
+      <td style="padding:.7rem 1.1rem; color:rgba(255,255,255,.3); font-size:.78rem;">${data}</td>
+      <td style="padding:.7rem 1.1rem;">
+        <button onclick="crmAbrirEditarContato('${c.id}')" style="background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; padding:.2rem .35rem; border-radius:5px; transition:color .15s;" onmouseover="this.style.color='#93c5fd'" onmouseout="this.style.color='rgba(255,255,255,.3)'"><i class="ti ti-pencil"></i></button>
+        <button onclick="crmConfirmarDelete('${c.id}')" style="background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; padding:.2rem .35rem; border-radius:5px; transition:color .15s;" onmouseover="this.style.color='#fca5a5'" onmouseout="this.style.color='rgba(255,255,255,.3)'"><i class="ti ti-trash"></i></button>
       </td>
     </tr>`;
   }).join('');
@@ -4115,29 +4250,32 @@ function crmRenderLembretes(){
   const list=document.getElementById('crm-lembretes-list');
   if(!list) return;
   const now=Date.now();
-  if(!crmLembretes.length){list.innerHTML='<div style="color:#555; text-align:center; padding:2rem;">Nenhum lembrete cadastrado</div>';return;}
+  if(!crmLembretes.length){list.innerHTML='<div style="color:rgba(255,255,255,.2); text-align:center; padding:2.5rem;">Nenhum lembrete cadastrado</div>';return;}
   const sorted=[...crmLembretes].sort((a,b)=>new Date(a.dt_lembrete)-new Date(b.dt_lembrete));
   list.innerHTML=sorted.map(l=>{
     const dt=new Date(l.dt_lembrete);
     const diff=dt-now;
     const passado=diff<0;
-    const urgente=!passado&&diff<1800000; // 30 min
-    const proximo=!passado&&diff<3600000*2;
-    const cls=urgente?'urgente':proximo?'proximo':'';
-    const dtStr=dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    const statusBadge=passado?'<span style="background:#ef444422;color:#ef4444;padding:.1rem .4rem;border-radius:4px;font-size:.7rem;">Passado</span>':urgente?'<span style="background:#f5c84222;color:#f5c842;padding:.1rem .4rem;border-radius:4px;font-size:.7rem;">Em 30min!</span>':'';
-    return `<div class="crm-lembrete-card ${cls}" style="opacity:${passado?.6:1};">
-      <div style="width:44px;height:44px;border-radius:10px;background:${urgente?'#f5c84222':passado?'#33333a':'#8b5cf622'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <i class="ti ti-bell" style="font-size:1.2rem;color:${urgente?'#f5c842':passado?'#555':'#8b5cf6'};"></i>
+    const urgente=!passado&&diff<1800000;
+    const dtStr=dt.toLocaleDateString('pt-BR')+' · '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const iconColor=urgente?'#f59e0b':passado?'rgba(255,255,255,.2)':'#3b82f6';
+    const statusChip=passado
+      ?`<span style="background:rgba(239,68,68,.15);color:#fca5a5;padding:.1rem .45rem;border-radius:4px;font-size:.7rem;font-weight:700;">Passado</span>`
+      :urgente
+      ?`<span style="background:rgba(245,158,11,.15);color:#fcd34d;padding:.1rem .45rem;border-radius:4px;font-size:.7rem;font-weight:700;">⚡ Em 30min</span>`
+      :'';
+    return `<div class="crm-lembrete-card ${urgente?'urgente':''} ${passado?'passado':''}">
+      <div style="width:46px;height:46px;border-radius:12px;background:${iconColor}18;border:1px solid ${iconColor}30;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="ti ti-bell" style="font-size:1.2rem;color:${iconColor};"></i>
       </div>
-      <div style="flex:1;">
-        <div style="font-weight:600;font-size:.9rem;color:#e8e8ef;margin-bottom:.2rem;">${escHTML(l.titulo||'')} ${statusBadge}</div>
-        ${l.descricao?`<div style="font-size:.78rem;color:#888;margin-bottom:.2rem;">${escHTML(l.descricao)}</div>`:''}
-        <div style="font-size:.75rem;color:#666;">${dtStr}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:.88rem;color:#fff;margin-bottom:.15rem;display:flex;align-items:center;gap:.5rem;">${escHTML(l.titulo||'')} ${statusChip}</div>
+        ${l.descricao?`<div style="font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHTML(l.descricao)}</div>`:''}
+        <div style="font-size:.74rem;color:rgba(255,255,255,.25);">${dtStr}</div>
       </div>
-      <div style="display:flex;gap:.3rem;">
-        <button onclick="crmAbrirEditarLembrete('${l.id}')" style="background:none;border:none;color:#888;cursor:pointer;padding:.3rem;" onmouseover="this.style.color='#f5c842'" onmouseout="this.style.color='#888'"><i class="ti ti-pencil"></i></button>
-        <button onclick="crmConfirmarDeleteLembrete('${l.id}')" style="background:none;border:none;color:#888;cursor:pointer;padding:.3rem;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#888'"><i class="ti ti-trash"></i></button>
+      <div style="display:flex;gap:.25rem;flex-shrink:0;">
+        <button onclick="crmAbrirEditarLembrete('${l.id}')" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;padding:.3rem;border-radius:6px;transition:color .15s;" onmouseover="this.style.color='#93c5fd'" onmouseout="this.style.color='rgba(255,255,255,.3)'"><i class="ti ti-pencil"></i></button>
+        <button onclick="crmConfirmarDeleteLembrete('${l.id}')" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;padding:.3rem;border-radius:6px;transition:color .15s;" onmouseover="this.style.color='#fca5a5'" onmouseout="this.style.color='rgba(255,255,255,.3)'"><i class="ti ti-trash"></i></button>
       </div>
     </div>`;
   }).join('');
@@ -4152,57 +4290,58 @@ function crmRenderDash(){
   const naoVendidos=crmContatos.filter(c=>c.etapa==='nao_foi_vendido').length;
   const emAndamento=crmContatos.filter(c=>!['vendido','nao_foi_vendido'].includes(c.etapa)).length;
   const taxa=total>0?Math.round(vendidos/total*100):0;
-  // Por vendedor
   const porVend=Object.entries(CRM_VENDEDORES).map(([id,nome])=>{
     const ctts=crmContatos.filter(c=>c.vendedor===id);
     const vend=ctts.filter(c=>c.etapa==='vendido').length;
     return {id,nome,total:ctts.length,vendidos:vend,taxa:ctts.length?Math.round(vend/ctts.length*100):0};
   });
   el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:.875rem;margin-bottom:1.75rem;">
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#3b82f6;">${total}</div><div class="crm-kpi-label">Total de contatos</div></div>
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#22c55e;">${vendidos}</div><div class="crm-kpi-label">Vendidos</div></div>
-      <div class="crm-kpi"><div class="crm-kpi-val" style="color:#f5c842;">${emAndamento}</div><div class="crm-kpi-label">Em andamento</div></div>
+      <div class="crm-kpi"><div class="crm-kpi-val" style="color:#f59e0b;">${emAndamento}</div><div class="crm-kpi-label">Em andamento</div></div>
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#ef4444;">${naoVendidos}</div><div class="crm-kpi-label">Perdidos</div></div>
-      <div class="crm-kpi"><div class="crm-kpi-val" style="color:#8b5cf6;">${taxa}%</div><div class="crm-kpi-label">Taxa de conversão</div></div>
+      <div class="crm-kpi"><div class="crm-kpi-val" style="color:#8b5cf6;">${taxa}%</div><div class="crm-kpi-label">Conversão geral</div></div>
     </div>
-    <h3 style="font-size:1rem;font-weight:700;color:#e8e8ef;margin:0 0 .75rem;">Por Vendedor</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1.5rem;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.875rem;margin-bottom:1.75rem;">
       ${porVend.map(v=>`
-        <div style="background:#1a1d2e;border-radius:12px;border:1px solid #2a2d3e;padding:1rem;">
-          <div style="font-weight:700;color:#e8e8ef;margin-bottom:.75rem;">${v.nome}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;text-align:center;">
-            <div><div style="font-size:1.4rem;font-weight:800;color:#3b82f6;">${v.total}</div><div style="font-size:.7rem;color:#888;">Contatos</div></div>
-            <div><div style="font-size:1.4rem;font-weight:800;color:#22c55e;">${v.vendidos}</div><div style="font-size:.7rem;color:#888;">Vendidos</div></div>
-            <div><div style="font-size:1.4rem;font-weight:800;color:#8b5cf6;">${v.taxa}%</div><div style="font-size:.7rem;color:#888;">Conversão</div></div>
+        <div class="crm-glass-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+            <div style="font-weight:800;color:#fff;font-size:.95rem;">${v.nome}</div>
+            <span style="background:rgba(37,99,235,.2);color:#93c5fd;border-radius:20px;padding:.15rem .6rem;font-size:.74rem;font-weight:700;">${v.taxa}% conv.</span>
           </div>
-          <div style="margin-top:.75rem;background:#12142a;border-radius:20px;height:6px;overflow:hidden;">
-            <div style="height:100%;width:${v.taxa}%;background:linear-gradient(90deg,#8b5cf6,#f5c842);border-radius:20px;transition:width .5s;"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;text-align:center;margin-bottom:.9rem;">
+            <div><div style="font-size:1.5rem;font-weight:900;color:#3b82f6;">${v.total}</div><div style="font-size:.7rem;color:rgba(255,255,255,.35);">Contatos</div></div>
+            <div><div style="font-size:1.5rem;font-weight:900;color:#22c55e;">${v.vendidos}</div><div style="font-size:.7rem;color:rgba(255,255,255,.35);">Vendidos</div></div>
+            <div><div style="font-size:1.5rem;font-weight:900;color:#8b5cf6;">${v.taxa}%</div><div style="font-size:.7rem;color:rgba(255,255,255,.35);">Taxa</div></div>
+          </div>
+          <div style="background:rgba(255,255,255,.06);border-radius:20px;height:5px;overflow:hidden;">
+            <div style="height:100%;width:${v.taxa}%;background:linear-gradient(90deg,#1e40af,#3b82f6);border-radius:20px;transition:width .6s;"></div>
           </div>
         </div>`).join('')}
     </div>
-    <h3 style="font-size:1rem;font-weight:700;color:#e8e8ef;margin:0 0 .75rem;">Por Etapa</h3>
-    <div style="background:#1a1d2e;border-radius:12px;border:1px solid #2a2d3e;padding:1rem;">
+    <div class="crm-glass-card">
+      <div style="font-weight:700;color:rgba(255,255,255,.6);font-size:.78rem;text-transform:uppercase;letter-spacing:.6px;margin-bottom:1rem;">Funil por etapa</div>
       ${CRM_ETAPAS.map(e=>{
         const cnt=crmContatos.filter(c=>c.etapa===e.id).length;
         const pct=total>0?Math.round(cnt/total*100):0;
-        return `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:.6rem;">
-          <div style="width:120px;font-size:.82rem;color:${e.cor};">${e.label}</div>
-          <div style="flex:1;background:#12142a;border-radius:20px;height:8px;overflow:hidden;">
-            <div style="height:100%;width:${pct}%;background:${e.cor};border-radius:20px;"></div>
+        return `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:.7rem;">
+          <div style="width:130px;font-size:.8rem;color:${e.cor};font-weight:600;">${e.label}</div>
+          <div style="flex:1;background:rgba(255,255,255,.06);border-radius:20px;height:7px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${e.cor};border-radius:20px;transition:width .5s;box-shadow:0 0 8px ${e.cor}60;"></div>
           </div>
-          <div style="width:50px;text-align:right;font-size:.82rem;color:#888;">${cnt}</div>
+          <div style="width:40px;text-align:right;font-size:.8rem;color:rgba(255,255,255,.35);font-weight:600;">${cnt}</div>
         </div>`;
       }).join('')}
     </div>`;
 }
 
-/* ===== crmRenderAdmin (inside admin tab) ===== */
+/* ===== ADMIN TAB ===== */
 function crmRenderAdmin(){
   const el=document.getElementById('view-crm-content');
   if(!el) return;
   el.innerHTML=`
-    <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+    <div style="display:flex;gap:.4rem;margin-bottom:1.5rem;flex-wrap:wrap;">
       <button onclick="crmAdminSection('pipeline')" class="crm-nav-btn active" id="cadm-pipeline">Pipeline</button>
       <button onclick="crmAdminSection('contatos')" class="crm-nav-btn" id="cadm-contatos">Contatos</button>
       <button onclick="crmAdminSection('lembretes')" class="crm-nav-btn" id="cadm-lembretes">Lembretes</button>
@@ -4210,17 +4349,17 @@ function crmRenderAdmin(){
     </div>
     <div id="cadm-section-pipeline">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <h2 style="margin:0;font-size:1.1rem;font-weight:700;">Pipeline de Vendas</h2>
-        <button onclick="crmAbrirNovoContato()" style="background:linear-gradient(135deg,#f5c842,#e89c20);border:none;border-radius:7px;color:#0f1117;font-weight:700;cursor:pointer;padding:.45rem 1rem;font-size:.82rem;">+ Novo Contato</button>
+        <h2 style="margin:0;font-size:1.1rem;font-weight:800;">Pipeline de Vendas</h2>
+        <button onclick="crmAbrirNovoContato()" class="crm-btn-primary" style="font-size:.82rem;">+ Novo Contato</button>
       </div>
-      <div id="crm-pipeline-board" style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;overflow-x:auto;padding-bottom:1rem;"></div>
+      <div id="crm-pipeline-board" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.875rem;overflow-x:auto;padding-bottom:.5rem;"></div>
     </div>
     <div id="cadm-section-contatos" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
-        <h2 style="margin:0;font-size:1.1rem;font-weight:700;">Todos os Contatos</h2>
+        <h2 style="margin:0;font-size:1.1rem;font-weight:800;">Todos os Contatos</h2>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-          <input id="crm-search" placeholder="Buscar…" oninput="crmFiltrarContatos()" style="background:#12142a;border:1px solid #2a2d3e;border-radius:7px;color:#e8e8ef;padding:.4rem .7rem;font-size:.82rem;width:180px;">
-          <select id="crm-filter-etapa" onchange="crmFiltrarContatos()" style="background:#12142a;border:1px solid #2a2d3e;border-radius:7px;color:#e8e8ef;padding:.4rem .7rem;font-size:.82rem;">
+          <input id="crm-search" placeholder="Buscar…" oninput="crmFiltrarContatos()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#e8e8ef;padding:.4rem .7rem;font-size:.82rem;width:175px;">
+          <select id="crm-filter-etapa" onchange="crmFiltrarContatos()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#e8e8ef;padding:.4rem .7rem;font-size:.82rem;">
             <option value="">Todas etapas</option>
             <option value="em_espera">Em espera</option>
             <option value="abordado">Abordado</option>
@@ -4228,37 +4367,36 @@ function crmRenderAdmin(){
             <option value="vendido">Vendido</option>
             <option value="nao_foi_vendido">Não foi vendido</option>
           </select>
-          <label style="background:#12142a;border:1px solid #2a2d3e;border-radius:7px;color:#f5c842;cursor:pointer;padding:.4rem .7rem;font-size:.82rem;display:flex;align-items:center;gap:.3rem;">
-            <i class="ti ti-upload"></i> CSV/XLSX
-            <input type="file" accept=".csv,.xlsx,.xls" onchange="crmImportarPlanilha(event)" style="display:none;">
+          <label class="crm-btn-outline" style="cursor:pointer;display:flex;align-items:center;gap:.35rem;font-size:.8rem;padding:.4rem .8rem;">
+            <i class="ti ti-upload"></i>CSV/XLSX<input type="file" accept=".csv,.xlsx,.xls" onchange="crmImportarPlanilha(event)" style="display:none;">
           </label>
-          <button onclick="crmAbrirNovoContato()" style="background:linear-gradient(135deg,#f5c842,#e89c20);border:none;border-radius:7px;color:#0f1117;font-weight:700;cursor:pointer;padding:.4rem .9rem;font-size:.82rem;">+ Novo</button>
+          <button onclick="crmAbrirNovoContato()" class="crm-btn-primary" style="font-size:.82rem;padding:.4rem .9rem;">+ Novo</button>
         </div>
       </div>
-      <div style="background:#1a1d2e;border-radius:12px;overflow:hidden;border:1px solid #2a2d3e;">
+      <div class="crm-glass-card" style="padding:0;overflow:hidden;">
         <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
-          <thead><tr style="background:#12142a;color:#888;">
-            <th style="padding:.65rem 1rem;text-align:left;">Nome</th>
-            <th style="padding:.65rem 1rem;text-align:left;">Empresa</th>
-            <th style="padding:.65rem 1rem;text-align:left;">WhatsApp</th>
-            <th style="padding:.65rem 1rem;text-align:left;">Etapa</th>
-            <th style="padding:.65rem 1rem;text-align:left;">Vendedor</th>
-            <th style="padding:.65rem 1rem;text-align:left;">Data</th>
-            <th style="padding:.65rem 1rem;text-align:left;">Ações</th>
+          <thead><tr style="border-bottom:1px solid rgba(255,255,255,.07);">
+            <th style="padding:.75rem 1rem;text-align:left;color:rgba(255,255,255,.4);font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;">Nome</th>
+            <th style="padding:.75rem 1rem;text-align:left;color:rgba(255,255,255,.4);font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;">Empresa</th>
+            <th style="padding:.75rem 1rem;text-align:left;color:rgba(255,255,255,.4);font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;">WhatsApp</th>
+            <th style="padding:.75rem 1rem;text-align:left;color:rgba(255,255,255,.4);font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;">Etapa</th>
+            <th style="padding:.75rem 1rem;text-align:left;color:rgba(255,255,255,.4);font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;">Vendedor</th>
+            <th style="padding:.75rem 1rem;text-align:left;color:rgba(255,255,255,.4);font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;">Data</th>
+            <th style="padding:.75rem 1rem;"></th>
           </tr></thead>
-          <tbody id="crm-contatos-tbody"><tr><td colspan="7" style="padding:2rem;text-align:center;color:#555;">Carregando...</td></tr></tbody>
+          <tbody id="crm-contatos-tbody"><tr><td colspan="7" style="padding:2.5rem;text-align:center;color:rgba(255,255,255,.2);">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
     <div id="cadm-section-lembretes" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <h2 style="margin:0;font-size:1.1rem;font-weight:700;">Lembretes & Reuniões</h2>
-        <button onclick="crmAbrirNovoLembrete()" style="background:linear-gradient(135deg,#f5c842,#e89c20);border:none;border-radius:7px;color:#0f1117;font-weight:700;cursor:pointer;padding:.45rem 1rem;font-size:.82rem;display:flex;align-items:center;gap:.3rem;"><i class="ti ti-bell-plus"></i> Novo Lembrete</button>
+        <h2 style="margin:0;font-size:1.1rem;font-weight:800;">Lembretes & Reuniões</h2>
+        <button onclick="crmAbrirNovoLembrete()" class="crm-btn-primary" style="font-size:.82rem;"><i class="ti ti-bell-plus"></i> Novo</button>
       </div>
       <div id="crm-lembretes-list" style="display:flex;flex-direction:column;gap:.75rem;"></div>
     </div>
     <div id="cadm-section-dash" style="display:none;">
-      <h2 style="margin:0 0 1rem;font-size:1.1rem;font-weight:700;">Dashboard de Vendas</h2>
+      <h2 style="margin:0 0 1.25rem;font-size:1.1rem;font-weight:800;">Dashboard de Vendas</h2>
       <div id="crm-dash-content"></div>
     </div>`;
   crmAdminSection('pipeline');
@@ -4283,8 +4421,9 @@ function crmAbrirNovoContato(){
   ['crm-f-nome','crm-f-empresa','crm-f-whatsapp','crm-f-instagram','crm-f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const fe=document.getElementById('crm-f-etapa');if(fe)fe.value='em_espera';
   const fv=document.getElementById('crm-f-vendedor');
-  if(fv&&currentUser.role==='vendedor') fv.value=currentUser.username||currentUser.name.toLowerCase();
+  if(fv&&currentUser.role==='vendedor') fv.value=currentUser.username||'rudney';
   document.getElementById('crm-f-id').value='';
+  const err=document.getElementById('crm-modal-erro');if(err)err.style.display='none';
   crmAbrirModal('crm-modal-contato');
 }
 function crmAbrirEditarContato(id){
@@ -4298,18 +4437,21 @@ function crmAbrirEditarContato(id){
   document.getElementById('crm-f-etapa').value=c.etapa||'em_espera';
   document.getElementById('crm-f-vendedor').value=c.vendedor||'rudney';
   document.getElementById('crm-f-id').value=c.id;
+  const err=document.getElementById('crm-modal-erro');if(err)err.style.display='none';
   crmAbrirModal('crm-modal-contato');
 }
 async function crmSalvarContato(){
   const nome=document.getElementById('crm-f-nome').value.trim();
-  if(!nome){alert('Nome é obrigatório');return;}
+  const errEl=document.getElementById('crm-modal-erro');
+  if(!nome){if(errEl){errEl.textContent='Nome é obrigatório';errEl.style.display='block';}return;}
+  if(errEl) errEl.style.display='none';
   const id=document.getElementById('crm-f-id').value;
   const obj={
     nome,
-    empresa:document.getElementById('crm-f-empresa').value.trim(),
-    whatsapp:document.getElementById('crm-f-whatsapp').value.trim(),
-    instagram:document.getElementById('crm-f-instagram').value.trim(),
-    observacao:document.getElementById('crm-f-obs').value.trim(),
+    empresa:document.getElementById('crm-f-empresa').value.trim()||null,
+    whatsapp:document.getElementById('crm-f-whatsapp').value.trim()||null,
+    instagram:document.getElementById('crm-f-instagram').value.trim()||null,
+    observacao:document.getElementById('crm-f-obs').value.trim()||null,
     etapa:document.getElementById('crm-f-etapa').value,
     vendedor:document.getElementById('crm-f-vendedor').value,
   };
@@ -4318,16 +4460,15 @@ async function crmSalvarContato(){
     await crmUpsertContato(obj);
     crmFecharModal('crm-modal-contato');
     await crmFetchContatos();
-    if(crmCurrentSection==='pipeline') crmRenderPipeline();
-    else if(crmCurrentSection==='contatos') crmRenderTabela();
-    // admin tab
-    if(document.getElementById('cadm-section-pipeline')?.style.display!=='none') crmRenderPipeline();
-    if(document.getElementById('cadm-section-contatos')?.style.display!=='none') crmRenderTabela();
-  }catch(e){alert('Erro ao salvar: '+e.message);}
+    crmRenderPipeline();
+    if(document.getElementById('crm-contatos-tbody')) crmRenderTabela();
+  }catch(e){
+    if(errEl){errEl.textContent='Erro ao salvar: '+e.message;errEl.style.display='block';}
+  }
 }
 async function crmConfirmarDelete(id){
   if(!confirm('Excluir este contato?')) return;
-  await crmDeleteContato(id);
+  try{await crmDeleteContato(id);}catch(e){alert('Erro: '+e.message);return;}
   await crmFetchContatos();
   crmRenderTabela();crmRenderPipeline();
 }
@@ -4337,9 +4478,9 @@ function crmAbrirNovoLembrete(){
   document.getElementById('crm-l-titulo').value='';
   document.getElementById('crm-l-desc').value='';
   document.getElementById('crm-l-id').value='';
-  // default: 1h a partir de agora
   const now=new Date(Date.now()+3600000);
   document.getElementById('crm-l-dt').value=now.toISOString().slice(0,16);
+  const err=document.getElementById('crm-lembrete-erro');if(err)err.style.display='none';
   crmAbrirModal('crm-modal-lembrete');
 }
 function crmAbrirEditarLembrete(id){
@@ -4349,14 +4490,22 @@ function crmAbrirEditarLembrete(id){
   document.getElementById('crm-l-desc').value=l.descricao||'';
   document.getElementById('crm-l-dt').value=l.dt_lembrete?l.dt_lembrete.slice(0,16):'';
   document.getElementById('crm-l-id').value=l.id;
+  const err=document.getElementById('crm-lembrete-erro');if(err)err.style.display='none';
   crmAbrirModal('crm-modal-lembrete');
 }
 async function crmSalvarLembrete(){
   const titulo=document.getElementById('crm-l-titulo').value.trim();
   const dt=document.getElementById('crm-l-dt').value;
-  if(!titulo||!dt){alert('Título e data/hora são obrigatórios');return;}
+  const errEl=document.getElementById('crm-lembrete-erro');
+  if(!titulo||!dt){if(errEl){errEl.textContent='Título e data/hora são obrigatórios';errEl.style.display='block';}return;}
+  if(errEl) errEl.style.display='none';
   const id=document.getElementById('crm-l-id').value;
-  const obj={titulo,descricao:document.getElementById('crm-l-desc').value.trim(),dt_lembrete:new Date(dt).toISOString(),vendedor:currentUser.role==='vendedor'?(currentUser.username||currentUser.name.toLowerCase()):'admin'};
+  const obj={
+    titulo,
+    descricao:document.getElementById('crm-l-desc').value.trim()||null,
+    dt_lembrete:new Date(dt).toISOString(),
+    vendedor:currentUser.role==='vendedor'?(currentUser.username||currentUser.name.toLowerCase()):'admin',
+  };
   if(id) obj.id=id;
   try{
     await crmUpsertLembrete(obj);
@@ -4364,24 +4513,19 @@ async function crmSalvarLembrete(){
     await crmFetchLembretes();
     crmRenderLembretes();
     crmAgendarNotificacoes();
-  }catch(e){alert('Erro ao salvar lembrete: '+e.message);}
+  }catch(e){
+    if(errEl){errEl.textContent='Erro ao salvar: '+e.message;errEl.style.display='block';}
+  }
 }
 async function crmConfirmarDeleteLembrete(id){
   if(!confirm('Excluir este lembrete?')) return;
-  await crmDeleteLembrete(id);
+  try{await crmDeleteLembrete(id);}catch(e){alert('Erro: '+e.message);return;}
   await crmFetchLembretes();
-  crmRenderLembretes();
-  crmAgendarNotificacoes();
+  crmRenderLembretes();crmAgendarNotificacoes();
 }
 
-function crmAbrirModal(id){
-  const el=document.getElementById(id);
-  if(el){el.style.display='flex';}
-}
-function crmFecharModal(id){
-  const el=document.getElementById(id);
-  if(el){el.style.display='none';}
-}
+function crmAbrirModal(id){const el=document.getElementById(id);if(el)el.style.display='flex';}
+function crmFecharModal(id){const el=document.getElementById(id);if(el)el.style.display='none';}
 
 /* ===== IMPORTAR CSV / XLSX ===== */
 async function crmImportarPlanilha(event){
@@ -4393,7 +4537,6 @@ async function crmImportarPlanilha(event){
     const text=await file.text();
     rows=crmParseCSV(text);
   } else {
-    // XLSX via SheetJS (carrega dinamicamente)
     if(!window.XLSX){
       await new Promise((res,rej)=>{
         const s=document.createElement('script');
@@ -4408,35 +4551,34 @@ async function crmImportarPlanilha(event){
     rows=XLSX.utils.sheet_to_json(ws,{defval:''});
   }
   if(!rows.length){alert('Nenhum dado encontrado na planilha');return;}
-  // Mapeamento flexível de colunas
   const colMap={
-    nome:['nome','name','contato','prospect'],
-    empresa:['empresa','company','negocio'],
+    nome:['nome','name','contato','prospect','cliente'],
+    empresa:['empresa','company','negocio','negócio'],
     whatsapp:['whatsapp','telefone','phone','celular','tel','fone'],
-    instagram:['instagram','ig','@'],
-    observacao:['obs','observacao','observação','nota','note'],
+    instagram:['instagram','ig'],
+    observacao:['obs','observacao','observação','nota','note','anotacao'],
     etapa:['etapa','status','fase'],
     vendedor:['vendedor','resp','responsavel','responsável'],
   };
-  function findCol(obj,keys){const k=Object.keys(obj).find(k=>keys.some(m=>k.toLowerCase().includes(m)));return k;}
+  function findCol(obj,keys){const k=Object.keys(obj).find(k2=>keys.some(m=>k2.toLowerCase().replace(/[^a-z]/g,'').includes(m.replace(/[^a-z]/g,''))));return k;}
   let ok=0,erros=0;
   for(const row of rows){
     const nomCol=findCol(row,colMap.nome);
-    if(!nomCol||!row[nomCol]) continue;
+    if(!nomCol||!String(row[nomCol]).trim()) continue;
     const obj={
       nome:String(row[nomCol]||'').trim(),
-      empresa:String(row[findCol(row,colMap.empresa)]||'').trim(),
-      whatsapp:String(row[findCol(row,colMap.whatsapp)]||'').trim(),
-      instagram:String(row[findCol(row,colMap.instagram)]||'').trim(),
-      observacao:String(row[findCol(row,colMap.observacao)]||'').trim(),
+      empresa:String(row[findCol(row,colMap.empresa)]||'').trim()||null,
+      whatsapp:String(row[findCol(row,colMap.whatsapp)]||'').trim()||null,
+      instagram:String(row[findCol(row,colMap.instagram)]||'').trim()||null,
+      observacao:String(row[findCol(row,colMap.observacao)]||'').trim()||null,
       etapa:'em_espera',
-      vendedor:currentUser.role==='vendedor'?(currentUser.username||currentUser.name.toLowerCase()):'rudney',
+      vendedor:currentUser.role==='vendedor'?(currentUser.username||'rudney'):'rudney',
     };
     try{await crmUpsertContato(obj);ok++;}catch(e){erros++;}
   }
   await crmFetchContatos();
   crmRenderPipeline();crmRenderTabela();
-  alert(`Importação concluída: ${ok} contatos importados${erros?`, ${erros} erros`:''}.`);
+  alert(`✅ ${ok} contatos importados${erros?` · ${erros} erros`:''}.`);
   event.target.value='';
 }
 
@@ -4455,50 +4597,41 @@ function crmParseCSV(text){
 
 /* ===== NOTIFICAÇÕES ===== */
 async function crmAgendarNotificacoes(){
-  // Limpar timers anteriores
   crmLembretesTimers.forEach(t=>clearTimeout(t));
   crmLembretesTimers=[];
   if(!('Notification' in window)) return;
-  if(Notification.permission==='default'){
-    const perm=await Notification.requestPermission();
-    if(perm!=='granted') return;
-  }
+  if(Notification.permission==='default') await Notification.requestPermission();
   if(Notification.permission!=='granted') return;
   const now=Date.now();
   crmLembretes.forEach(l=>{
     const dt=new Date(l.dt_lembrete).getTime();
-    // Alerta 30 min antes
     const t30=dt-1800000-now;
-    if(t30>0){
-      const timer=setTimeout(()=>{
-        new Notification('⏰ Reunião em 30 minutos — Roity CRM',{body:l.titulo+(l.descricao?'\n'+l.descricao:''),icon:'/favicon.ico'});
-      },t30);
-      crmLembretesTimers.push(timer);
+    if(t30>0&&t30<86400000*7){
+      crmLembretesTimers.push(setTimeout(()=>{
+        new Notification('⏰ Reunião em 30 min — Roity CRM',{body:l.titulo+(l.descricao?'\n'+l.descricao:''),icon:'/favicon.ico'});
+      },t30));
     }
-    // Alerta na hora
-    const tExato=dt-now;
-    if(tExato>0&&tExato<86400000*7){
-      const timer=setTimeout(()=>{
-        new Notification('🔔 Reunião AGORA — Roity CRM',{body:l.titulo+(l.descricao?'\n'+l.descricao:''),icon:'/favicon.ico'});
-      },tExato);
-      crmLembretesTimers.push(timer);
+    const tEx=dt-now;
+    if(tEx>0&&tEx<86400000*7){
+      crmLembretesTimers.push(setTimeout(()=>{
+        new Notification('🔔 Reunião agora! — Roity CRM',{body:l.titulo+(l.descricao?'\n'+l.descricao:''),icon:'/favicon.ico'});
+      },tEx));
     }
   });
 }
 
-/* ===== UTILITÁRIO ===== */
+/* ===== UTIL ===== */
 function escHTML(str){
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/* Fechar modais clicando fora */
 ['crm-modal-contato','crm-modal-lembrete'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('click',e=>{if(e.target===el) crmFecharModal(id);});
 });
 </script>
 
-<!-- SQL: rodar no Supabase SQL Editor -->
+<!-- SQL para rodar no Supabase SQL Editor (uma única vez) -->
 <!--
 CREATE TABLE IF NOT EXISTS roity_contatos (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
