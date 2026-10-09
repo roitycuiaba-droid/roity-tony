@@ -1539,6 +1539,22 @@ function switchTab(tab){
   }catch(e){}}
   if(tab==='kanban'){try{renderKanban();renderReposicoes();}catch(e){}}
   if(tab==='postagens'){try{renderPostagens();}catch(e){}}
+  if(tab==='crm'){try{crmInitAdmin();}catch(e){}}
+}
+
+/* Inicializa o CRM na aba do app principal (admin) */
+let crmAdminLoaded=false;
+async function crmInitAdmin(){
+  const el=document.getElementById('view-crm-content');
+  if(!el) return;
+  if(!crmAdminLoaded){
+    el.innerHTML='<div style="padding:2.5rem;text-align:center;color:rgba(255,255,255,.3);">Carregando CRM…</div>';
+    try{await crmFetchContatos();}catch(e){}
+    try{await crmFetchLembretes();}catch(e){}
+    crmAdminLoaded=true;
+  }
+  crmRenderAdmin();
+  try{crmAgendarNotificacoes();}catch(e){}
 }
 
 function closeBanner(){
@@ -3755,7 +3771,18 @@ window.addEventListener('DOMContentLoaded',async()=>{
 
   <!-- CRM Header — limpo, sem logo -->
   <div id="crm-header" style="background:rgba(255,255,255,0.03); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,0.07); padding:.4rem 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; min-height:56px; flex-wrap:wrap; position:sticky; top:0; z-index:100;">
-    <div style="display:flex; align-items:center; gap:1rem; min-width:0;">
+    <nav id="crm-nav" style="display:flex; align-items:center; gap:.15rem; flex-wrap:wrap;">
+      <button id="crm-nav-dash" onclick="crmShowSection('dash')" class="crm-nav-btn active">Dashboard</button>
+      <button id="crm-nav-pipeline" onclick="crmShowSection('pipeline')" class="crm-nav-btn">Pipeline</button>
+      <button id="crm-nav-contatos" onclick="crmShowSection('contatos')" class="crm-nav-btn">Contatos</button>
+      <button id="crm-nav-lembretes" onclick="crmShowSection('lembretes')" class="crm-nav-btn">Lembretes</button>
+      <button onclick="crmExportarCSV()" class="crm-nav-btn" style="background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25);color:#4ade80;">⬇ Exportar</button>
+    </nav>
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <div id="crm-clock" style="display:flex;gap:.75rem;font-size:.72rem;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;">
+        <span><span style="color:rgba(255,255,255,.2);">CBA</span> <span id="crm-clock-cba" style="color:rgba(255,255,255,.55);font-weight:600;"></span></span>
+        <span><span style="color:rgba(255,255,255,.2);">BSB</span> <span id="crm-clock-bsb" style="color:rgba(255,255,255,.55);font-weight:600;"></span></span>
+      </div>
       <button id="crm-profile-btn" onclick="crmAbrirPerfil()" class="crm-profile-chip" title="Meu perfil">
         <span class="crm-avatar" id="crm-avatar">··</span>
         <span class="crm-profile-text">
@@ -3764,19 +3791,6 @@ window.addEventListener('DOMContentLoaded',async()=>{
         </span>
         <i class="ti ti-chevron-down" style="font-size:.8rem;color:rgba(255,255,255,.3);"></i>
       </button>
-      <nav id="crm-nav" style="display:flex; align-items:center; gap:.15rem; flex-wrap:wrap;">
-        <button id="crm-nav-dash" onclick="crmShowSection('dash')" class="crm-nav-btn active">Dashboard</button>
-        <button id="crm-nav-pipeline" onclick="crmShowSection('pipeline')" class="crm-nav-btn">Pipeline</button>
-        <button id="crm-nav-contatos" onclick="crmShowSection('contatos')" class="crm-nav-btn">Contatos</button>
-        <button id="crm-nav-lembretes" onclick="crmShowSection('lembretes')" class="crm-nav-btn">Lembretes</button>
-        <button onclick="crmExportarCSV()" class="crm-nav-btn" style="background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25);color:#4ade80;">⬇ Exportar</button>
-      </nav>
-    </div>
-    <div style="display:flex; align-items:center; gap:.75rem;">
-      <div id="crm-clock" style="display:flex;gap:.75rem;font-size:.72rem;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;">
-        <span><span style="color:rgba(255,255,255,.2);">CBA</span> <span id="crm-clock-cba" style="color:rgba(255,255,255,.55);font-weight:600;"></span></span>
-        <span><span style="color:rgba(255,255,255,.2);">BSB</span> <span id="crm-clock-bsb" style="color:rgba(255,255,255,.55);font-weight:600;"></span></span>
-      </div>
       <span id="crm-user-label" style="display:none;"></span>
       <button onclick="logout()" class="crm-exit-btn">Sair</button>
     </div>
@@ -4143,18 +4157,22 @@ window.addEventListener('DOMContentLoaded',async()=>{
 .crm-profile-text{display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; min-width:0;}
 .crm-profile-text #crm-profile-name{font-weight:700; font-size:.8rem; color:#fff; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .crm-profile-text #crm-profile-role{font-size:.64rem; color:rgba(255,255,255,.35); text-transform:capitalize;}
-.crm-funnel-row{display:grid; grid-template-columns:120px 1fr 120px; align-items:center; gap:.6rem; margin-bottom:.45rem;}
-.crm-funnel-band{position:relative; display:flex; align-items:center; justify-content:center; height:52px; color:#fff; font-weight:800; font-size:.82rem; text-shadow:0 1px 3px rgba(0,0,0,.4); transition:clip-path .4s ease;}
-.crm-funnel-side-l{text-align:right; font-size:.78rem; color:rgba(255,255,255,.5); line-height:1.2;}
-.crm-funnel-side-r{text-align:left; font-size:.82rem; color:rgba(255,255,255,.55); font-weight:700; line-height:1.2;}
+.crm-funnel-row{display:grid; grid-template-columns:96px 1fr 96px; align-items:center; gap:.75rem; margin-bottom:.4rem;}
+.crm-funnel-band{position:relative; display:flex; align-items:center; justify-content:center; height:54px; color:#fff; font-weight:800; font-size:.84rem; letter-spacing:.2px; text-shadow:0 1px 3px rgba(0,0,0,.45); transition:clip-path .4s ease;}
+.crm-funnel-side-l,.crm-funnel-side-r{display:flex; flex-direction:column; line-height:1.1;}
+.crm-funnel-side-l{text-align:right; align-items:flex-end;}
+.crm-funnel-side-r{text-align:left; align-items:flex-start;}
+.crm-funnel-side-l strong{color:#fff; font-size:1.05rem; font-weight:900;}
+.crm-funnel-side-r strong{color:rgba(255,255,255,.75); font-size:.95rem; font-weight:800;}
+.crm-funnel-side-l span,.crm-funnel-side-r span{font-size:.64rem; color:rgba(255,255,255,.32); margin-top:1px;}
 @media(max-width:760px){
   #crm-header{height:auto;}
   .crm-body{padding:1.1rem 1rem !important;}
   .crm-profile-text{display:none;}
-  .crm-funnel-row{grid-template-columns:52px 1fr 52px; gap:.4rem;}
-  .crm-funnel-side-l,.crm-funnel-side-r{font-size:.68rem;}
-  .crm-funnel-side-l strong{font-size:.85rem !important;}
-  .crm-funnel-band{font-size:.68rem; height:46px;}
+  .crm-funnel-row{grid-template-columns:48px 1fr 48px; gap:.45rem;}
+  .crm-funnel-side-l strong{font-size:.9rem;}
+  .crm-funnel-side-r strong{font-size:.8rem;}
+  .crm-funnel-band{font-size:.7rem; height:46px;}
   #crm-clock{display:none !important;}
 }
 </style>
@@ -4174,6 +4192,8 @@ const CRM_ETAPAS=[
   {id:'nao_foi_vendido',label:'Não foi vendido',  cor:'#ef4444'},
 ];
 const CRM_VENDEDORES={rudney:'Rudney',hugo:'Hugo',otacilio:'Otacilio',tiago:'Tiago',kalyston:'Kalyston'};
+const CRM_ADMINS=['gustavo','tiago','kalyston'];
+function crmEhAdmin(){return !!(currentUser&&(currentUser.role==='admin'||CRM_ADMINS.includes(currentUser.username)));}
 function crmShowValorVendido(val){
   const wrap=document.getElementById('crm-f-valor-wrap');
   if(wrap) wrap.style.display=val==='vendido'?'block':'none';
@@ -4241,17 +4261,20 @@ async function startCRM(){
     document.getElementById('app').style.display='none';
     document.getElementById('crm-app').style.display='block';
     crmAplicarPerfil();
-    if(role==='viewer_crm'){
+    // viewer puro (não-admin) só vê o dashboard; admins do CRM veem tudo
+    if(role==='viewer_crm' && !crmEhAdmin()){
       document.getElementById('crm-nav-pipeline').style.display='none';
       document.getElementById('crm-nav-contatos').style.display='none';
       document.getElementById('crm-nav-lembretes').style.display='none';
-      crmShowSection('dash');
     } else {
-      crmShowSection('dash');
+      document.getElementById('crm-nav-pipeline').style.display='';
+      document.getElementById('crm-nav-contatos').style.display='';
+      document.getElementById('crm-nav-lembretes').style.display='';
     }
+    crmShowSection('dash');
   } else {
-    // admin: tab dentro do app principal
-    crmRenderAdmin();
+    // admin (app principal): CRM renderizado ao abrir a aba
+    crmInitAdmin();
   }
   crmAgendarNotificacoes();
   crmIniciarRelogio();
@@ -4354,7 +4377,7 @@ function crmRenderPipeline(){
     const col=document.createElement('div');
     col.className='crm-col';
     col.dataset.etapa=etapa.id;
-    const isAdmin2=currentUser&&(currentUser.role==='admin'||currentUser.username==='gustavo'||currentUser.username==='tiago');
+    const isAdmin2=crmEhAdmin();
     col.innerHTML=`
       <div class="crm-col-header" style="background:${etapa.cor}15; border-bottom:2px solid ${etapa.cor}40;">
         <span style="color:${etapa.cor}; text-shadow:0 0 10px ${etapa.cor}60;">${etapa.label}</span>
@@ -4563,11 +4586,16 @@ let crmMeta={valor:0,prazo:''};
 let crmDashInterval=null;
 
 function crmRenderDash(){
-  const el=document.getElementById('crm-dash-content');
+  // pode haver 2 elementos (shell do vendedor + aba admin) — escolher o do contexto ativo
+  const dels=document.querySelectorAll('#crm-dash-content');
+  const el=dels.length>1
+    ? (document.getElementById('view-crm-content')?.contains(dels[1]) ? dels[1] : dels[0])
+    : dels[0];
   if(!el) return;
   if(crmDashInterval){clearInterval(crmDashInterval);crmDashInterval=null;}
 
-  const isAdmin=currentUser&&(currentUser.role==='admin'||currentUser.username==='gustavo'||currentUser.username==='tiago');
+  const isAdmin=crmEhAdmin();
+  const temAbaComissoes=!!document.getElementById('cadm-comissoes');
   const meuContatos=currentUser&&currentUser.role==='vendedor'
     ? crmContatos.filter(c=>c.vendedor===currentUser.username)
     : crmContatos;
@@ -4599,7 +4627,7 @@ function crmRenderDash(){
     return {id,nome,total:ctts.length,vendidos:vend,taxa:ctts.length?Math.round(vend/ctts.length*100):0};
   }).filter(v=>v.total>0);
 
-  // Funil visual (trapézios em formato de funil, vendas externas somadas em 'vendido')
+  // Funil visual — segmentos centralizados, largura proporcional à contagem (vendas externas somam em 'vendido')
   function funiHTML(etapas,contatos,extCount){
     const counts=etapas.map(e=>{
       let n=contatos.filter(c=>c.etapa===e.id).length;
@@ -4608,20 +4636,21 @@ function crmRenderDash(){
     });
     const maxVal=Math.max(1,...counts);
     const totalAll=counts.reduce((a,b)=>a+b,0)||1;
-    const widthFor=n=>Math.max(28,Math.round(n/maxVal*100));
+    // largura: 0 => 15%, demais entre 34% e 100% proporcional ao maior
+    const wFor=n=> n<=0?15:Math.round(34+(n/maxVal)*66);
     let rows='';
     etapas.forEach((e,i)=>{
       const n=counts[i];
-      const wt=widthFor(n);
-      const wb=widthFor(i<etapas.length-1?counts[i+1]:Math.max(1,Math.round(n*0.72)));
-      const insT=((100-wt)/2).toFixed(1);
+      const w=wFor(n);
+      const wb=Math.max(12,w*0.9); // leve afunilamento dentro do segmento
+      const insT=((100-w)/2).toFixed(1);
       const insB=((100-wb)/2).toFixed(1);
       const clip=`polygon(${insT}% 0, ${100-insT}% 0, ${100-insB}% 100%, ${insB}% 100%)`;
       const pct=Math.round(n/totalAll*100);
       rows+=`<div class="crm-funnel-row">
-        <div class="crm-funnel-side-l"><strong style="color:#fff;font-size:1rem;">${n}</strong><br><span style="font-size:.66rem;color:rgba(255,255,255,.35);">contatos</span></div>
-        <div class="crm-funnel-band" style="clip-path:${clip};-webkit-clip-path:${clip};background:linear-gradient(135deg,${e.cor},${e.cor}bb);">${escHTML(e.label)}</div>
-        <div class="crm-funnel-side-r">${pct}%<br><span style="font-size:.66rem;color:rgba(255,255,255,.3);font-weight:500;">do total</span></div>
+        <div class="crm-funnel-side-l"><strong>${n}</strong><span>contatos</span></div>
+        <div class="crm-funnel-band" style="clip-path:${clip};-webkit-clip-path:${clip};background:linear-gradient(135deg,${e.cor},${e.cor}cc);"><span>${escHTML(e.label)}</span></div>
+        <div class="crm-funnel-side-r"><strong>${pct}%</strong><span>do total</span></div>
       </div>`;
     });
     return rows;
@@ -4722,6 +4751,12 @@ function crmRenderDash(){
           </div>
         </div>`).join('')}
       </div>
+    </div>`:''}
+    <!-- METAS & COMISSÕES POR VENDEDOR (admin, quando não há aba dedicada) -->
+    ${isAdmin&&!temAbaComissoes?`<div class="crm-glass-card" style="margin-bottom:1.25rem;">
+      <div style="font-weight:700;color:rgba(255,255,255,.7);font-size:.85rem;margin-bottom:.3rem;">Metas & Comissões por Vendedor</div>
+      <div style="font-size:.72rem;color:rgba(255,255,255,.3);margin-bottom:1rem;">Defina a meta de vendas e a comissão de cada vendedor</div>
+      <div id="crm-metascom-content">${crmRenderMetasComissoesHTML()}</div>
     </div>`:''}
     <!-- VENDAS EXTERNAS -->
     <div class="crm-glass-card" style="margin-bottom:1.25rem;">
@@ -4852,8 +4887,7 @@ function crmDeleteVendaExt(idx){
 }
 
 function crmEditarMeta(){
-  const isAdmin=currentUser&&(currentUser.role==='admin'||currentUser.username==='gustavo'||currentUser.username==='tiago');
-  if(!isAdmin){alert('Apenas administradores podem editar a meta.');return;}
+  if(!crmEhAdmin()){alert('Apenas administradores podem editar a meta.');return;}
   const metaKey='crm_meta_'+(currentUser?.username||'all');
   const novaVal=prompt('Meta de vendas (número de vendas):',crmMeta.valor||0);
   if(novaVal===null) return;
@@ -4862,6 +4896,62 @@ function crmEditarMeta(){
   crmMeta={valor:parseInt(novaVal)||0,prazo:novaPrazo};
   try{localStorage.setItem(metaKey,JSON.stringify(crmMeta));}catch(e){}
   crmRenderDash();
+}
+
+/* Metas & comissões por vendedor (admin) */
+function crmRenderMetasComissoesHTML(){
+  let comissoes={};
+  try{const s=localStorage.getItem('crm_comissoes');if(s)comissoes=JSON.parse(s);}catch(e){}
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.75rem;">
+    ${Object.entries(CRM_VENDEDORES).map(([id,nome])=>{
+      const pct=comissoes[id]||0;
+      const ctts=crmContatos.filter(c=>c.vendedor===id);
+      const vends=ctts.filter(c=>c.etapa==='vendido').length;
+      let meta={valor:0,prazo:''};
+      try{const s=localStorage.getItem('crm_meta_'+id);if(s)meta=JSON.parse(s);}catch(e){}
+      return `<div class="crm-glass-card" style="padding:.9rem 1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+          <div style="font-weight:800;color:#fff;font-size:.92rem;">${nome}</div>
+          <span style="background:rgba(34,197,94,.15);color:#4ade80;border-radius:20px;padding:.1rem .5rem;font-size:.7rem;font-weight:700;">${vends} vendas</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <div>
+            <label style="font-size:.66rem;color:rgba(255,255,255,.4);display:block;margin-bottom:.2rem;">Meta (nº de vendas)</label>
+            <input type="number" id="metav-${id}" value="${meta.valor||''}" min="0" placeholder="0"
+              style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#e8e8ef;padding:.4rem .65rem;font-size:.85rem;">
+          </div>
+          <div>
+            <label style="font-size:.66rem;color:rgba(255,255,255,.4);display:block;margin-bottom:.2rem;">Prazo</label>
+            <input type="text" id="metap-${id}" value="${meta.prazo||''}" placeholder="31/12/2026"
+              style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#e8e8ef;padding:.4rem .65rem;font-size:.85rem;">
+          </div>
+          <div>
+            <label style="font-size:.66rem;color:rgba(255,255,255,.4);display:block;margin-bottom:.2rem;">Comissão (%)</label>
+            <input type="number" id="com-${id}" value="${pct}" min="0" max="100" step="0.5" placeholder="0"
+              style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#e8e8ef;padding:.4rem .65rem;font-size:.85rem;">
+          </div>
+          <button onclick="crmSalvarMetaComissao('${id}')" class="crm-btn-primary" style="font-size:.8rem;padding:.4rem;justify-content:center;">Salvar</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function crmSalvarMetaComissao(id){
+  // meta
+  const mv=document.getElementById('metav-'+id);
+  const mp=document.getElementById('metap-'+id);
+  if(mv){
+    const meta={valor:parseInt(mv.value)||0,prazo:(mp?mp.value.trim():'')};
+    try{localStorage.setItem('crm_meta_'+id,JSON.stringify(meta));}catch(e){}
+  }
+  // comissão
+  let comissoes={};
+  try{const s=localStorage.getItem('crm_comissoes');if(s)comissoes=JSON.parse(s);}catch(e){}
+  const ci=document.getElementById('com-'+id);
+  if(ci){comissoes[id]=parseFloat(ci.value)||0;try{localStorage.setItem('crm_comissoes',JSON.stringify(comissoes));}catch(e){}}
+  const box=document.getElementById('crm-metascom-content');
+  if(box) box.innerHTML=crmRenderMetasComissoesHTML();
+  crmAtualizarTicker();
 }
 
 /* ===== ADMIN TAB ===== */
@@ -4874,7 +4964,7 @@ function crmRenderAdmin(){
       <button onclick="crmAdminSection('pipeline')" class="crm-nav-btn" id="cadm-pipeline">Pipeline</button>
       <button onclick="crmAdminSection('contatos')" class="crm-nav-btn" id="cadm-contatos">Contatos</button>
       <button onclick="crmAdminSection('lembretes')" class="crm-nav-btn" id="cadm-lembretes">Lembretes</button>
-      <button onclick="crmAdminSection('comissoes')" class="crm-nav-btn" id="cadm-comissoes">💰 Comissões</button>
+      <button onclick="crmAdminSection('comissoes')" class="crm-nav-btn" id="cadm-comissoes">💰 Metas & Comissões</button>
     </div>
     <div id="cadm-section-dash">
       <h2 style="margin:0 0 1.25rem;font-size:1.1rem;font-weight:800;">Dashboard de Vendas</h2>
@@ -4931,8 +5021,9 @@ function crmRenderAdmin(){
       <div id="crm-lembretes-list" style="display:flex;flex-direction:column;gap:.75rem;"></div>
     </div>
     <div id="cadm-section-comissoes" style="display:none;">
-      <h2 style="margin:0 0 1.25rem;font-size:1.1rem;font-weight:800;">Comissões por Vendedor</h2>
-      <div id="crm-comissoes-content">${crmRenderComissoesHTML()}</div>
+      <h2 style="margin:0 0 .3rem;font-size:1.1rem;font-weight:800;">Metas & Comissões por Vendedor</h2>
+      <p style="margin:0 0 1.25rem;font-size:.8rem;color:rgba(255,255,255,.35);">Defina a meta de vendas e a comissão de cada vendedor</p>
+      <div id="crm-metascom-content">${crmRenderMetasComissoesHTML()}</div>
     </div>`;
   crmAdminSection('dash');
 }
