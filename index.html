@@ -3911,6 +3911,33 @@ window.addEventListener('DOMContentLoaded',async()=>{
   </div>
 </div>
 
+<!-- MODAL: Valor da venda / negociação -->
+<div id="crm-modal-venda" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); z-index:1001; align-items:center; justify-content:center;">
+  <div class="crm-modal-box" style="max-width:420px; width:95%;">
+    <h3 id="crm-venda-title" style="margin:0 0 .35rem; font-size:1.05rem; font-weight:800; color:#fff;">Registrar venda</h3>
+    <p style="margin:0 0 1.25rem; font-size:.82rem; color:rgba(255,255,255,.4);">Cliente: <b id="crm-venda-cliente" style="color:rgba(255,255,255,.7);"></b></p>
+    <div style="margin-bottom:.9rem;">
+      <label class="crm-label" id="crm-venda-valor-label">Valor da venda (R$)</label>
+      <input id="crm-venda-valor" type="number" min="0" step="10" class="crm-input" placeholder="0,00" autofocus>
+    </div>
+    <div id="crm-venda-pagto-wrap" style="margin-bottom:1.5rem;">
+      <label class="crm-label">Forma de pagamento</label>
+      <select id="crm-venda-pagto" class="crm-input">
+        <option value="PIX">PIX</option>
+        <option value="Cartão de crédito">Cartão de crédito</option>
+        <option value="Cartão de débito">Cartão de débito</option>
+        <option value="Boleto">Boleto</option>
+        <option value="Dinheiro">Dinheiro</option>
+        <option value="Transferência">Transferência</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:.5rem; justify-content:flex-end;">
+      <button onclick="crmCancelarVenda()" class="crm-btn-ghost">Cancelar</button>
+      <button onclick="crmConfirmarVenda()" class="crm-btn-primary" id="crm-venda-ok">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Novo/Editar Contato -->
 <div id="crm-modal-contato" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); z-index:999; align-items:center; justify-content:center;">
   <div class="crm-modal-box" style="max-width:520px; width:95%;">
@@ -4157,18 +4184,30 @@ window.addEventListener('DOMContentLoaded',async()=>{
 .crm-profile-text{display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; min-width:0;}
 .crm-profile-text #crm-profile-name{font-weight:700; font-size:.8rem; color:#fff; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .crm-profile-text #crm-profile-role{font-size:.64rem; color:rgba(255,255,255,.35); text-transform:capitalize;}
-.crm-funnel-row{display:grid; grid-template-columns:96px 1fr 96px; align-items:center; gap:.75rem; margin-bottom:.4rem;}
-.crm-funnel-band{position:relative; display:flex; align-items:center; justify-content:center; height:54px; color:#fff; font-weight:800; font-size:.84rem; letter-spacing:.2px; text-shadow:0 1px 3px rgba(0,0,0,.45); transition:clip-path .4s ease;}
+.crm-funnel-row{display:grid; grid-template-columns:96px 1fr 96px; align-items:center; gap:.75rem; margin-bottom:0;}
+.crm-funnel-band{position:relative; display:flex; align-items:center; justify-content:center; height:56px;}
+.crm-funnel-shape{position:absolute; inset:0; transition:clip-path .4s ease;}
+.crm-funnel-label{position:relative; z-index:1; color:#fff; font-weight:800; font-size:.84rem; letter-spacing:.2px; white-space:nowrap; text-shadow:0 1px 4px rgba(0,0,0,.75), 0 0 2px rgba(0,0,0,.6);}
 .crm-funnel-side-l,.crm-funnel-side-r{display:flex; flex-direction:column; line-height:1.1;}
 .crm-funnel-side-l{text-align:right; align-items:flex-end;}
 .crm-funnel-side-r{text-align:left; align-items:flex-start;}
 .crm-funnel-side-l strong{color:#fff; font-size:1.05rem; font-weight:900;}
 .crm-funnel-side-r strong{color:rgba(255,255,255,.75); font-size:.95rem; font-weight:800;}
 .crm-funnel-side-l span,.crm-funnel-side-r span{font-size:.64rem; color:rgba(255,255,255,.32); margin-top:1px;}
+.crm-val-list{display:flex; flex-direction:column; gap:.1rem; max-height:200px; overflow-y:auto; margin-top:.2rem;}
+.crm-val-row{display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.4rem .55rem; border-radius:8px; font-size:.82rem;}
+.crm-val-row:hover{background:rgba(255,255,255,.04);}
+.crm-val-row b{color:#fff; font-weight:600;}
+.crm-val-sub{color:rgba(255,255,255,.35); font-size:.74rem;}
+.crm-val-amount{font-weight:800; font-size:.84rem; white-space:nowrap; flex-shrink:0; font-variant-numeric:tabular-nums;}
+.crm-val-empty{color:rgba(255,255,255,.22); font-size:.8rem; text-align:center; padding:1rem 0;}
+.crm-val-list::-webkit-scrollbar{width:6px;}
+.crm-val-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:3px;}
 @media(max-width:760px){
   #crm-header{height:auto;}
   .crm-body{padding:1.1rem 1rem !important;}
   .crm-profile-text{display:none;}
+  .crm-value-grid{grid-template-columns:1fr !important;}
   .crm-funnel-row{grid-template-columns:48px 1fr 48px; gap:.45rem;}
   .crm-funnel-side-l strong{font-size:.9rem;}
   .crm-funnel-side-r strong{font-size:.8rem;}
@@ -4420,15 +4459,84 @@ function crmCardHTML(c){
   </div>`;
 }
 
+let crmVendaPendente=null;
 async function crmOnDrop(ev,novaEtapa){
   if(!crmDragId) return;
   const c=crmContatos.find(x=>String(x.id)===String(crmDragId));
-  if(!c||c.etapa===novaEtapa){crmDragId=null;return;}
-  c.etapa=novaEtapa;
-  crmRenderPipeline();
-  try{await crmUpsertContato({id:c.id,etapa:novaEtapa});}
-  catch(e){alert('Erro ao mover: '+e.message);await crmFetchContatos();crmRenderPipeline();}
   crmDragId=null;
+  if(!c||c.etapa===novaEtapa) return;
+  // etapas que exigem valor → abre modal antes de aplicar
+  if(novaEtapa==='vendido' || novaEtapa==='vai_ser_vendido'){
+    crmAbrirModalVenda(c,novaEtapa);
+    return;
+  }
+  await crmAplicarEtapa(c,novaEtapa);
+}
+
+// aplica a etapa (e campos extras) no Supabase, com fallback se colunas novas não existirem
+async function crmAplicarEtapa(c,novaEtapa,extra){
+  const prev={etapa:c.etapa,valor:c.valor,pagamento:c.pagamento,vendido_em:c.vendido_em};
+  c.etapa=novaEtapa;
+  if(extra) Object.assign(c,extra);
+  crmRenderPipeline();
+  const body={id:c.id,etapa:novaEtapa};
+  if(extra){
+    if(extra.valor!=null) body.valor=extra.valor;
+    if(extra.pagamento!=null) body.pagamento=extra.pagamento;
+    if(extra.vendido_em!=null) body.vendido_em=extra.vendido_em;
+  }
+  try{
+    await crmUpsertContato(body);
+  }catch(e){
+    // fallback: colunas pagamento/vendido_em podem não existir ainda no banco
+    try{
+      const min={id:c.id,etapa:novaEtapa};
+      if(body.valor!=null) min.valor=body.valor;
+      await crmUpsertContato(min);
+    }catch(e2){
+      alert('Erro ao salvar: '+e2.message);
+      Object.assign(c,prev);
+    }
+  }
+  crmRenderPipeline();
+  if(crmCurrentSection==='dash') crmRenderDash();
+}
+
+function crmAbrirModalVenda(c,novaEtapa){
+  crmVendaPendente={id:c.id,novaEtapa};
+  const vendido=novaEtapa==='vendido';
+  document.getElementById('crm-venda-title').textContent=vendido?'Registrar venda':'Valor em negociação';
+  document.getElementById('crm-venda-valor-label').textContent=vendido?'Valor da venda (R$)':'Valor estimado (R$)';
+  document.getElementById('crm-venda-cliente').textContent=c.nome||'—';
+  document.getElementById('crm-venda-valor').value=c.valor||'';
+  document.getElementById('crm-venda-pagto-wrap').style.display=vendido?'block':'none';
+  const pg=document.getElementById('crm-venda-pagto'); if(pg&&c.pagamento) pg.value=c.pagamento;
+  crmAbrirModal('crm-modal-venda');
+  setTimeout(()=>{const v=document.getElementById('crm-venda-valor');if(v)v.focus();},50);
+}
+
+async function crmConfirmarVenda(){
+  if(!crmVendaPendente) return;
+  const {id,novaEtapa}=crmVendaPendente;
+  const c=crmContatos.find(x=>String(x.id)===String(id));
+  if(!c){crmFecharModal('crm-modal-venda');crmVendaPendente=null;return;}
+  const valor=parseFloat(document.getElementById('crm-venda-valor').value)||0;
+  const extra={valor};
+  if(novaEtapa==='vendido'){
+    extra.vendido_em=new Date().toISOString();
+    const pg=document.getElementById('crm-venda-pagto');
+    if(pg) extra.pagamento=pg.value;
+  }
+  crmFecharModal('crm-modal-venda');
+  crmVendaPendente=null;
+  await crmAplicarEtapa(c,novaEtapa,extra);
+}
+
+function crmCancelarVenda(){
+  // não altera a etapa — apenas fecha e redesenha para o card voltar ao lugar
+  crmVendaPendente=null;
+  crmFecharModal('crm-modal-venda');
+  crmRenderPipeline();
 }
 
 function crmEditarEtapa(etapaId){
@@ -4584,6 +4692,20 @@ function crmRenderLembretes(){
 /* ===== DASHBOARD ===== */
 let crmMeta={valor:0,prazo:''};
 let crmDashInterval=null;
+let crmDashPeriodo='mes';
+let crmDashVendedor='';
+function crmBRL(v){return 'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function crmPeriodoDesde(per){
+  const d=new Date();
+  if(per==='dia'){d.setHours(0,0,0,0);return d;}
+  if(per==='semana'){const w=d.getDay();d.setDate(d.getDate()-w);d.setHours(0,0,0,0);return d;}
+  if(per==='mes'){d.setDate(1);d.setHours(0,0,0,0);return d;}
+  return null; // tudo
+}
+function crmDataVenda(c){return new Date(c.vendido_em||c.updated_at||c.created_at||0);}
+function crmDataExt(v){if(v.ts)return new Date(v.ts);if(v.data){const p=v.data.split('/');return new Date(+p[2],+p[1]-1,+p[0]);}return new Date(0);}
+function crmSetPeriodo(v){crmDashPeriodo=v;crmRenderDash();}
+function crmSetVendedor(v){crmDashVendedor=v;crmRenderDash();}
 
 function crmRenderDash(){
   // pode haver 2 elementos (shell do vendedor + aba admin) — escolher o do contexto ativo
@@ -4596,9 +4718,10 @@ function crmRenderDash(){
 
   const isAdmin=crmEhAdmin();
   const temAbaComissoes=!!document.getElementById('cadm-comissoes');
-  const meuContatos=currentUser&&currentUser.role==='vendedor'
+  let meuContatos=currentUser&&currentUser.role==='vendedor'
     ? crmContatos.filter(c=>c.vendedor===currentUser.username)
     : crmContatos;
+  if(isAdmin && crmDashVendedor) meuContatos=meuContatos.filter(c=>c.vendedor===crmDashVendedor);
   const total=meuContatos.length;
   const vendidos=meuContatos.filter(c=>c.etapa==='vendido').length;
   const naoVendidos=meuContatos.filter(c=>c.etapa==='nao_foi_vendido').length;
@@ -4620,6 +4743,25 @@ function crmRenderDash(){
   const vendidosTotal=vendidos+vendasExtCount;
   const metaPct=metaVal>0?Math.min(100,Math.round(vendidosTotal/metaVal*100)):0;
 
+  // ===== Período selecionado (filtra os números por data) =====
+  const per=crmDashPeriodo;
+  const desde=crmPeriodoDesde(per);
+  const perLabel={dia:'Hoje',semana:'Esta semana',mes:'Este mês',tudo:'Todo período'}[per]||'Este mês';
+  const noPeriodo=d=>!desde||(d&&d>=desde);
+  // Em negociação (estado atual do pipeline)
+  const negoc=meuContatos.filter(c=>c.etapa==='vai_ser_vendido');
+  const negocValor=negoc.reduce((a,c)=>a+(parseFloat(c.valor)||0),0);
+  const negocLista=negoc.slice().sort((a,b)=>(parseFloat(b.valor)||0)-(parseFloat(a.valor)||0));
+  // Vendido no período (contatos + vendas externas)
+  const vendidosContatos=meuContatos.filter(c=>c.etapa==='vendido'&&noPeriodo(crmDataVenda(c)));
+  const vendasExtPer=vendasExt.filter(v=>noPeriodo(crmDataExt(v)));
+  const vendidoValor=vendidosContatos.reduce((a,c)=>a+(parseFloat(c.valor)||0),0)+vendasExtPer.reduce((a,v)=>a+(parseFloat(v.valor)||0),0);
+  const vendidoQtd=vendidosContatos.length+vendasExtPer.length;
+  const vendidoLista=[
+    ...vendidosContatos.map(c=>({nome:c.nome,sub:c.empresa||(CRM_VENDEDORES[c.vendedor]||c.vendedor||''),valor:parseFloat(c.valor)||0,ext:false})),
+    ...vendasExtPer.map(v=>({nome:v.cliente,sub:(v.origem?'ext · '+v.origem:'externa'),valor:parseFloat(v.valor)||0,ext:true}))
+  ].sort((a,b)=>b.valor-a.valor);
+
   // Por vendedor (só admin)
   const porVend=Object.entries(CRM_VENDEDORES).map(([id,nome])=>{
     const ctts=crmContatos.filter(c=>c.vendedor===id);
@@ -4627,29 +4769,40 @@ function crmRenderDash(){
     return {id,nome,total:ctts.length,vendidos:vend,taxa:ctts.length?Math.round(vend/ctts.length*100):0};
   }).filter(v=>v.total>0);
 
-  // Funil visual — segmentos centralizados, largura proporcional à contagem (vendas externas somam em 'vendido')
+  // Funil contínuo — cada etapa encaixa na próxima (base de uma = topo da seguinte).
+  // A largura de cada etapa reflete quantos contatos ainda estão nela ou em etapas seguintes
+  // (acumulado), por isso afunila sempre e se adapta a qualquer alteração do pipeline.
   function funiHTML(etapas,contatos,extCount){
     const counts=etapas.map(e=>{
       let n=contatos.filter(c=>c.etapa===e.id).length;
       if(e.id==='vendido') n+=(extCount||0);
       return n;
     });
-    const maxVal=Math.max(1,...counts);
     const totalAll=counts.reduce((a,b)=>a+b,0)||1;
-    // largura: 0 => 15%, demais entre 34% e 100% proporcional ao maior
-    const wFor=n=> n<=0?15:Math.round(34+(n/maxVal)*66);
+    // acumulado de cada etapa para baixo (sempre decrescente → funil de verdade)
+    const restante=counts.map((_,i)=>counts.slice(i).reduce((a,b)=>a+b,0));
+    const WMIN=9;
+    // largura de borda por etapa i = topo da faixa i; a base = topo da faixa i+1
+    const edge=i=>{
+      if(i>=etapas.length) return WMIN; // bico final
+      const r=restante[i];
+      return r<=0?WMIN:Math.round(WMIN+(r/restante[0])*(100-WMIN));
+    };
     let rows='';
     etapas.forEach((e,i)=>{
       const n=counts[i];
-      const w=wFor(n);
-      const wb=Math.max(12,w*0.9); // leve afunilamento dentro do segmento
-      const insT=((100-w)/2).toFixed(1);
-      const insB=((100-wb)/2).toFixed(1);
+      const topW=edge(i);
+      const botW=edge(i+1);
+      const insT=((100-topW)/2).toFixed(2);
+      const insB=((100-botW)/2).toFixed(2);
       const clip=`polygon(${insT}% 0, ${100-insT}% 0, ${100-insB}% 100%, ${insB}% 100%)`;
       const pct=Math.round(n/totalAll*100);
       rows+=`<div class="crm-funnel-row">
         <div class="crm-funnel-side-l"><strong>${n}</strong><span>contatos</span></div>
-        <div class="crm-funnel-band" style="clip-path:${clip};-webkit-clip-path:${clip};background:linear-gradient(135deg,${e.cor},${e.cor}cc);"><span>${escHTML(e.label)}</span></div>
+        <div class="crm-funnel-band">
+          <div class="crm-funnel-shape" style="clip-path:${clip};-webkit-clip-path:${clip};background:linear-gradient(135deg,${e.cor},${e.cor}cc);"></div>
+          <span class="crm-funnel-label">${escHTML(e.label)}</span>
+        </div>
         <div class="crm-funnel-side-r"><strong>${pct}%</strong><span>do total</span></div>
       </div>`;
     });
@@ -4657,40 +4810,56 @@ function crmRenderDash(){
   }
 
   el.innerHTML=`
-    <!-- TICKER AO VIVO -->
-    <div class="crm-glass-card" style="margin-bottom:1.25rem;border:1px solid rgba(34,197,94,.2);background:rgba(34,197,94,.04);">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
-        <div style="display:flex;align-items:center;gap:.6rem;">
-          <span style="display:inline-flex;align-items:center;gap:.3rem;background:rgba(34,197,94,.15);border-radius:20px;padding:.15rem .6rem;font-size:.72rem;font-weight:700;color:#4ade80;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:crmPulse 1.2s infinite;display:inline-block;"></span>AO VIVO
-          </span>
-          <span id="crm-ticker-clock" style="font-size:.75rem;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;"></span>
+    <!-- CONTROLES AO VIVO -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <span style="display:inline-flex;align-items:center;gap:.35rem;background:rgba(34,197,94,.15);border-radius:20px;padding:.2rem .65rem;font-size:.72rem;font-weight:700;color:#4ade80;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:crmPulse 1.2s infinite;display:inline-block;"></span>AO VIVO
+        </span>
+        <span id="crm-ticker-clock" style="font-size:.75rem;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;"></span>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+        ${isAdmin?`<select onchange="crmSetVendedor(this.value)" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#e8e8ef;padding:.4rem .7rem;font-size:.78rem;">
+          <option value="">Todos vendedores</option>
+          ${Object.entries(CRM_VENDEDORES).map(([id,n])=>`<option value="${id}"${crmDashVendedor===id?' selected':''}>${n}</option>`).join('')}
+        </select>`:''}
+        <select onchange="crmSetPeriodo(this.value)" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:#e8e8ef;padding:.4rem .7rem;font-size:.78rem;">
+          <option value="dia"${per==='dia'?' selected':''}>Hoje</option>
+          <option value="semana"${per==='semana'?' selected':''}>Esta semana</option>
+          <option value="mes"${per==='mes'?' selected':''}>Este mês</option>
+          <option value="tudo"${per==='tudo'?' selected':''}>Todo período</option>
+        </select>
+        <button onclick="crmRenderDash()" title="Atualizar" style="background:rgba(37,99,235,.2);border:1px solid rgba(37,99,235,.3);border-radius:7px;color:#93c5fd;padding:.4rem .6rem;font-size:.78rem;cursor:pointer;">↻</button>
+      </div>
+    </div>
+    <!-- PAINÉIS DE VALOR (principal) -->
+    <div class="crm-value-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+      <!-- Em negociação -->
+      <div class="crm-glass-card" style="border:1px solid rgba(245,158,11,.28);background:linear-gradient(160deg,rgba(245,158,11,.06),rgba(255,255,255,.02));display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
+          <span style="font-weight:700;color:#fcd34d;font-size:.74rem;text-transform:uppercase;letter-spacing:.7px;">Em negociação</span>
+          <span style="background:rgba(245,158,11,.15);color:#fcd34d;border-radius:20px;padding:.1rem .5rem;font-size:.68rem;font-weight:700;">${negoc.length} cliente${negoc.length!==1?'s':''}</span>
         </div>
-        <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
-          <div style="text-align:center;">
-            <div id="crm-ticker-hoje" style="font-size:1.4rem;font-weight:900;color:#22c55e;">0</div>
-            <div style="font-size:.68rem;color:rgba(255,255,255,.35);">Vendas hoje</div>
-          </div>
-          <div style="text-align:center;">
-            <div id="crm-ticker-mes" style="font-size:1.4rem;font-weight:900;color:#3b82f6;">0</div>
-            <div style="font-size:.68rem;color:rgba(255,255,255,.35);">Vendas no mês</div>
-          </div>
-          <div style="text-align:center;">
-            <div id="crm-ticker-meta" style="font-size:1.4rem;font-weight:900;color:#f59e0b;">${metaPct}%</div>
-            <div style="font-size:.68rem;color:rgba(255,255,255,.35);">Da meta</div>
-          </div>
+        <div style="font-size:2.1rem;font-weight:900;color:#f59e0b;line-height:1.1;margin-bottom:.6rem;">${crmBRL(negocValor)}</div>
+        <div class="crm-val-list">
+          ${negocLista.length?negocLista.map(c=>`<div class="crm-val-row">
+            <div style="min-width:0;"><b>${escHTML(c.nome||'—')}</b>${c.empresa?`<span class="crm-val-sub"> · ${escHTML(c.empresa)}</span>`:''}</div>
+            <div class="crm-val-amount" style="color:#fcd34d;">${crmBRL(parseFloat(c.valor)||0)}</div>
+          </div>`).join(''):`<div class="crm-val-empty">Nenhum cliente em negociação</div>`}
         </div>
-        <div style="display:flex;gap:.5rem;align-items:center;">
-          <select id="crm-ticker-filtro-vend" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#e8e8ef;padding:.3rem .6rem;font-size:.75rem;">
-            <option value="">Todos vendedores</option>
-            ${Object.entries(CRM_VENDEDORES).map(([id,n])=>`<option value="${id}"${currentUser?.username===id?` selected`:``}>${n}</option>`).join('')}
-          </select>
-          <select id="crm-ticker-filtro-per" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#e8e8ef;padding:.3rem .6rem;font-size:.75rem;">
-            <option value="dia">Hoje</option>
-            <option value="semana">Esta semana</option>
-            <option value="mes" selected>Este mês</option>
-          </select>
-          <button onclick="crmAtualizarTicker()" style="background:rgba(37,99,235,.2);border:1px solid rgba(37,99,235,.3);border-radius:6px;color:#93c5fd;padding:.3rem .6rem;font-size:.75rem;cursor:pointer;">↻</button>
+      </div>
+      <!-- Vendido -->
+      <div class="crm-glass-card" style="border:1px solid rgba(34,197,94,.28);background:linear-gradient(160deg,rgba(34,197,94,.06),rgba(255,255,255,.02));display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
+          <span style="font-weight:700;color:#4ade80;font-size:.74rem;text-transform:uppercase;letter-spacing:.7px;">Vendido · ${perLabel}</span>
+          <span style="background:rgba(34,197,94,.15);color:#4ade80;border-radius:20px;padding:.1rem .5rem;font-size:.68rem;font-weight:700;">${vendidoQtd} venda${vendidoQtd!==1?'s':''}</span>
+        </div>
+        <div style="font-size:2.1rem;font-weight:900;color:#22c55e;line-height:1.1;margin-bottom:.6rem;">${crmBRL(vendidoValor)}</div>
+        <div class="crm-val-list">
+          ${vendidoLista.length?vendidoLista.map(c=>`<div class="crm-val-row">
+            <div style="min-width:0;"><b>${escHTML(c.nome||'—')}</b>${c.sub?`<span class="crm-val-sub"> · ${escHTML(c.sub)}</span>`:''}</div>
+            <div class="crm-val-amount" style="color:#4ade80;">${crmBRL(c.valor)}</div>
+          </div>`).join(''):`<div class="crm-val-empty">Nenhuma venda no período</div>`}
         </div>
       </div>
     </div>
