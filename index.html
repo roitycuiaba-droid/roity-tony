@@ -3757,13 +3757,17 @@ window.addEventListener('DOMContentLoaded',async()=>{
   <!-- CRM Header — limpo, sem logo -->
   <div id="crm-header" style="background:rgba(255,255,255,0.03); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,0.07); padding:0 1.5rem; display:flex; align-items:center; justify-content:space-between; height:52px; position:sticky; top:0; z-index:100;">
     <nav style="display:flex; align-items:center; gap:.15rem;">
-      <button id="crm-nav-dash" onclick="crmShowSection('dash')" class="crm-nav-btn active">📊 Dashboard</button>
+      <button id="crm-nav-dash" onclick="crmShowSection('dash')" class="crm-nav-btn active">Dashboard</button>
         <button id="crm-nav-pipeline" onclick="crmShowSection('pipeline')" class="crm-nav-btn">Pipeline</button>
         <button id="crm-nav-contatos" onclick="crmShowSection('contatos')" class="crm-nav-btn">Contatos</button>
         <button id="crm-nav-lembretes" onclick="crmShowSection('lembretes')" class="crm-nav-btn">Lembretes</button>
         <button onclick="crmExportarCSV()" class="crm-nav-btn" style="background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25);color:#4ade80;">⬇ Exportar</button>
     </nav>
     <div style="display:flex; align-items:center; gap:.75rem;">
+      <div id="crm-clock" style="display:flex;gap:.75rem;font-size:.72rem;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;">
+        <span><span style="color:rgba(255,255,255,.2);">CBA</span> <span id="crm-clock-cba" style="color:rgba(255,255,255,.55);font-weight:600;"></span></span>
+        <span><span style="color:rgba(255,255,255,.2);">BSB</span> <span id="crm-clock-bsb" style="color:rgba(255,255,255,.55);font-weight:600;"></span></span>
+      </div>
       <span id="crm-user-label" style="font-size:.78rem; color:rgba(255,255,255,.3); display:none;"></span>
       <button onclick="logout()" class="crm-exit-btn">Sair</button>
     </div>
@@ -3820,12 +3824,13 @@ window.addEventListener('DOMContentLoaded',async()=>{
               <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">WhatsApp</th>
               <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Etapa</th>
               <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Vendedor</th>
+              <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Tags</th>
               <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;">Data</th>
               <th style="padding:.8rem 1.1rem; text-align:left; font-weight:600; color:rgba(255,255,255,.4); font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;"></th>
             </tr>
           </thead>
           <tbody id="crm-contatos-tbody">
-            <tr><td colspan="7" style="padding:2.5rem; text-align:center; color:rgba(255,255,255,.2);">Carregando...</td></tr>
+            <tr><td colspan="8" style="padding:2.5rem; text-align:center; color:rgba(255,255,255,.2);">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -4096,6 +4101,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
   box-sizing:border-box; transition:border-color .18s; outline:none;
 }
 .crm-input:focus{border-color:rgba(37,99,235,.6); background:rgba(37,99,235,.06);}
+@keyframes crmPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.85);}}
 </style>
 
 <!-- CRM JAVASCRIPT -->
@@ -4169,6 +4175,7 @@ async function crmDeleteLembrete(id){
 
 /* ===== startCRM ===== */
 async function startCRM(){
+  crmCarregarEtapasCustom();
   document.getElementById('loading').style.display='flex';
   await crmFetchContatos();
   await crmFetchLembretes();
@@ -4193,6 +4200,22 @@ async function startCRM(){
     crmRenderAdmin();
   }
   crmAgendarNotificacoes();
+  crmIniciarRelogio();
+}
+
+function crmIniciarRelogio(){
+  function tick(){
+    const agora=new Date();
+    const optTime={hour:'2-digit',minute:'2-digit',second:'2-digit'};
+    const cba=agora.toLocaleTimeString('pt-BR',{...optTime,timeZone:'America/Cuiaba'});
+    const bsb=agora.toLocaleTimeString('pt-BR',{...optTime,timeZone:'America/Sao_Paulo'});
+    const elCba=document.getElementById('crm-clock-cba');
+    const elBsb=document.getElementById('crm-clock-bsb');
+    if(elCba)elCba.textContent=cba;
+    if(elBsb)elBsb.textContent=bsb;
+  }
+  tick();
+  setInterval(tick,1000);
 }
 
 /* ===== NAVEGAÇÃO ===== */
@@ -4228,10 +4251,14 @@ function crmRenderPipeline(){
     const col=document.createElement('div');
     col.className='crm-col';
     col.dataset.etapa=etapa.id;
+    const isAdmin2=currentUser&&(currentUser.role==='admin'||currentUser.username==='gustavo'||currentUser.username==='tiago');
     col.innerHTML=`
       <div class="crm-col-header" style="background:${etapa.cor}15; border-bottom:2px solid ${etapa.cor}40;">
         <span style="color:${etapa.cor}; text-shadow:0 0 10px ${etapa.cor}60;">${etapa.label}</span>
-        <span style="background:${etapa.cor}20; color:${etapa.cor}; border-radius:20px; padding:.1rem .55rem; font-size:.74rem; font-weight:800;">${cards.length}</span>
+        <div style="display:flex;align-items:center;gap:.35rem;">
+          <span style="background:${etapa.cor}20; color:${etapa.cor}; border-radius:20px; padding:.1rem .55rem; font-size:.74rem; font-weight:800;">${cards.length}</span>
+          ${isAdmin2?`<button onclick="crmEditarEtapa('${etapa.id}')" title="Editar quadro" style="background:none;border:none;color:${etapa.cor}50;cursor:pointer;font-size:.75rem;padding:.1rem .2rem;border-radius:4px;line-height:1;" onmouseover="this.style.color='${etapa.cor}'" onmouseout="this.style.color='${etapa.cor}50'">✎</button>`:''}
+        </div>
       </div>
       <div class="crm-col-body" data-etapa="${etapa.id}" ondragover="event.preventDefault();this.style.background='rgba(255,255,255,.05)'" ondragleave="this.style.background=''" ondrop="crmOnDrop(event,'${etapa.id}');this.style.background=''">
         ${cards.length===0?`<div class="crm-drop-placeholder" style="color:rgba(255,255,255,.15); font-size:.78rem; text-align:center; padding:1.5rem 1rem; border:1px dashed rgba(255,255,255,.08); border-radius:8px; margin:.25rem;">Vazio</div>`:''}
@@ -4276,6 +4303,39 @@ async function crmOnDrop(ev,novaEtapa){
   try{await crmUpsertContato({id:c.id,etapa:novaEtapa});}
   catch(e){alert('Erro ao mover: '+e.message);await crmFetchContatos();crmRenderPipeline();}
   crmDragId=null;
+}
+
+function crmEditarEtapa(etapaId){
+  const etapa=CRM_ETAPAS.find(e=>e.id===etapaId);
+  if(!etapa) return;
+  const novoLabel=prompt('Nome do quadro:',etapa.label);
+  if(!novoLabel||novoLabel===etapa.label){
+    // só cor
+  } else {
+    etapa.label=novoLabel.trim();
+  }
+  const novaCor=prompt('Cor (hex, ex: #3b82f6):',etapa.cor);
+  if(novaCor&&/^#[0-9a-fA-F]{6}$/.test(novaCor.trim())) etapa.cor=novaCor.trim();
+  // Salva customizações em localStorage
+  try{localStorage.setItem('crm_etapas_custom',JSON.stringify(CRM_ETAPAS));}catch(e){}
+  crmRenderPipeline();
+}
+
+function crmCarregarEtapasCustom(){
+  try{
+    const s=localStorage.getItem('crm_etapas_custom');
+    if(s){
+      const custom=JSON.parse(s);
+      custom.forEach(c=>{
+        const e=CRM_ETAPAS.find(x=>x.id===c.id);
+        if(e){e.label=c.label;e.cor=c.cor;}
+      });
+      // Adiciona etapas novas
+      custom.forEach(c=>{
+        if(!CRM_ETAPAS.find(x=>x.id===c.id)) CRM_ETAPAS.push(c);
+      });
+    }
+  }catch(e){}
 }
 
 /* ===== TABELA CONTATOS ===== */
@@ -4397,9 +4457,14 @@ function crmRenderLembretes(){
 
 /* ===== DASHBOARD ===== */
 let crmMeta={valor:0,prazo:''};
+let crmDashInterval=null;
+
 function crmRenderDash(){
   const el=document.getElementById('crm-dash-content');
   if(!el) return;
+  if(crmDashInterval){clearInterval(crmDashInterval);crmDashInterval=null;}
+
+  const isAdmin=currentUser&&(currentUser.role==='admin'||currentUser.username==='gustavo'||currentUser.username==='tiago');
   const meuContatos=currentUser&&currentUser.role==='vendedor'
     ? crmContatos.filter(c=>c.vendedor===currentUser.username)
     : crmContatos;
@@ -4408,29 +4473,97 @@ function crmRenderDash(){
   const naoVendidos=meuContatos.filter(c=>c.etapa==='nao_foi_vendido').length;
   const emAndamento=meuContatos.filter(c=>!['vendido','nao_foi_vendido'].includes(c.etapa)).length;
   const taxa=total>0?Math.round(vendidos/total*100):0;
+
   // Meta
   const metaKey='crm_meta_'+(currentUser?.username||'all');
   try{const s=localStorage.getItem(metaKey);if(s)crmMeta=JSON.parse(s);}catch(e){}
   const metaVal=crmMeta.valor||0;
   const metaPrazo=crmMeta.prazo||'';
   const metaPct=metaVal>0?Math.min(100,Math.round(vendidos/metaVal*100)):0;
+
+  // Vendas externas
+  const extKey='crm_vendas_ext_'+(currentUser?.username||'all');
+  let vendasExt=[];
+  try{const s=localStorage.getItem(extKey);if(s)vendasExt=JSON.parse(s);}catch(e){}
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const iniMes=new Date();iniMes.setDate(1);iniMes.setHours(0,0,0,0);
+
+  // Por vendedor (só admin)
   const porVend=Object.entries(CRM_VENDEDORES).map(([id,nome])=>{
     const ctts=crmContatos.filter(c=>c.vendedor===id);
     const vend=ctts.filter(c=>c.etapa==='vendido').length;
     return {id,nome,total:ctts.length,vendidos:vend,taxa:ctts.length?Math.round(vend/ctts.length*100):0};
   }).filter(v=>v.total>0);
+
+  // Funil SVG
+  function funiSVG(etapas,contatos){
+    const maxVal=Math.max(1,...etapas.map(e=>contatos.filter(c=>c.etapa===e.id).length));
+    const h=36; const gap=4; const totalH=etapas.length*(h+gap)-gap+8;
+    const svgW=160;
+    let rows='';
+    etapas.forEach((e,i)=>{
+      const cnt=contatos.filter(c=>c.etapa===e.id).length;
+      const pct=cnt/maxVal;
+      const barW=Math.max(30,Math.round(pct*svgW));
+      const x=(svgW-barW)/2;
+      const y=i*(h+gap)+4;
+      rows+=`<g>
+        <rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${e.cor}" opacity="0.85"/>
+        <text x="${svgW/2}" y="${y+h/2+1}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="700" font-family="Inter,sans-serif">${e.label}: ${cnt}</text>
+      </g>`;
+    });
+    return `<svg width="${svgW}" height="${totalH}" viewBox="0 0 ${svgW} ${totalH}" xmlns="http://www.w3.org/2000/svg">${rows}</svg>`;
+  }
+
   el.innerHTML=`
+    <!-- TICKER AO VIVO -->
+    <div class="crm-glass-card" style="margin-bottom:1.25rem;border:1px solid rgba(34,197,94,.2);background:rgba(34,197,94,.04);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <span style="display:inline-flex;align-items:center;gap:.3rem;background:rgba(34,197,94,.15);border-radius:20px;padding:.15rem .6rem;font-size:.72rem;font-weight:700;color:#4ade80;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:crmPulse 1.2s infinite;display:inline-block;"></span>AO VIVO
+          </span>
+          <span id="crm-ticker-clock" style="font-size:.75rem;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;"></span>
+        </div>
+        <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div id="crm-ticker-hoje" style="font-size:1.4rem;font-weight:900;color:#22c55e;">0</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.35);">Vendas hoje</div>
+          </div>
+          <div style="text-align:center;">
+            <div id="crm-ticker-mes" style="font-size:1.4rem;font-weight:900;color:#3b82f6;">0</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.35);">Vendas no mês</div>
+          </div>
+          <div style="text-align:center;">
+            <div id="crm-ticker-meta" style="font-size:1.4rem;font-weight:900;color:#f59e0b;">${metaPct}%</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.35);">Da meta</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <select id="crm-ticker-filtro-vend" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#e8e8ef;padding:.3rem .6rem;font-size:.75rem;">
+            <option value="">Todos vendedores</option>
+            ${Object.entries(CRM_VENDEDORES).map(([id,n])=>`<option value="${id}"${currentUser?.username===id?` selected`:``}>${n}</option>`).join('')}
+          </select>
+          <select id="crm-ticker-filtro-per" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#e8e8ef;padding:.3rem .6rem;font-size:.75rem;">
+            <option value="dia">Hoje</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes" selected>Este mês</option>
+          </select>
+          <button onclick="crmAtualizarTicker()" style="background:rgba(37,99,235,.2);border:1px solid rgba(37,99,235,.3);border-radius:6px;color:#93c5fd;padding:.3rem .6rem;font-size:.75rem;cursor:pointer;">↻</button>
+        </div>
+      </div>
+    </div>
     <!-- META DE VENDAS -->
-    <div class="crm-glass-card" style="margin-bottom:1.5rem;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
-        <div style="font-weight:700;color:rgba(255,255,255,.6);font-size:.78rem;text-transform:uppercase;letter-spacing:.6px;">🎯 Meta de Vendas</div>
-        <button onclick="crmEditarMeta()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.5);font-size:.73rem;padding:.2rem .6rem;cursor:pointer;">Editar meta</button>
+    <div class="crm-glass-card" style="margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem;">
+        <div style="font-weight:700;color:rgba(255,255,255,.6);font-size:.78rem;text-transform:uppercase;letter-spacing:.6px;">Meta de Vendas</div>
+        ${isAdmin?`<button onclick="crmEditarMeta()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.5);font-size:.73rem;padding:.2rem .6rem;cursor:pointer;">Editar meta</button>`:''}
       </div>
       ${metaVal>0?`
         <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:.6rem;">
           <div>
             <div style="font-size:2rem;font-weight:900;color:#22c55e;line-height:1;">${vendidos}</div>
-            <div style="font-size:.78rem;color:rgba(255,255,255,.4);">de <strong style="color:rgba(255,255,255,.7);">${metaVal}</strong> vendas${metaPrazo?` · meta até <strong style="color:#f59e0b;">${metaPrazo}</strong>`:''}</div>
+            <div style="font-size:.78rem;color:rgba(255,255,255,.4);">de <strong style="color:rgba(255,255,255,.7);">${metaVal}</strong> vendas${metaPrazo?` · até <strong style="color:#f59e0b;">${metaPrazo}</strong>`:''}</div>
           </div>
           <div style="text-align:right;">
             <div style="font-size:1.6rem;font-weight:900;color:${metaPct>=100?'#22c55e':metaPct>=70?'#f59e0b':'#ef4444'};">${metaPct}%</div>
@@ -4438,61 +4571,170 @@ function crmRenderDash(){
           </div>
         </div>
         <div style="background:rgba(255,255,255,.07);border-radius:20px;height:10px;overflow:hidden;">
-          <div style="height:100%;width:${metaPct}%;background:linear-gradient(90deg,#1e40af,${metaPct>=100?'#22c55e':metaPct>=70?'#f59e0b':'#3b82f6'});border-radius:20px;transition:width .7s;box-shadow:0 0 10px rgba(37,99,235,.4);"></div>
+          <div style="height:100%;width:${metaPct}%;background:linear-gradient(90deg,#1e40af,${metaPct>=100?'#22c55e':metaPct>=70?'#f59e0b':'#3b82f6'});border-radius:20px;transition:width .7s;"></div>
         </div>
-      `:`<div style="color:rgba(255,255,255,.25);font-size:.83rem;text-align:center;padding:.75rem 0;">Clique em "Editar meta" para definir sua meta de vendas</div>`}
+      `:`<div style="color:rgba(255,255,255,.25);font-size:.83rem;text-align:center;padding:.5rem 0;">${isAdmin?'Clique em "Editar meta" para definir a meta':'Meta não definida'}</div>`}
     </div>
     <!-- KPIs -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.875rem;margin-bottom:1.5rem;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.75rem;margin-bottom:1.25rem;">
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#3b82f6;">${total}</div><div class="crm-kpi-label">Total contatos</div></div>
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#22c55e;">${vendidos}</div><div class="crm-kpi-label">Vendidos</div></div>
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#f59e0b;">${emAndamento}</div><div class="crm-kpi-label">Em andamento</div></div>
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#ef4444;">${naoVendidos}</div><div class="crm-kpi-label">Perdidos</div></div>
       <div class="crm-kpi"><div class="crm-kpi-val" style="color:#8b5cf6;">${taxa}%</div><div class="crm-kpi-label">Conversão</div></div>
     </div>
-    <!-- POR VENDEDOR (só admin vê) -->
-    ${currentUser&&currentUser.role!=='vendedor'?`
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.875rem;margin-bottom:1.5rem;">
-      ${porVend.map(v=>`
-        <div class="crm-glass-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
-            <div style="font-weight:800;color:#fff;font-size:.93rem;">${v.nome}</div>
-            <span style="background:rgba(37,99,235,.2);color:#93c5fd;border-radius:20px;padding:.1rem .5rem;font-size:.72rem;font-weight:700;">${v.taxa}%</span>
+    <!-- LAYOUT: Funil + Vendedores -->
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:1rem;margin-bottom:1.25rem;align-items:start;">
+      <!-- Funil visual -->
+      <div class="crm-glass-card" style="padding:1rem 1.25rem;min-width:190px;">
+        <div style="font-weight:700;color:rgba(255,255,255,.6);font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;margin-bottom:.75rem;">Funil</div>
+        ${funiSVG(CRM_ETAPAS,meuContatos)}
+      </div>
+      <!-- Por vendedor (só admin) ou mensagem para vendedor -->
+      <div>
+        ${isAdmin&&porVend.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.75rem;">
+          ${porVend.map(v=>`<div class="crm-glass-card" style="padding:.9rem 1rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;">
+              <div style="font-weight:800;color:#fff;font-size:.88rem;">${v.nome}</div>
+              <span style="background:rgba(37,99,235,.2);color:#93c5fd;border-radius:20px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;">${v.taxa}%</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;text-align:center;margin-bottom:.6rem;">
+              <div><div style="font-size:1.2rem;font-weight:900;color:#3b82f6;">${v.total}</div><div style="font-size:.65rem;color:rgba(255,255,255,.3);">Leads</div></div>
+              <div><div style="font-size:1.2rem;font-weight:900;color:#22c55e;">${v.vendidos}</div><div style="font-size:.65rem;color:rgba(255,255,255,.3);">Vendas</div></div>
+              <div><div style="font-size:1.2rem;font-weight:900;color:#8b5cf6;">${v.taxa}%</div><div style="font-size:.65rem;color:rgba(255,255,255,.3);">Taxa</div></div>
+            </div>
+            <div style="background:rgba(255,255,255,.06);border-radius:20px;height:4px;overflow:hidden;">
+              <div style="height:100%;width:${v.taxa}%;background:linear-gradient(90deg,#1e40af,#3b82f6);border-radius:20px;"></div>
+            </div>
+          </div>`).join('')}
+        </div>`:`<div class="crm-glass-card" style="display:flex;align-items:center;justify-content:center;min-height:120px;color:rgba(255,255,255,.2);font-size:.85rem;">Seus dados aparecem no funil ao lado</div>`}
+      </div>
+    </div>
+    <!-- VENDAS EXTERNAS -->
+    <div class="crm-glass-card" style="margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+        <div>
+          <div style="font-weight:700;color:rgba(255,255,255,.8);font-size:.9rem;">Registrar Venda Externa</div>
+          <div style="font-size:.75rem;color:rgba(255,255,255,.3);margin-top:.1rem;">Vendas fora da lista de contatos</div>
+        </div>
+        <button onclick="crmToggleFormExt()" id="crm-btn-ext" style="background:rgba(37,99,235,.2);border:1px solid rgba(37,99,235,.3);border-radius:7px;color:#93c5fd;font-size:.78rem;padding:.35rem .8rem;cursor:pointer;">+ Registrar</button>
+      </div>
+      <div id="crm-form-ext" style="display:none;border-top:1px solid rgba(255,255,255,.06);padding-top:.9rem;margin-bottom:.9rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.65rem;">
+          <div><label class="crm-label">Cliente / Descrição</label><input id="ext-cliente" class="crm-input" placeholder="Nome ou descrição"></div>
+          <div><label class="crm-label">Origem</label><input id="ext-origem" class="crm-input" placeholder="Ex: Indicação, Instagram, Evento…"></div>
+          <div><label class="crm-label">Valor (R$)</label><input id="ext-valor" type="number" min="0" step="10" class="crm-input" placeholder="0,00"></div>
+          <div><label class="crm-label">Forma de pagamento</label>
+            <select id="ext-pagto" class="crm-input">
+              <option value="PIX">PIX</option>
+              <option value="Cartão de crédito">Cartão de crédito</option>
+              <option value="Cartão de débito">Cartão de débito</option>
+              <option value="Boleto">Boleto</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="Transferência">Transferência</option>
+            </select>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;text-align:center;margin-bottom:.8rem;">
-            <div><div style="font-size:1.4rem;font-weight:900;color:#3b82f6;">${v.total}</div><div style="font-size:.68rem;color:rgba(255,255,255,.3);">Contatos</div></div>
-            <div><div style="font-size:1.4rem;font-weight:900;color:#22c55e;">${v.vendidos}</div><div style="font-size:.68rem;color:rgba(255,255,255,.3);">Vendidos</div></div>
-            <div><div style="font-size:1.4rem;font-weight:900;color:#8b5cf6;">${v.taxa}%</div><div style="font-size:.68rem;color:rgba(255,255,255,.3);">Taxa</div></div>
-          </div>
-          <div style="background:rgba(255,255,255,.06);border-radius:20px;height:4px;overflow:hidden;">
-            <div style="height:100%;width:${v.taxa}%;background:linear-gradient(90deg,#1e40af,#3b82f6);border-radius:20px;"></div>
-          </div>
-        </div>`).join('')}
-    </div>`:''}
-    <!-- FUNIL -->
-    <div class="crm-glass-card">
-      <div style="font-weight:700;color:rgba(255,255,255,.6);font-size:.78rem;text-transform:uppercase;letter-spacing:.6px;margin-bottom:1rem;">Funil por etapa</div>
-      ${CRM_ETAPAS.map(e=>{
-        const cnt=meuContatos.filter(c=>c.etapa===e.id).length;
-        const pct=total>0?Math.round(cnt/total*100):0;
-        return `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:.7rem;">
-          <div style="width:130px;font-size:.8rem;color:${e.cor};font-weight:600;white-space:nowrap;">${e.label}</div>
-          <div style="flex:1;background:rgba(255,255,255,.06);border-radius:20px;height:7px;overflow:hidden;">
-            <div style="height:100%;width:${pct}%;background:${e.cor};border-radius:20px;transition:width .5s;box-shadow:0 0 8px ${e.cor}60;"></div>
-          </div>
-          <div style="width:36px;text-align:right;font-size:.8rem;color:rgba(255,255,255,.35);font-weight:600;">${cnt}</div>
-        </div>`;
-      }).join('')}
+          <div style="grid-column:span 2;"><label class="crm-label">Observação</label><input id="ext-obs" class="crm-input" placeholder="Detalhes adicionais…"></div>
+        </div>
+        <div style="display:flex;gap:.5rem;justify-content:flex-end;">
+          <button onclick="crmToggleFormExt()" class="crm-btn-ghost" style="font-size:.8rem;padding:.35rem .8rem;">Cancelar</button>
+          <button onclick="crmSalvarVendaExt()" class="crm-btn-primary" style="font-size:.8rem;padding:.35rem .9rem;">Salvar venda</button>
+        </div>
+      </div>
+      <!-- Lista vendas externas -->
+      <div id="crm-lista-ext">
+        ${vendasExt.length===0?`<div style="color:rgba(255,255,255,.2);font-size:.78rem;text-align:center;padding:.75rem 0;">Nenhuma venda externa registrada</div>`
+        :vendasExt.slice().reverse().map((v,ri)=>{
+          const i=vendasExt.length-1-ri;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .75rem;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:.35rem;flex-wrap:wrap;gap:.5rem;">
+            <div>
+              <span style="font-weight:600;color:#fff;font-size:.83rem;">${escHTML(v.cliente||'—')}</span>
+              ${v.origem?`<span style="margin-left:.5rem;font-size:.7rem;color:rgba(255,255,255,.35);">· ${escHTML(v.origem)}</span>`:''}
+              ${v.obs?`<div style="font-size:.72rem;color:rgba(255,255,255,.3);margin-top:.1rem;">${escHTML(v.obs)}</div>`:''}
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              ${v.valor?`<span style="font-weight:800;color:#22c55e;font-size:.88rem;">R$ ${parseFloat(v.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>`:''}
+              ${v.pagto?`<span style="background:rgba(255,255,255,.08);border-radius:4px;padding:.1rem .4rem;font-size:.68rem;color:rgba(255,255,255,.5);">${escHTML(v.pagto)}</span>`:''}
+              <span style="font-size:.68rem;color:rgba(255,255,255,.25);">${v.data||''}</span>
+              <button onclick="crmDeleteVendaExt(${i})" style="background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:.9rem;" onmouseover="this.style.color='#fca5a5'" onmouseout="this.style.color='rgba(255,255,255,.2)'">×</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
     </div>`;
+
+  crmAtualizarTicker();
+  crmDashInterval=setInterval(crmAtualizarTicker,30000);
+}
+
+function crmAtualizarTicker(){
+  const vendFiltro=document.getElementById('crm-ticker-filtro-vend')?.value||'';
+  const perFiltro=document.getElementById('crm-ticker-filtro-per')?.value||'mes';
+  const agora=new Date();
+  let desde=new Date();
+  if(perFiltro==='dia'){desde.setHours(0,0,0,0);}
+  else if(perFiltro==='semana'){const d=agora.getDay();desde.setDate(agora.getDate()-d);desde.setHours(0,0,0,0);}
+  else{desde.setDate(1);desde.setHours(0,0,0,0);}
+  const hojeDt=new Date();hojeDt.setHours(0,0,0,0);
+
+  let base=crmContatos.filter(c=>c.etapa==='vendido');
+  if(vendFiltro) base=base.filter(c=>c.vendedor===vendFiltro);
+
+  const noMes=base.filter(c=>{const d=new Date(c.created_at||0);return d>=desde;}).length;
+  const noHoje=base.filter(c=>{const d=new Date(c.created_at||0);return d>=hojeDt;}).length;
+
+  const metaKey='crm_meta_'+(currentUser?.username||'all');
+  let meta={valor:0};
+  try{const s=localStorage.getItem(metaKey);if(s)meta=JSON.parse(s);}catch(e){}
+  const pct=meta.valor>0?Math.min(100,Math.round(base.length/meta.valor*100)):0;
+
+  const el1=document.getElementById('crm-ticker-hoje');if(el1)el1.textContent=noHoje;
+  const el2=document.getElementById('crm-ticker-mes');if(el2)el2.textContent=noMes;
+  const el3=document.getElementById('crm-ticker-meta');if(el3)el3.textContent=pct+'%';
+  const elC=document.getElementById('crm-ticker-clock');
+  if(elC)elC.textContent=agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function crmToggleFormExt(){
+  const f=document.getElementById('crm-form-ext');
+  if(f) f.style.display=f.style.display==='none'?'block':'none';
+}
+
+function crmSalvarVendaExt(){
+  const extKey='crm_vendas_ext_'+(currentUser?.username||'all');
+  let vendasExt=[];
+  try{const s=localStorage.getItem(extKey);if(s)vendasExt=JSON.parse(s);}catch(e){}
+  const cliente=document.getElementById('ext-cliente')?.value.trim();
+  if(!cliente){alert('Informe o cliente/descrição');return;}
+  vendasExt.push({
+    cliente,
+    origem:document.getElementById('ext-origem')?.value.trim()||'',
+    valor:document.getElementById('ext-valor')?.value||'',
+    pagto:document.getElementById('ext-pagto')?.value||'',
+    obs:document.getElementById('ext-obs')?.value.trim()||'',
+    data:new Date().toLocaleDateString('pt-BR'),
+    vendedor:currentUser?.username||'',
+  });
+  try{localStorage.setItem(extKey,JSON.stringify(vendasExt));}catch(e){}
+  crmRenderDash();
+}
+
+function crmDeleteVendaExt(idx){
+  const extKey='crm_vendas_ext_'+(currentUser?.username||'all');
+  let vendasExt=[];
+  try{const s=localStorage.getItem(extKey);if(s)vendasExt=JSON.parse(s);}catch(e){}
+  vendasExt.splice(idx,1);
+  try{localStorage.setItem(extKey,JSON.stringify(vendasExt));}catch(e){}
+  crmRenderDash();
 }
 
 function crmEditarMeta(){
+  const isAdmin=currentUser&&(currentUser.role==='admin'||currentUser.username==='gustavo'||currentUser.username==='tiago');
+  if(!isAdmin){alert('Apenas administradores podem editar a meta.');return;}
   const metaKey='crm_meta_'+(currentUser?.username||'all');
-  const valAtual=crmMeta.valor||0;
-  const prazoAtual=crmMeta.prazo||'';
-  const novaVal=prompt('Meta de vendas (número de vendas):', valAtual);
+  const novaVal=prompt('Meta de vendas (número de vendas):',crmMeta.valor||0);
   if(novaVal===null) return;
-  const novaPrazo=prompt('Data limite (ex: 31/12/2026):', prazoAtual);
+  const novaPrazo=prompt('Data limite (ex: 31/12/2026):',crmMeta.prazo||'');
   if(novaPrazo===null) return;
   crmMeta={valor:parseInt(novaVal)||0,prazo:novaPrazo};
   try{localStorage.setItem(metaKey,JSON.stringify(crmMeta));}catch(e){}
@@ -4505,7 +4747,7 @@ function crmRenderAdmin(){
   if(!el) return;
   el.innerHTML=`
     <div style="display:flex;gap:.4rem;margin-bottom:1.5rem;flex-wrap:wrap;">
-      <button onclick="crmAdminSection('dash')" class="crm-nav-btn active" id="cadm-dash">📊 Dashboard</button>
+      <button onclick="crmAdminSection('dash')" class="crm-nav-btn active" id="cadm-dash">Dashboard</button>
       <button onclick="crmAdminSection('pipeline')" class="crm-nav-btn" id="cadm-pipeline">Pipeline</button>
       <button onclick="crmAdminSection('contatos')" class="crm-nav-btn" id="cadm-contatos">Contatos</button>
       <button onclick="crmAdminSection('lembretes')" class="crm-nav-btn" id="cadm-lembretes">Lembretes</button>
