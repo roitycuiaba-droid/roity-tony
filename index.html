@@ -526,6 +526,18 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .post-stat-sub{font-size:10px;color:var(--text3);margin-top:3px;}
 .del-post-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px 5px;transition:color .1s;}
 .del-post-btn:hover{color:var(--danger2);}
+.edit-post-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px 5px;transition:color .1s;}
+.edit-post-btn:hover{color:var(--gold);}
+.video-row-date{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-left:28px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;}
+.video-row-date input{background:rgba(255,255,255,0.04);border:1px solid var(--glass-b);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--text);font-family:inherit;color-scheme:dark;}
+.video-row-date input:focus{outline:none;border-color:var(--gold);}
+.video-row-date .tag-custom{background:rgba(201,169,110,0.15);color:var(--gold);border-radius:5px;padding:2px 7px;font-size:9px;}
+.periodo-custom{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:10px;width:100%;}
+.periodo-custom .ff-post{min-width:140px;flex:1;}
+.periodo-custom input{color-scheme:dark;}
+.sem-link{font-size:10px;color:var(--danger2);font-weight:700;margin-right:8px;white-space:nowrap;}
+.post-aviso{background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);border-radius:10px;padding:9px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.post-aviso i{color:var(--danger2);}
 .link-post-btn{background:none;border:none;cursor:pointer;color:var(--gold-dim);font-size:14px;padding:3px 5px;transition:color .1s;}
 .link-post-btn:hover{color:var(--gold);}
 
@@ -776,7 +788,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v3.7 · Roity © 2026</div>
+      <div class="legend-version">v3.8 · Roity © 2026</div>
     </div>
 
     <!-- SEÇÃO DE DÉBITOS — visível para todos abaixo das semanas -->
@@ -845,6 +857,140 @@ const SUPABASE_URL='https://pwequvptibzlahfzmpbp.supabase.co';
 const SUPABASE_KEY='sb_publishable_VY8p5SbsIhbY4DXOxdhoJg_D92QNfLJ';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+// ══════════════════════════════════════════════════════════════════════
+// v3.8 — CARREGAMENTO SEGURO E CONTAGEM ÚNICA
+// ══════════════════════════════════════════════════════════════════════
+// O Supabase devolve no máximo 1000 linhas por requisição. Sem paginar,
+// quando a tabela passava de 1000 registros os meses antigos sumiam da tela.
+async function sbFetchAll(build, pageSize){
+  pageSize = pageSize || 1000;
+  let all = [], from = 0;
+  for(let guard=0; guard<500; guard++){
+    const {data, error} = await build().range(from, from + pageSize - 1);
+    if(error){ console.error('[sbFetchAll]', error); throw error; }
+    const rows = data || [];
+    all = all.concat(rows);
+    if(rows.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function ultimoDiaMesKey(a, m){ return a+'-'+pad2(m+1)+'-'+pad2(new Date(a, m+1, 0).getDate()); }
+function fmtBR(k){ if(!k) return ''; const p=String(k).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+
+// Edições digitadas que ainda não foram confirmadas pelo banco.
+// Um recarregamento (troca de semana, Realtime, F5 de outro usuário) não pode apagá-las da tela.
+const dayPending = {};    // {day_key: {campo: valor}}
+const dbSnapshot = {};    // última versão do dia vinda do banco
+const vlinkPending = {};  // {id: {campo: valor}}
+
+function mergeDayRow(r){
+  if(!r || !r.day_key) return;
+  dbSnapshot[r.day_key] = r;
+  const prev = (typeof cache !== 'undefined' && cache[r.day_key]) || {};
+  cache[r.day_key] = Object.assign({}, prev, r, dayPending[r.day_key] || {});
+}
+function marcarPendenteDia(key, field, val){
+  if(!dayPending[key]) dayPending[key] = {};
+  dayPending[key][field] = val;
+}
+function limparPendenteDia(key, field, val){
+  const p = dayPending[key];
+  if(p && Object.prototype.hasOwnProperty.call(p, field) && p[field] === val){
+    delete p[field];
+    if(!Object.keys(p).length) delete dayPending[key];
+  }
+}
+function aplicarPendenteVlink(r){
+  const p = vlinkPending[String(r.id)];
+  return p ? Object.assign({}, r, p) : r;
+}
+function marcarPendenteVlink(id, field, val){
+  const k = String(id);
+  if(!vlinkPending[k]) vlinkPending[k] = {};
+  vlinkPending[k][field] = val;
+}
+function limparPendenteVlink(id, field, val){
+  const k = String(id), p = vlinkPending[k];
+  if(p && Object.prototype.hasOwnProperty.call(p, field) && p[field] === val){
+    delete p[field];
+    if(!Object.keys(p).length) delete vlinkPending[k];
+  }
+}
+
+// Link "colocado de verdade": tem URL preenchida (linhas vazias criadas pelo
+// botão "Adicionar link" e nunca preenchidas não contam).
+function linkValido(x){ return !!(x && typeof x.link === 'string' && x.link.trim().length > 5); }
+function postTemLink(p){ return !!(p && typeof p.link_post === 'string' && p.link_post.trim().length > 5); }
+function normUrl(u){
+  return String(u||'').trim().toLowerCase()
+    .replace(/[?&](usp|utm_[a-z]+)=[^&#]*/g,'')
+    .replace(/[?&]$/,'').replace(/\/+$/,'');
+}
+
+// ÚNICA regra de "produzidos" usada no dashboard, na meta da semana, no saldo,
+// na aba Postagens e no relatório PDF (antes cada tela calculava de um jeito).
+//  • Agosto (sistema antigo): link do Drive do dia + quantidade ajustada (prod_longos/prod_virais)
+//  • Setembro+: links individuais APROVADOS, com URL preenchida, sem repetir o mesmo link no mesmo dia
+function contarProduzidos(deKey, ateKey){
+  const r = {long:0, viral:0, pendLong:0, pendViral:0, reprov:0};
+  const ini = dateKey(PROJECT_START);
+  const keys = new Set(Object.keys(cache).concat(Object.keys(vlinkCache)));
+  keys.forEach(k=>{
+    if(k < deKey || k > ateKey || k < ini) return;
+    if(isNewSystem(k)){
+      const vistos = new Set();
+      (vlinkCache[k] || []).forEach(x=>{
+        if(!linkValido(x)) return;
+        const assinatura = x.editor + '|' + normUrl(x.link);
+        if(vistos.has(assinatura)) return;
+        vistos.add(assinatura);
+        const longo = x.editor === 'rudney';
+        if(x.status === 'aprovado'){ if(longo) r.long++; else r.viral++; }
+        else if(x.status === 'reprovado'){ r.reprov++; }
+        else { if(longo) r.pendLong++; else r.pendViral++; }
+      });
+    } else {
+      const d = cache[k];
+      if(!d) return;
+      if(d.long_link)  r.long  += (d.prod_longos != null) ? Number(d.prod_longos) : META_LONG_DIA;
+      if(d.viral_link) r.viral += (d.prod_virais != null) ? Number(d.prod_virais) : META_VIRAL_DIA;
+    }
+  });
+  r.total = r.long + r.viral;
+  r.pend  = r.pendLong + r.pendViral;
+  return r;
+}
+
+// ÚNICA regra de "postados": só conta distribuição que tem o link do vídeo colado.
+function contarPostagens(rows){
+  const comLink = rows.filter(postTemLink);
+  const semLink = rows.filter(p => !postTemLink(p));
+  const tipoPorVideo = {};
+  comLink.forEach(p=>{ const uid = String(p.video_uid || p.id); if(!tipoPorVideo[uid]) tipoPorVideo[uid] = p.tipo; });
+  const videosSemLink = new Set(semLink.map(p => String(p.video_uid || p.id)));
+  Object.keys(tipoPorVideo).forEach(u => videosSemLink.delete(u));
+  const plat = pl => comLink.filter(p => p.plataforma === pl).length;
+  const tipos = Object.values(tipoPorVideo);
+  return {
+    unicos: tipos.length,
+    longos: tipos.filter(t => t === 'Longo').length,
+    curtos: tipos.filter(t => t === 'Curto').length,
+    yt: plat('YouTube'), tk: plat('TikTok'), ig: plat('Instagram'),
+    distrib: comLink.length,
+    semLink: semLink.length,
+    videosSemLink: videosSemLink.size
+  };
+}
+
+// Até onde carregar dados: fim do projeto ou 60 dias à frente de hoje (o que for maior)
+function fimCargaKey(){
+  const lim = addDays(new Date(), 60);
+  return dateKey(PROJECT_END > lim ? PROJECT_END : lim);
+}
+
 // Senhas armazenadas como SHA-256 (nunca em plaintext)
 // Para gerar um novo hash: await hashSenha('sua_senha_aqui') no console
 const USERS={
@@ -892,9 +1038,11 @@ const HISTORY={
 let currentUser=null,currentWeekStart=null,cache={},saveTimers={};
 
 function dateKey(d){
-  // Usa horário de Brasília (UTC-4)
-  const brt=new Date(d.getTime()-4*60*60*1000);
-  return brt.toISOString().slice(0,10);
+  // v3.8: data local do aparelho. A versão anterior subtraía 4h do UTC e só acertava
+  // em aparelhos no fuso de Cuiabá; no horário de Brasília (UTC-3) o card de
+  // segunda-feira gravava os links no domingo.
+  const t=new Date(d);
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
 }
 function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
 function fmtDate(d){return d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});}
@@ -985,7 +1133,8 @@ window.gerarHashes=async function(){
   }
 };
 
-async function startApp(){
+async function startApp(opts){
+  opts = opts || {};
   document.getElementById('login-screen').style.display='none';
 
   // Redirecionar por role
@@ -998,12 +1147,16 @@ async function startApp(){
   document.getElementById('loading').style.display='flex';
   document.getElementById('user-label').textContent=currentUser.name+(role==='admin'?' (Admin)':'');
   currentWeekStart=getWeekStart(new Date());
-  await loadWeek(currentWeekStart);
-  await loadExtraForDash();
-  await loadReposicoes();
-  await loadPostagens();
-  await loadProjetoConfig();
-  await loadVlinksWeek(currentWeekStart);
+
+  // v3.8: cada carga isolada — se uma falhar, o app abre mesmo assim e avisa
+  const falhas=[];
+  const tentar=async(nome,fn)=>{ try{ await fn(); }catch(e){ console.error('[startApp] '+nome, e); falhas.push(nome); } };
+  await tentar('configuração', loadProjetoConfig);       // define início/fim antes das outras cargas
+  await tentar('semana', ()=>loadWeek(currentWeekStart));
+  await tentar('dias do projeto', loadExtraForDash);
+  await tentar('reposições', loadReposicoes);
+  await tentar('postagens', ()=>loadPostagens(true));
+  await tentar('links dos editores', ()=>loadVlinksRange(SET_START, fimCargaKey()));
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='flex';
 
@@ -1029,6 +1182,7 @@ async function startApp(){
   switchTab(startTab);
 
   updateScheduleBanner();
+  updateSaldoBar();
   // Mostrar boas-vindas só 1x por dia
   const todayStr = dateKey(new Date());
   const lastWelcome = localStorage.getItem('roity_welcome_'+currentUser.id);
@@ -1036,23 +1190,34 @@ async function startApp(){
     localStorage.setItem('roity_welcome_'+currentUser.id, todayStr);
     showWelcomePopup();
   }
-  if(role==='editor') showEditorPopup();
+  if(role==='editor' && !opts.restaurado) showEditorPopup();
   subscribeRealtime();
   setupInactivityDetection();
+  if(falhas.length){
+    showToast('ti-alert-triangle','Alguns dados não carregaram', falhas.join(', ')+'. Clique em Atualizar.');
+  }
 }
 
 async function refreshData(){
   setSyncing(true);
   const btn = document.querySelector('[onclick="refreshData()"]');
   if(btn) btn.style.opacity='0.5';
-  await loadWeek(currentWeekStart);
-  await loadExtraForDash();
-  await loadReposicoes();
+  try{
+    await loadWeek(currentWeekStart);
+    await loadExtraForDash();
+    await loadReposicoes();
+    await loadVlinksRange(SET_START, fimCargaKey());
+    await loadPostagens(true);
+  }catch(e){
+    console.error('[refreshData]', e);
+    showToast('ti-alert-circle','Erro ao atualizar','Verifique a conexão e tente de novo.');
+  }
   updateScheduleBanner();
   updateSaldoBar();
   if(currentUser.role==='admin'){renderDashboard();renderKanban();}
   else renderKanban();
   renderReposicoes();
+  renderPostagens();
   setSyncing(false);
   if(btn){btn.style.opacity='1';}
 }
@@ -1107,7 +1272,8 @@ function subscribeRealtime(){
         const row=payload.new||payload.old;
         if(!row||!row.day_key) return;
         const prev = cache[row.day_key] || {};
-        cache[row.day_key] = {...prev, ...row};
+        dbSnapshot[row.day_key] = row;
+        cache[row.day_key] = {...prev, ...row, ...(dayPending[row.day_key]||{})};
         updateScheduleBanner();
 
         if(currentUser && currentUser.role==='admin'){
@@ -1131,8 +1297,8 @@ function subscribeRealtime(){
         if(!row||!row.day_key) return;
         // Atualizar cache local
         if(!vlinkCache[row.day_key]) vlinkCache[row.day_key] = [];
-        const exists = vlinkCache[row.day_key].find(x=>x.id===row.id);
-        if(!exists) vlinkCache[row.day_key].push(row);
+        const exists = vlinkCache[row.day_key].find(x=>String(x.id)===String(row.id));
+        if(!exists) vlinkCache[row.day_key].push(aplicarPendenteVlink(row));
         // Re-renderizar só a seção afetada (mais rápido que renderKanban inteiro)
         const card = document.querySelector('[data-day-key="'+row.day_key+'"]');
         if(card){
@@ -1153,11 +1319,11 @@ function subscribeRealtime(){
         if(!row||!row.day_key) return;
         // SE eu mesmo salvei este registro, só atualiza cache — NÃO re-renderiza
         // Isso evita o loop: digito → salvo → Realtime → recriai card → apaga o que digitei
-        const euSalvei = vlinkSavingIds && vlinkSavingIds.has(row.id);
+        const euSalvei = vlinkSavingIds && vlinkSavingIds.has(String(row.id));
         if(!vlinkCache[row.day_key]) vlinkCache[row.day_key] = [];
-        const idx = vlinkCache[row.day_key].findIndex(x=>x.id===row.id);
-        if(idx>=0) vlinkCache[row.day_key][idx] = {...vlinkCache[row.day_key][idx], ...row};
-        else vlinkCache[row.day_key].push(row);
+        const idx = vlinkCache[row.day_key].findIndex(x=>String(x.id)===String(row.id));
+        if(idx>=0) vlinkCache[row.day_key][idx] = aplicarPendenteVlink({...vlinkCache[row.day_key][idx], ...row});
+        else vlinkCache[row.day_key].push(aplicarPendenteVlink(row));
         if(euSalvei) return; // não re-renderizar — foi eu que salvei
         // Re-renderizar só se veio de outro usuário
         const card = document.querySelector('[data-day-key="'+row.day_key+'"]');
@@ -1179,7 +1345,7 @@ function subscribeRealtime(){
         const row = payload.old;
         if(!row||!row.day_key) return;
         if(vlinkCache[row.day_key]){
-          vlinkCache[row.day_key] = vlinkCache[row.day_key].filter(x=>x.id!==row.id);
+          vlinkCache[row.day_key] = vlinkCache[row.day_key].filter(x=>String(x.id)!==String(row.id));
         }
         const card = document.querySelector('[data-day-key="'+row.day_key+'"]');
         if(card){
@@ -1256,13 +1422,11 @@ async function loadWeek(ws){
   const keys=[];
   for(let i=0;i<7;i++){const d=addDays(ws,i);if(d>=PROJECT_START)keys.push(dateKey(d));}
   if(!keys.length) return;
-  const{data}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
-  // Sempre sobrescrever com dados frescos do banco (corrige bug de stale cache)
-  if(data)data.forEach(r=>{cache[r.day_key]=r;});
-  // Garantir que dias sem registro no banco existam no cache
+  const{data,error}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
+  if(error){ console.error('[loadWeek]', error); throw error; }
+  // Dados frescos do banco, preservando o que foi digitado e ainda não salvou
+  if(data)data.forEach(mergeDayRow);
   keys.forEach(k=>{ if(!cache[k]) cache[k]={day_key:k}; });
-  // NÃO limpar vlinkCache aqui — isso fazia os links summirem!
-  // vlinkCache é gerenciado por loadVlinksWeek separadamente
 }
 
 async function loadExtraForDash(){
@@ -1271,19 +1435,18 @@ async function loadExtraForDash(){
 }
 
 async function loadAllProjectDays(){
-  // Gerar todas as chaves de datas do projeto inteiro
-  const keys=[];
+  // v3.8: busca por intervalo + paginação (antes: lista com centenas de datas na URL)
+  const ini = dateKey(PROJECT_START), fim = fimCargaKey();
+  const data = await sbFetchAll(()=>sb.from('tony_dashboard').select('*')
+    .gte('day_key', ini).lte('day_key', fim).order('day_key',{ascending:true}));
+  data.forEach(mergeDayRow);
   const cur=new Date(PROJECT_START);
-  const end=new Date(PROJECT_END);
+  const end=new Date(fim+'T12:00:00');
   while(cur<=end){
-    keys.push(dateKey(new Date(cur)));
+    const k=dateKey(cur);
+    if(!cache[k]) cache[k]={day_key:k};
     cur.setDate(cur.getDate()+1);
   }
-  // Buscar tudo em uma única query (o projeto tem ~60 dias, bem dentro do limite)
-  const{data,error}=await sb.from('tony_dashboard').select('*').in('day_key',keys);
-  if(data) data.forEach(r=>{ cache[r.day_key]=r; });
-  // Garantir que dias sem registro existam no cache como objeto vazio
-  keys.forEach(k=>{ if(!cache[k]) cache[k]={day_key:k}; });
 }
 
 function showToast(icon, title, msg){
@@ -1325,66 +1488,50 @@ async function upsertDay(key, changedField){
   setSyncing(true);
   const d=getDay(key);
   const now = new Date().toISOString();
-  const upsertData = {
-    day_key:key,long_link:d.long_link||'',viral_link:d.viral_link||'',
-    long_obs:d.long_obs||'',viral_obs:d.viral_obs||'',
-    admin_notes:d.admin_notes||'',folder_link:d.folder_link||'',
-    platforms:d.platforms||{},updated_at:now,
-    prod_longos:(d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):(d.long_link?META_LONG_DIA:0),
-    prod_virais:(d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):(d.viral_link?META_VIRAL_DIA:0)
+  // v3.8: grava SÓ o campo alterado. Antes o dia inteiro era regravado com o que estava
+  // na tela de quem salvou — se a tela estava desatualizada, apagava o link de outra pessoa.
+  const campo = changedField || 'platforms';
+  const payload = { day_key:key, updated_at:now };
+  payload[campo] = campo==='platforms' ? (d.platforms||{}) : (d[campo]==null ? '' : d[campo]);
+
+  const ajustarProd = (linkField, prodField, metaDia, prefixo)=>{
+    if(changedField!==linkField) return;
+    if(d[linkField]){
+      payload[prefixo+'_updated_at'] = now;
+      payload[prefixo+'_updated_by'] = currentUser.name;
+      d[prefixo+'_updated_at'] = now;
+      d[prefixo+'_updated_by'] = currentUser.name;
+      // Link recém-colocado conta a produção padrão do dia (inclusive quando o link
+      // foi apagado e colado de novo — antes ficava travado em 0)
+      const antes = (dbSnapshot[key]||{})[linkField];
+      if(d[prodField]==null || (!antes && Number(d[prodField])===0)) d[prodField] = metaDia;
+      payload[prodField] = Number(d[prodField]);
+    } else {
+      payload[prefixo+'_updated_at'] = null;
+      payload[prefixo+'_updated_by'] = null;
+      payload[prodField] = 0;
+      d[prodField] = 0;
+    }
   };
-  // Registrar quem e quando subiu cada link (qualquer usuário)
-  if(changedField==='long_link'){
-    if(d.long_link){
-      upsertData.long_updated_at = now;
-      upsertData.long_updated_by = currentUser.name;
-      d.long_updated_at = now;
-      d.long_updated_by = currentUser.name;
-      // Contabilizar automaticamente: link subido = prod_longos preenchido com default
-      if(d.prod_longos===undefined||d.prod_longos===null){
-        d.prod_longos = META_LONG_DIA;
-      }
-      upsertData.prod_longos = d.prod_longos;
-    } else {
-      upsertData.long_updated_at = null;
-      upsertData.long_updated_by = null;
-      upsertData.prod_longos = 0;
-      d.prod_longos = 0;
-    }
-  } else {
-    if(d.long_updated_at) upsertData.long_updated_at = d.long_updated_at;
-    if(d.long_updated_by) upsertData.long_updated_by = d.long_updated_by;
-  }
-  if(changedField==='viral_link'){
-    if(d.viral_link){
-      upsertData.viral_updated_at = now;
-      upsertData.viral_updated_by = currentUser.name;
-      d.viral_updated_at = now;
-      d.viral_updated_by = currentUser.name;
-      // Contabilizar automaticamente: link subido = prod_virais preenchido com default
-      if(d.prod_virais===undefined||d.prod_virais===null){
-        d.prod_virais = META_VIRAL_DIA;
-      }
-      upsertData.prod_virais = d.prod_virais;
-    } else {
-      upsertData.viral_updated_at = null;
-      upsertData.viral_updated_by = null;
-      upsertData.prod_virais = 0;
-      d.prod_virais = 0;
-    }
-  } else {
-    if(d.viral_updated_at) upsertData.viral_updated_at = d.viral_updated_at;
-    if(d.viral_updated_by) upsertData.viral_updated_by = d.viral_updated_by;
-  }
-  await sb.from('tony_dashboard').upsert(upsertData,{onConflict:'day_key'});
+  ajustarProd('long_link','prod_longos',META_LONG_DIA,'long');
+  ajustarProd('viral_link','prod_virais',META_VIRAL_DIA,'viral');
+
+  const {error} = await sb.from('tony_dashboard').upsert(payload,{onConflict:'day_key'});
   setSyncing(false);
+  if(error){
+    console.error('[upsertDay]', error);
+    showToast('ti-alert-circle','Não salvou','Verifique a conexão. O que você digitou continua na tela; tente de novo.');
+    return;
+  }
+  if(campo!=='platforms') limparPendenteDia(key, campo, payload[campo]);
+  dbSnapshot[key] = Object.assign({}, dbSnapshot[key]||{}, payload);
   updateScheduleBanner();
-  // Recalcular meta e saldo sempre que algo muda (bug fix: contagem desatualizava)
+  // Recalcular meta e saldo sempre que algo muda
   updateMeta();
   updateSaldoBar();
   if(currentUser.role==='admin'){
     renderDashboard();
-    renderKanban();
+    if(!isUserTyping()) renderKanban(); else window._pendingRender = true;
   }
 }
 
@@ -1409,11 +1556,13 @@ async function upsertSilent(key, field){
   const d = getDay(key);
   const update = { updated_at: new Date().toISOString() };
   update[field] = d[field] || '';
-  await sb.from('tony_dashboard').upsert(
+  const {error} = await sb.from('tony_dashboard').upsert(
     { day_key: key, ...update },
     { onConflict: 'day_key', ignoreDuplicates: false }
   );
   setSyncing(false);
+  if(error){ console.error('[upsertSilent]', error); showToast('ti-alert-circle','Não salvou','Verifique a conexão e tente de novo.'); return; }
+  limparPendenteDia(key, field, update[field]);
 }
 function saveProd(key, field, val){
   const num = parseInt(val);
@@ -1434,13 +1583,14 @@ function saveProd(key, field, val){
     setSyncing(false);
     // Re-ler do banco para garantir sincronia total
     const {data} = await sb.from('tony_dashboard').select('*').eq('day_key', key).single();
-    if(data){ cache[key]=data; updateMeta(); updateSaldoBar(); }
+    if(data){ mergeDayRow(data); updateMeta(); updateSaldoBar(); }
     playConfirm();
   }, 600);
 }
 
 function saveField(key,field,val){
   getDay(key)[field]=val;
+  marcarPendenteDia(key, field, val);  // v3.8: protege o valor até o banco confirmar
   // Som de confirmação ao salvar observação (admin)
   if((field==='long_obs'||field==='viral_obs') && currentUser && currentUser.role==='admin'){
     if(saveTimers['obs_sound']) clearTimeout(saveTimers['obs_sound']);
@@ -1458,7 +1608,7 @@ function hasLinks(key){
   if(isNewSystem(key)){
     // Setembro+: tem links se houver pelo menos 1 link em qualquer editor
     const links = vlinkCache[key] || [];
-    return links.length > 0;
+    return links.some(linkValido);
   }
   const d=cache[key];
   return !!(d&&d.long_link&&d.viral_link);
@@ -1615,42 +1765,21 @@ function renderDashboard(){
   const wNum   = Math.floor((wStart - getWeekStart(PROJECT_START))/(7*24*3600*1000)) + 1;
   const wLabel = `Semana ${wNum} — ${wStart.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} a ${wEnd.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`;
 
-  // ── KPIs de produção (filtrado pelo mês) ──────────────────────────
-  let produzidosMes = 0;
-  Object.values(cache).forEach(d => {
-    if(!d.day_key) return;
-    if(d.day_key < pkStr || d.day_key > ukStr) return;
-    if(isNewSystem(d.day_key)){
-      // Set+: links aprovados
-      const links = vlinkCache[d.day_key] || [];
-      produzidosMes += links.filter(x => x.status === 'aprovado').length;
-    } else {
-      // Ago: prod_longos + prod_virais
-      if(d.long_link)  produzidosMes += (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : META_LONG_DIA;
-      if(d.viral_link) produzidosMes += (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : META_VIRAL_DIA;
-    }
-  });
+  // ── KPIs de produção (filtrado pelo mês) — v3.8: regra única ─────
+  const prodR = contarProduzidos(pkStr, ukStr);
+  const produzidosMes = prodR.total;
 
-  // ── KPIs de postagem (filtrado pelo mês) ─────────────────────────
-  const postagensMes = postagens.filter(p => {
-    const d = new Date(p.data_post + 'T12:00:00');
-    return d.getMonth() === mes && d.getFullYear() === ano;
-  });
-
-  // Vídeos únicos postados
-  const videosUnicosMap = {};
-  postagensMes.forEach(p => {
-    const uid = p.video_uid || p.id;
-    if(!videosUnicosMap[uid]) videosUnicosMap[uid] = p.tipo;
-  });
-  const totalVideosUnicos = Object.keys(videosUnicosMap).length;
-  const totalLong = Object.values(videosUnicosMap).filter(t => t === 'Longo').length;
-  const totalCurt = Object.values(videosUnicosMap).filter(t => t === 'Curto').length;
+  // ── KPIs de postagem (filtrado pelo mês) — só conta com link colado ──
+  const postagensMes = postagens.filter(p => p.data_post && p.data_post >= pkStr && p.data_post <= ukStr);
+  const postR = contarPostagens(postagensMes);
+  const totalVideosUnicos = postR.unicos;
+  const totalLong = postR.longos;
+  const totalCurt = postR.curtos;
 
   // Por plataforma
-  const totalYT = postagensMes.filter(p => p.plataforma === 'YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalTK = postagensMes.filter(p => p.plataforma === 'TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalIG = postagensMes.filter(p => p.plataforma === 'Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
+  const totalYT = postR.yt;
+  const totalTK = postR.tk;
+  const totalIG = postR.ig;
   const totalPlat = totalYT + totalTK + totalIG;
 
   // ── META MENSAL (zera a cada mês) ────────────────────────────────
@@ -1662,33 +1791,8 @@ function renderDashboard(){
   // ── PRODUZIDOS DO MÊS (via links aprovados) ───────────────────────
   // produzidosMes já calculado acima (filtrado por pkStr..ukStr)
   // Aqui usamos produzidosMes como o "produzidos do mês selecionado"
-  const produzidosMesLong = (() => {
-    let c = 0;
-    Object.values(cache).forEach(d => {
-      if(!d.day_key || d.day_key < pkStr || d.day_key > ukStr) return;
-      if(isNewSystem(d.day_key)){
-        const links = vlinkCache[d.day_key] || [];
-        c += links.filter(x => x.status === 'aprovado' && x.editor === 'rudney').length;
-      } else {
-        if(d.long_link) c += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
-      }
-    });
-    return c;
-  })();
-
-  const produzidosMesViral = (() => {
-    let c = 0;
-    Object.values(cache).forEach(d => {
-      if(!d.day_key || d.day_key < pkStr || d.day_key > ukStr) return;
-      if(isNewSystem(d.day_key)){
-        const links = vlinkCache[d.day_key] || [];
-        c += links.filter(x => x.status === 'aprovado' && x.editor === 'teixeira').length;
-      } else {
-        if(d.viral_link) c += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
-      }
-    });
-    return c;
-  })();
+  const produzidosMesLong = prodR.long;
+  const produzidosMesViral = prodR.viral;
 
   const produzidosTotal = produzidosMesLong + produzidosMesViral;
   const pctMeta = metaTotal > 0 ? Math.round(produzidosTotal / metaTotal * 100) : 0;
@@ -1761,7 +1865,7 @@ function renderDashboard(){
         <div class="dash-kpi-icon" style="color:var(--gold)"><i class="ti ti-video"></i></div>
         <div class="dash-kpi-label">Produzidos em ${mesLabelCap.split(' ')[0]}</div>
         <div class="dash-kpi-val ${produzidosTotal>=metaTotal?'green':''}">${produzidosTotal}</div>
-        <div class="dash-kpi-sub">de ${metaTotal} (${produzidosMesLong} longos + ${produzidosMesViral} virais)</div>
+        <div class="dash-kpi-sub">de ${metaTotal} (${produzidosMesLong} longos + ${produzidosMesViral} virais)${prodR.pend?` · <span style="color:var(--gold)">${prodR.pend} aguardando aprovação</span>`:''}</div>
       </div>
 
       <div class="dash-kpi ${saldoDevedor>0?'danger':'success'}">
@@ -1785,7 +1889,7 @@ function renderDashboard(){
       <div class="dash-plat-card">
         <div class="dash-plat-title"><i class="ti ti-chart-bar"></i>Vídeos únicos postados em ${mesLabelCap.split(' ')[0]}</div>
         <div style="font-size:2.8rem;font-weight:900;color:var(--text);line-height:1;margin-bottom:4px;">${totalVideosUnicos}</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">conteúdos distintos no mês</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">conteúdos distintos no mês, com link${postR.semLink?` · <span style="color:var(--danger2)">${postR.semLink} registro${postR.semLink>1?'s':''} sem link (não contam)</span>`:''}</div>
         <div class="dash-tipo-row">
           <div class="dash-tipo-item">
             <div class="dash-tipo-label">Longos</div>
@@ -1844,54 +1948,26 @@ async function trocarMesDash(val){
   const [m,a] = val.split('_').map(Number);
   window._dashMes = m;
   window._dashAno = a;
-
-  // Buscar dados do mês selecionado do banco (cache + vlinks)
-  const primeiro = new Date(a, m, 1);
-  const ultimo   = new Date(a, m + 1, 0);
-  const pStr = dateKey(primeiro);
-  const uStr = dateKey(ultimo);
-
-  // Buscar tony_dashboard para os dias do mês
-  const {data: dashData} = await sb.from('tony_dashboard')
-    .select('*')
-    .gte('day_key', pStr)
-    .lte('day_key', uStr);
-  if(dashData) dashData.forEach(r => { cache[r.day_key] = r; });
-
-  // Buscar tony_video_links para os dias do mês (setembro+)
-  if(pStr >= SET_START || uStr >= SET_START){
-    const {data: vData} = await sb.from('tony_video_links')
-      .select('*')
-      .gte('day_key', pStr)
-      .lte('day_key', uStr)
-      .order('created_at', {ascending: true});
-    // Limpar cache do mês e repovoar
-    const cur = new Date(primeiro);
-    while(cur <= ultimo){
-      const k = dateKey(new Date(cur));
-      if(k >= SET_START) vlinkCache[k] = [];
-      cur.setDate(cur.getDate() + 1);
-    }
-    if(vData) vData.forEach(r => {
-      if(!vlinkCache[r.day_key]) vlinkCache[r.day_key] = [];
-      vlinkCache[r.day_key].push(r);
-    });
+  const pStr = a+'-'+pad2(m+1)+'-01';
+  const uStr = ultimoDiaMesKey(a, m);
+  try{
+    // Dias do mês (paginado)
+    const dashData = await sbFetchAll(()=>sb.from('tony_dashboard').select('*')
+      .gte('day_key', pStr).lte('day_key', uStr).order('day_key',{ascending:true}));
+    dashData.forEach(mergeDayRow);
+    // Links individuais do mês (setembro+)
+    if(uStr >= SET_START) await loadVlinksRange(pStr, uStr);
+    // Postagens do mês
+    const postData = await sbFetchAll(()=>sb.from('tony_postagens').select('*')
+      .gte('data_post', pStr).lte('data_post', uStr)
+      .order('data_post',{ascending:true}).order('id',{ascending:true}));
+    postagens = postagens.filter(p => !(p.data_post >= pStr && p.data_post <= uStr)).concat(postData);
+  }catch(e){
+    console.error('[trocarMesDash]', e);
+    showToast('ti-alert-circle','Erro ao carregar o mês','Verifique a conexão e clique em Atualizar.');
   }
-
-  // Buscar postagens do mês
-  const {data: postData} = await sb.from('tony_postagens')
-    .select('*')
-    .gte('data_post', pStr)
-    .lte('data_post', uStr)
-    .order('data_post', {ascending: true});
-  // Remover postagens do mês do array global e repovoar com os novos dados
-  postagens = postagens.filter(p => {
-    const d = new Date(p.data_post + 'T12:00:00');
-    return !(d.getMonth() === m && d.getFullYear() === a);
-  });
-  if(postData) postagens = postagens.concat(postData);
-
   renderDashboard();
+  updateSaldoBar();
 }
 
 async function recarregarDashboard(){
@@ -1912,10 +1988,17 @@ async function changeWeek(dir){
   currentWeekStart=next;
   document.getElementById('loading').style.display='flex';
   document.getElementById('view-kanban').style.display='none';
-  // Carregar semana atual + todos os dias do projeto (contagem global)
-  await Promise.all([loadWeek(currentWeekStart), loadAllProjectDays(), loadVlinksWeek(currentWeekStart)]);
-  document.getElementById('loading').style.display='none';
-  document.getElementById('view-kanban').style.display='block';
+  try{
+    // Carregar semana atual + todos os dias do projeto (contagem global)
+    await Promise.all([loadWeek(currentWeekStart), loadAllProjectDays(), loadVlinksWeek(currentWeekStart)]);
+  }catch(e){
+    console.error('[changeWeek]', e);
+    showToast('ti-alert-circle','Erro ao carregar a semana','Verifique a conexão e clique em Atualizar.');
+  }finally{
+    // v3.8: nunca deixa a tela presa no "carregando"
+    document.getElementById('loading').style.display='none';
+    document.getElementById('view-kanban').style.display='block';
+  }
   renderKanban();
   updateMeta();
   updateSaldoBar();
@@ -1925,6 +2008,7 @@ function gotoToday(){
   const today = new Date(); today.setHours(0,0,0,0);
   currentWeekStart = getWeekStart(today);
   Promise.all([loadWeek(currentWeekStart), loadAllProjectDays(), loadVlinksWeek(currentWeekStart)])
+    .catch(e=>{ console.error('[gotoToday]', e); showToast('ti-alert-circle','Erro ao carregar a semana','Verifique a conexão.'); })
     .then(()=>{ renderKanban(); updateMeta(); updateSaldoBar(); });
 }
 
@@ -1956,25 +2040,13 @@ function updateMeta(){
   const metaViralSemana = META_VIRAL_DIA * nDias;
   const metaTotalSemana = metaLongSemana + metaViralSemana;
 
-  // Produzidos na semana
+  // Produzidos na semana — v3.8: regra única (contarProduzidos)
   let totalLong = 0, totalViral = 0;
-  dias.forEach(day => {
-    const key = dateKey(day);
-    const d = cache[key];
-    if(!d) return;
-    if(isNewSystem(key)){
-      // Setembro+: contar links aprovados
-      const links = vlinkCache[key] || [];
-      totalLong  += links.filter(x=>x.editor==='rudney'   && x.status==='aprovado').length;
-      totalViral += links.filter(x=>x.editor==='teixeira' && x.status==='aprovado').length;
-    } else {
-      // Agosto: sistema antigo
-      const lVal = (d.prod_longos!==undefined&&d.prod_longos!==null) ? Number(d.prod_longos) : (d.long_link ? META_LONG_DIA : 0);
-      const vVal = (d.prod_virais!==undefined&&d.prod_virais!==null) ? Number(d.prod_virais) : (d.viral_link ? META_VIRAL_DIA : 0);
-      if(d.long_link)  totalLong  += lVal;
-      if(d.viral_link) totalViral += vVal;
-    }
-  });
+  if(nDias > 0){
+    const rs = contarProduzidos(dateKey(dias[0]), dateKey(dias[nDias-1]));
+    totalLong = rs.long;
+    totalViral = rs.viral;
+  }
   const totalAll = totalLong + totalViral;
 
   const pctLong  = metaLongSemana  > 0 ? Math.min(Math.round((totalLong /metaLongSemana )*100),100) : 0;
@@ -2146,7 +2218,7 @@ function renderKanban(){
             <div class="prod-field">
               <label><i class="ti ti-scissors" style="color:#a569bd;"></i>Virais</label>
               <input class="prod-input" type="number" min="0" max="5"
-                value="${d.long_link ? ((d.prod_virais!==undefined&&d.prod_virais!==null)?d.prod_virais:5) : 0}"
+                value="${d.viral_link ? ((d.prod_virais!==undefined&&d.prod_virais!==null)?d.prod_virais:5) : 0}"
                 ${!d.viral_link?'disabled':''}
                 onchange="saveProd('${key}','prod_virais',this.value)" />
             </div>
@@ -2327,20 +2399,9 @@ function updateSaldoBar(){
   if(metaVal) metaVal.textContent = metaTotal;
   if(metaSub) metaSub.textContent = metaLongos + ' longos + ' + metaVirais + ' virais';
 
-  // Produzidos no mês (só dias do mês selecionado)
-  let prodLong = 0, prodViral = 0;
-  Object.values(cache).forEach(d => {
-    if(!d.day_key) return;
-    if(d.day_key < pkStr || d.day_key > ukStr) return;
-    if(isNewSystem(d.day_key)){
-      const links = vlinkCache[d.day_key] || [];
-      prodLong  += links.filter(x => x.status === 'aprovado' && x.editor === 'rudney').length;
-      prodViral += links.filter(x => x.status === 'aprovado' && x.editor === 'teixeira').length;
-    } else {
-      if(d.long_link)  prodLong  += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
-      if(d.viral_link) prodViral += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
-    }
-  });
+  // Produzidos no mês (só dias do mês selecionado) — v3.8: regra única
+  const rSaldo = contarProduzidos(pkStr, ukStr);
+  const prodLong = rSaldo.long, prodViral = rSaldo.viral;
   const prod = prodLong + prodViral;
   const pct  = metaTotal > 0 ? Math.round(prod / metaTotal * 100) : 0;
 
@@ -2579,6 +2640,10 @@ let postagens = [];
 let editingPostId = null;
 let selectedMesPost = new Date().getMonth();
 let selectedAnoPost = new Date().getFullYear();
+// v3.8: período da aba Postagens — mês inteiro ou datas personalizadas (de/até)
+let postPeriodo = {modo:'mes', de:'', ate:''};
+let editingVideo = null;   // vídeo em edição (data, tipo, plataformas, links)
+let salvandoBatch = false;
 
 const POST_PLAT = ['Instagram','TikTok','YouTube'];
 const POST_TIPO = ['Longo','Curto'];
@@ -2611,21 +2676,16 @@ function getLabelSemanaData(dataVal){
 
 function sincronizarMesComData(dataVal){
   if(!dataVal) return;
-  const d = new Date(dataVal+'T12:00:00');
-  const m = d.getMonth();
-  const a = d.getFullYear();
-  // Só sincroniza se estiver no range ago-dez/2026
-  const mesesValidos = [{m:7,a:2026},{m:8,a:2026},{m:9,a:2026},{m:10,a:2026},{m:11,a:2026}];
-  if(!mesesValidos.some(x=>x.m===m&&x.a===a)) return;
-  selectedMesPost = m;
-  selectedAnoPost = a;
-  const sel = document.getElementById('mes-selector');
-  if(sel) sel.value = m+'_'+a;
-  // Atualizar label de semana/dia
   const labelEl = document.getElementById('data-semana-label');
   if(labelEl) labelEl.innerHTML = getLabelSemanaData(dataVal);
-  // Atualiza stats sem re-renderizar o form todo
-  renderPostagensSemForm();
+  // Com período personalizado, só atualiza as datas padrão das linhas
+  if(postPeriodo.modo === 'custom'){ renderVideoRows(); return; }
+  const d = new Date(dataVal+'T12:00:00');
+  selectedMesPost = d.getMonth();
+  selectedAnoPost = d.getFullYear();
+  // v3.8: re-render completo (as linhas digitadas ficam em memória em videoRows).
+  // Antes chamava uma função que não existia — a tela travava e os links sumiam.
+  renderPostagens();
 }
 
 function detectarPlataforma(url){
@@ -2644,11 +2704,16 @@ function detectarTipo(url){
   return 'Longo';
 }
 
-// videoRows: [{tipo:'Longo', plats:['YouTube','TikTok'], links:{YouTube:'',TikTok:''}}]
+// videoRows: [{tipo:'Longo', plats:['YouTube','TikTok'], links:{YouTube:'',TikTok:''}, data:null}]
+// data:null = usa a data padrão do formulário; data:'AAAA-MM-DD' = data personalizada do vídeo
 let videoRows=[];
 
 function novoVideoRow(){
-  return {tipo:'Longo', plats:[], links:{Instagram:'',TikTok:'',YouTube:''}};
+  return {tipo:'Longo', plats:[], links:{Instagram:'',TikTok:'',YouTube:''}, data:null};
+}
+
+function dataPadraoForm(){
+  return document.getElementById('pf-data')?.value || dateKey(new Date());
 }
 
 function addVideoRow(){
@@ -2667,11 +2732,11 @@ function removeVideoRow(idx){
 
 function togglePlat(idx, plat){
   const row=videoRows[idx];
+  if(!row) return;
   if(row.plats.includes(plat)){
     row.plats=row.plats.filter(p=>p!==plat);
   } else {
     row.plats.push(plat);
-    // Auto-detectar tipo se link já preenchido
     const link=row.links[plat];
     if(link) row.tipo=detectarTipo(link)||row.tipo;
   }
@@ -2679,24 +2744,29 @@ function togglePlat(idx, plat){
 }
 
 function onVideoLinkChange(idx, plat, val){
+  if(!videoRows[idx]) return;
   videoRows[idx].links[plat]=val;
-  // Auto-detectar tipo pelo link
   const tipo=detectarTipo(val);
   if(tipo) videoRows[idx].tipo=tipo;
-  // Auto-ativar plataforma se detectada pelo link
   const platDetect=detectarPlataforma(val);
   if(platDetect && !videoRows[idx].plats.includes(platDetect)){
     videoRows[idx].plats.push(platDetect);
     renderVideoRows();
     return;
   }
-  // Só atualizar o select de tipo sem re-renderizar
   const sel=document.querySelector(`#vr-${idx} .video-tipo-sel`);
   if(sel) sel.value=videoRows[idx].tipo;
 }
 
 function onVideoTipoChange(idx, val){
-  videoRows[idx].tipo=val;
+  if(videoRows[idx]) videoRows[idx].tipo=val;
+}
+
+function onVideoDataChange(idx, val){
+  if(!videoRows[idx]) return;
+  const padrao = dataPadraoForm();
+  videoRows[idx].data = (val && val !== padrao) ? val : null;
+  renderVideoRows();
 }
 
 const PLAT_ORDER=['YouTube','TikTok','Instagram'];
@@ -2705,6 +2775,8 @@ const PLAT_CODE={YouTube:'YT',TikTok:'TK',Instagram:'IG'};
 function renderVideoRows(){
   const area=document.getElementById('video-batch-area');
   if(!area) return;
+  if(videoRows.length===0) videoRows=[novoVideoRow()];
+  const padrao = dataPadraoForm();
   area.innerHTML=videoRows.map((row,i)=>{
     const platsHtml=PLAT_ORDER.map(p=>{
       const ativo=row.plats.includes(p)?'ativo':'';
@@ -2714,12 +2786,13 @@ function renderVideoRows(){
     const linksHtml=PLAT_ORDER.filter(p=>row.plats.includes(p)).map(p=>{
       return `<div class="video-link-row">
         <span class="video-link-label ${PLAT_CODE[p]}">${p}</span>
-        <input class="video-link-input" type="text" placeholder="https://..." value="${row.links[p]||''}"
+        <input class="video-link-input" type="text" placeholder="https://..." value="${escHTML(row.links[p]||'')}"
           oninput="onVideoLinkChange(${i},'${p}',this.value)"
           onpaste="setTimeout(()=>onVideoLinkChange(${i},'${p}',this.value),10)"/>
       </div>`;
     }).join('');
 
+    const dataVideo = row.data || padrao;
     return `<div class="video-row" id="vr-${i}">
       <div class="video-row-top">
         <span class="video-num">${i+1}</span>
@@ -2731,6 +2804,11 @@ function renderVideoRows(){
           </select>
           <button type="button" class="link-remove-btn" onclick="removeVideoRow(${i})"><i class="ti ti-x"></i></button>
         </div>
+      </div>
+      <div class="video-row-date">
+        <i class="ti ti-calendar"></i>Data
+        <input type="date" value="${dataVideo}" onchange="onVideoDataChange(${i},this.value)"/>
+        ${row.data?'<span class="tag-custom">personalizada</span>':'<span style="font-weight:400;text-transform:none;letter-spacing:0;">(padrão do formulário)</span>'}
       </div>
       ${linksHtml?`<div class="video-links">${linksHtml}</div>`:''}
     </div>`;
@@ -2746,67 +2824,109 @@ function atualizarBatchCount(){
 }
 
 async function submitBatch(){
-  const data=document.getElementById('pf-data')?.value;
-  if(!data){alert('Selecione a data.');return;}
+  if(salvandoBatch) return;
+  const dataPadrao=document.getElementById('pf-data')?.value;
   const validos=videoRows.filter(r=>r.plats.length>0);
   if(validos.length===0){alert('Adicione pelo menos um vídeo com plataforma selecionada.');return;}
+  if(!dataPadrao && validos.some(r=>!r.data)){alert('Selecione a data.');return;}
 
   const statusEl=document.getElementById('batch-status');
   const btn=document.querySelector('[onclick="submitBatch()"]');
+  salvandoBatch=true;
   if(statusEl) statusEl.textContent='Salvando...';
   if(btn){btn.disabled=true;btn.style.opacity='0.6';}
 
-  // Cada vídeo único gera 1 registro por plataforma, marcado com video_id comum
-  const videoId=Date.now(); // mesmo timestamp = mesmo vídeo
-  const payload=[];
-  validos.forEach((row,vi)=>{
-    const vid=videoId+vi; // id único por vídeo
-    row.plats.forEach(plat=>{
-      payload.push({
-        data_post:data,
-        plataforma:plat,
-        tipo:row.tipo,
-        quantidade:1,
-        hora_post:null,
-        link_post:row.links[plat]||null,
-        video_uid:String(vid), // agrupa distribuições do mesmo vídeo
-        updated_at:new Date().toISOString()
+  try{
+    // Cada vídeo único gera 1 registro por plataforma, marcado com video_uid comum
+    const videoId=Date.now();
+    const payload=[];
+    validos.forEach((row,vi)=>{
+      const vid=videoId+vi;
+      row.plats.forEach(plat=>{
+        payload.push({
+          data_post: row.data || dataPadrao,
+          plataforma: plat,
+          tipo: row.tipo,
+          quantidade: 1,
+          hora_post: null,
+          link_post: (row.links[plat]||'').trim() || null,
+          video_uid: String(vid),
+          updated_at: new Date().toISOString()
+        });
       });
     });
-  });
 
-  const {error}=await sb.from('tony_postagens').insert(payload);
-  if(error){
-    // Fallback: sem coluna video_uid (compatibilidade)
-    const payloadSimples=payload.map(({video_uid,...rest})=>rest);
-    const {error:e2}=await sb.from('tony_postagens').insert(payloadSimples);
-    if(e2){alert('Erro ao salvar: '+e2.message);if(btn){btn.disabled=false;btn.style.opacity='1';}return;}
+    let {error}=await sb.from('tony_postagens').insert(payload);
+    if(error && /video_uid/i.test(error.message||'')){
+      // Compatibilidade: tabela sem a coluna video_uid
+      const payloadSimples=payload.map(({video_uid,...rest})=>rest);
+      ({error}=await sb.from('tony_postagens').insert(payloadSimples));
+    }
+    if(error){ alert('Erro ao salvar: '+error.message); return; }
+
+    const nVideos=validos.length;
+    const nDist=payload.length;
+    const semLink=payload.filter(p=>!p.link_post).length;
+    videoRows=[novoVideoRow()];
+    await loadPostagens(true);
+    // Leva a lista para o mês do vídeo salvo (se não estiver em período personalizado)
+    if(postPeriodo.modo!=='custom'){
+      const d=new Date(payload[0].data_post+'T12:00:00');
+      selectedMesPost=d.getMonth(); selectedAnoPost=d.getFullYear();
+    }
+    renderPostagens();
+    playConfirm();
+    const st=document.getElementById('batch-status');
+    if(st){
+      st.textContent=`${nVideos} vídeo${nVideos>1?'s':''} · ${nDist} distribuiç${nDist>1?'ões':'ão'} salvas!`+(semLink?` (${semLink} sem link)`:'');
+      setTimeout(()=>{ if(st) st.textContent=''; },5000);
+    }
+  }catch(e){
+    console.error('[submitBatch]', e);
+    alert('Erro ao salvar: '+(e.message||e));
+  }finally{
+    // v3.8: o botão sempre volta ao normal (antes ficava travado em "Salvando...")
+    salvandoBatch=false;
+    const b=document.querySelector('[onclick="submitBatch()"]');
+    if(b){b.disabled=false;b.style.opacity='1';}
+    const st=document.getElementById('batch-status');
+    if(st && st.textContent==='Salvando...') st.textContent='';
   }
-
-  videoRows=[];
-  await loadPostagens();
-  sincronizarMesComData(data);
-  playConfirm();
-  const nVideos=validos.length;
-  const nDist=payload.length;
-  if(statusEl) statusEl.textContent=`${nVideos} vídeo${nVideos>1?'s':''} únicos · ${nDist} distribuiç${nDist>1?'ões':'ão'} salvas!`;
-  setTimeout(()=>{if(statusEl)statusEl.textContent='';},4000);
-  renderPostagens();
-  setTimeout(()=>{if(document.getElementById('video-batch-area')){videoRows=[novoVideoRow()];renderVideoRows();}},120);
-  if(btn){btn.disabled=false;btn.style.opacity='1';}
 }
 
 function trocarMesPost(val){
+  if(val === 'custom'){
+    postPeriodo.modo = 'custom';
+    if(!postPeriodo.de || !postPeriodo.ate){
+      postPeriodo.de  = selectedAnoPost+'-'+pad2(selectedMesPost+1)+'-01';
+      postPeriodo.ate = ultimoDiaMesKey(selectedAnoPost, selectedMesPost);
+    }
+    renderPostagens();
+    return;
+  }
   const [m,a] = val.split('_').map(Number);
+  postPeriodo.modo = 'mes';
   selectedMesPost = m;
   selectedAnoPost = a;
+  renderPostagens();
+}
+
+function aplicarPeriodoCustom(){
+  const de  = document.getElementById('per-de')?.value;
+  const ate = document.getElementById('per-ate')?.value;
+  if(!de || !ate){ alert('Preencha as duas datas do período.'); return; }
+  postPeriodo = {modo:'custom', de: de <= ate ? de : ate, ate: de <= ate ? ate : de};
   renderPostagens();
 }
 
 async function recarregarPostagens(){
   const btn = document.querySelector('[onclick="recarregarPostagens()"]');
   if(btn){ btn.style.opacity='0.5'; btn.style.pointerEvents='none'; }
-  await loadPostagens();
+  try{
+    await loadPostagens(true);
+    await loadVlinksRange(SET_START, fimCargaKey());
+    await loadAllProjectDays();
+  }catch(e){ console.error('[recarregarPostagens]', e); }
   renderPostagens();
   if(btn){ btn.style.opacity='1'; btn.style.pointerEvents=''; }
 }
@@ -2840,22 +2960,36 @@ async function loadVlinksWeek(ws){
   const keys = [];
   for(let i=0;i<7;i++){
     const d = addDays(ws,i);
-    if(d>=PROJECT_START && d<=PROJECT_END){
+    if(d>=PROJECT_START){
       const k = dateKey(d);
       if(k >= SET_START) keys.push(k);
     }
   }
   if(!keys.length) return;
-  const {data} = await sb.from('tony_video_links')
+  const {data, error} = await sb.from('tony_video_links')
     .select('*').in('day_key', keys).order('created_at', {ascending:true});
-  // Sobrescrever apenas os dias desta semana com dados frescos do banco
+  // v3.8: se a busca falhar, NÃO apaga os links da tela (antes zerava tudo)
+  if(error){ console.error('[loadVlinksWeek]', error); throw error; }
   keys.forEach(k => { vlinkCache[k] = []; });
-  if(data) data.forEach(r => {
+  (data||[]).forEach(r => {
     if(!vlinkCache[r.day_key]) vlinkCache[r.day_key] = [];
-    // Evitar duplicatas (manter o mais recente do banco)
-    const exists = vlinkCache[r.day_key].find(x => x.id === r.id);
-    if(!exists) vlinkCache[r.day_key].push(r);
-    else Object.assign(exists, r); // atualizar com dados frescos
+    vlinkCache[r.day_key].push(aplicarPendenteVlink(r));
+  });
+}
+
+// v3.8: carrega TODOS os links de um intervalo (paginado). Usado na abertura do app,
+// no Atualizar e no dashboard — antes só a semana aberta era carregada, então os
+// totais do mês e o F5 mostravam links "sumidos".
+async function loadVlinksRange(deKey, ateKey){
+  if(ateKey < SET_START) return;
+  if(deKey < SET_START) deKey = SET_START;
+  const data = await sbFetchAll(()=>sb.from('tony_video_links').select('*')
+    .gte('day_key', deKey).lte('day_key', ateKey)
+    .order('day_key',{ascending:true}).order('created_at',{ascending:true}).order('id',{ascending:true}));
+  Object.keys(vlinkCache).forEach(k=>{ if(k >= deKey && k <= ateKey) vlinkCache[k] = []; });
+  data.forEach(r=>{
+    if(!vlinkCache[r.day_key]) vlinkCache[r.day_key] = [];
+    vlinkCache[r.day_key].push(aplicarPendenteVlink(r));
   });
 }
 
@@ -2889,59 +3023,61 @@ const vlinkSavingIds = new Set(); // IDs sendo salvos por mim — ignorar echo d
 function updateVlinkField(id, key, field, value){
   // Atualizar cache local imediatamente
   if(!vlinkCache[key]) vlinkCache[key] = [];
-  const item = vlinkCache[key].find(x => x.id === id);
+  const item = vlinkCache[key].find(x => String(x.id) === String(id));
   if(item) item[field] = value;
+  marcarPendenteVlink(id, field, value);  // v3.8: protege até o banco confirmar
 
   // Debounce: salvar no banco 800ms após parar de digitar
   const tKey = id + '_' + field;
   if(vlinkSaveTimers[tKey]) clearTimeout(vlinkSaveTimers[tKey]);
   vlinkSaveTimers[tKey] = setTimeout(async () => {
-    vlinkSavingIds.add(id); // marcar que EU estou salvando este ID
-    setSyncing(true);
-    const { error } = await sb.from('tony_video_links')
-      .update({[field]: value, updated_at: new Date().toISOString()})
-      .eq('id', id);
-    setSyncing(false);
-    if(error){
-      console.error('Erro ao salvar link:', error.message);
-      vlinkSavingIds.delete(id);
-      // Retry
-      setTimeout(async () => {
-        await sb.from('tony_video_links').update({[field]: value}).eq('id', id);
-        vlinkSavingIds.delete(id);
-      }, 2000);
-    } else {
-      // Remover da lista após 1s (tempo suficiente para o Realtime chegar e ser ignorado)
-      setTimeout(() => vlinkSavingIds.delete(id), 1000);
-    }
+    delete vlinkSaveTimers[tKey];
+    await salvarVlinkCampo(id, field, value);
   }, 800);
+}
+
+async function salvarVlinkCampo(id, field, value){
+  const sid = String(id);
+  vlinkSavingIds.add(sid); // marcar que EU estou salvando este ID
+  setSyncing(true);
+  let { error } = await sb.from('tony_video_links')
+    .update({[field]: value, updated_at: new Date().toISOString()})
+    .eq('id', id);
+  if(error){
+    console.error('Erro ao salvar link:', error.message);
+    await new Promise(r=>setTimeout(r,2000));
+    ({ error } = await sb.from('tony_video_links').update({[field]: value}).eq('id', id));
+  }
+  setSyncing(false);
+  setTimeout(() => vlinkSavingIds.delete(sid), 1000);
+  if(error){
+    showToast('ti-alert-circle','Link não salvou','Verifique a conexão. O link continua na tela; clique fora do campo para tentar de novo.');
+    return false;
+  }
+  limparPendenteVlink(id, field, value);
+  updateMeta(); updateSaldoBar();
+  return true;
 }
 
 // Salvar imediatamente ao sair do campo (blur) — garante persistência mesmo fechando a aba
 function saveVlinkOnBlur(id, key, field, value){
-  updateVlinkField(id, key, field, value);
-  // Também salvar imediatamente sem esperar debounce
+  if(!vlinkCache[key]) vlinkCache[key] = [];
+  const item = vlinkCache[key].find(x => String(x.id) === String(id));
+  if(item) item[field] = value;
+  marcarPendenteVlink(id, field, value);
   const tKey = id + '_' + field;
   if(vlinkSaveTimers[tKey]){
     clearTimeout(vlinkSaveTimers[tKey]);
     delete vlinkSaveTimers[tKey];
   }
-  vlinkSavingIds.add(id);
-  setSyncing(true);
-  sb.from('tony_video_links')
-    .update({[field]: value, updated_at: new Date().toISOString()})
-    .eq('id', id)
-    .then(({error}) => {
-      setSyncing(false);
-      setTimeout(() => vlinkSavingIds.delete(id), 1000);
-      if(error) console.error('Erro blur save:', error.message);
-    });
+  salvarVlinkCampo(id, field, value);
 }
 
 async function setVlinkStatus(id, key, status){
-  await sb.from('tony_video_links').update({status}).eq('id', id);
+  const {error} = await sb.from('tony_video_links').update({status}).eq('id', id);
+  if(error){ showToast('ti-alert-circle','Não salvou a aprovação','Verifique a conexão e tente de novo.'); return; }
   const list = vlinkCache[key] || [];
-  const item = list.find(x => x.id === id);
+  const item = list.find(x => String(x.id) === String(id));
   if(item){ item.status = status; }
   // Re-renderizar ambos os editores para atualizar banners
   const card = document.querySelector('[data-day-key="'+key+'"]');
@@ -2954,8 +3090,10 @@ async function setVlinkStatus(id, key, status){
 
 async function removeVlink(id, key, editor){
   if(!confirm('Remover este link?')) return;
-  await sb.from('tony_video_links').delete().eq('id', id);
-  if(vlinkCache[key]) vlinkCache[key] = vlinkCache[key].filter(x => x.id !== id);
+  const {error} = await sb.from('tony_video_links').delete().eq('id', id);
+  if(error){ showToast('ti-alert-circle','Não removeu','Verifique a conexão e tente de novo.'); return; }
+  delete vlinkPending[String(id)];
+  if(vlinkCache[key]) vlinkCache[key] = vlinkCache[key].filter(x => String(x.id) !== String(id));
   renderVlinkSection(key, editor);
   updateMetaVlinks();
 }
@@ -3154,277 +3292,255 @@ async function salvarConfig(){
   document.addEventListener('input', e=>{ if(e.target.id===id) atualizarPreviewConfig(); });
 });
 
-async function loadPostagens(){
-  const {data} = await sb.from('tony_postagens').select('*').order('data_post',{ascending:false});
-  postagens = data || [];
+// ── POSTAGENS (v3.8) ─────────────────────────────────────────────────────
+function periodoPost(){
+  if(postPeriodo.modo==='custom' && postPeriodo.de && postPeriodo.ate){
+    const de = postPeriodo.de <= postPeriodo.ate ? postPeriodo.de : postPeriodo.ate;
+    const ate = postPeriodo.de <= postPeriodo.ate ? postPeriodo.ate : postPeriodo.de;
+    return {de, ate, label: fmtBR(de)+' a '+fmtBR(ate), custom:true};
+  }
+  const a=selectedAnoPost, m=selectedMesPost;
+  const lbl=new Date(a,m,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  return {de: a+'-'+pad2(m+1)+'-01', ate: ultimoDiaMesKey(a,m), label: lbl.charAt(0).toUpperCase()+lbl.slice(1), custom:false};
+}
+
+function postagensDoPeriodo(){
+  const {de, ate} = periodoPost();
+  return postagens.filter(p => p.data_post && p.data_post >= de && p.data_post <= ate);
+}
+
+function opcoesMesesPost(){
+  // De agosto/2026 até 2 meses à frente do mês atual (cresce sozinho)
+  const ops=[]; const hoje=new Date();
+  const lim=new Date(hoje.getFullYear(), hoje.getMonth()+2, 1);
+  let a=2026, m=7;
+  while(new Date(a,m,1) <= lim){
+    const lbl=new Date(a,m,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+    ops.push({m,a,label:lbl.charAt(0).toUpperCase()+lbl.slice(1)});
+    m++; if(m>11){m=0;a++;}
+  }
+  // garante o mês selecionado na lista
+  if(!ops.some(o=>o.m===selectedMesPost&&o.a===selectedAnoPost)){
+    const lbl=new Date(selectedAnoPost,selectedMesPost,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+    ops.push({m:selectedMesPost,a:selectedAnoPost,label:lbl.charAt(0).toUpperCase()+lbl.slice(1)});
+  }
+  return ops;
+}
+
+async function loadPostagens(lancarErro){
+  // v3.8: paginado — antes parava em 1000 registros e os meses antigos sumiam
+  try{
+    postagens = await sbFetchAll(()=>sb.from('tony_postagens').select('*')
+      .order('data_post',{ascending:true}).order('id',{ascending:true}));
+  }catch(e){
+    showToast('ti-alert-circle','Erro ao carregar postagens','Verifique a conexão e clique em "Carregar dados".');
+    if(lancarErro) throw e;
+  }
 }
 
 function renderPostagensSemForm(){
-  // Recalcula só os stats e tabela, preservando o form ativo
-  const el = document.getElementById('postagens-content');
-  if(!el) return;
-  const viewPost = document.getElementById('view-postagens');
-  if(!viewPost || viewPost.style.display === 'none') return;
-  // Re-render completo mas mantendo valores do form
-  const pfData = document.getElementById('pf-data')?.value;
-  const pfPlat = document.getElementById('pf-plat')?.value;
-  const pfTipo = document.getElementById('pf-tipo')?.value;
-  const pfLink = document.getElementById('pf-link')?.value;
-  const pfId   = document.getElementById('pf-id')?.value;
+  // v3.8: as linhas digitadas ficam em videoRows, então o re-render completo é seguro
   renderPostagens();
-  // Restaurar form depois do re-render
-  if(pfData && document.getElementById('pf-data')){
-    document.getElementById('pf-data').value = pfData;
-    const labelEl = document.getElementById('data-semana-label');
-    if(labelEl) labelEl.innerHTML = getLabelSemanaData(pfData);
-  }
-  // Inicializar batch area com rows existentes ou 1 linha em branco
-  if(document.getElementById('video-batch-area')){
-    if(linkRows.length===0) linkRows = [{link:'',plataforma:'desconhecido',tipo:'Longo'}];
-    renderLinkRows();
-  }
 }
 
 function renderPostagens(){
   const el = document.getElementById('postagens-content');
   if(!el) return;
-  // Só renderiza se a aba de postagens estiver visível
   const viewPost = document.getElementById('view-postagens');
   if(!viewPost || viewPost.style.display === 'none') return;
   const isAdmin = currentUser && currentUser.role==='admin';
 
-  // ── Stats do mês selecionado ────────────────────────────────────────
-  const mesAtual = selectedMesPost;
-  const anoAtual = selectedAnoPost;
-  const doMes = postagens.filter(p => {
-    const d = new Date(p.data_post+'T12:00:00');
-    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
-  });
+  const per = periodoPost();
+  const doPer = postagensDoPeriodo();
+  const pr = contarPostagens(doPer);
+  const prod = contarProduzidos(per.de, per.ate);
 
-  // Distribuições por plataforma (cada postagem numa rede conta)
-  const totalIG = doMes.filter(p=>p.plataforma==='Instagram').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalTK = doMes.filter(p=>p.plataforma==='TikTok').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalYT = doMes.filter(p=>p.plataforma==='YouTube').reduce((a,p)=>a+(p.quantidade||0),0);
-  const totalPost = totalIG + totalTK + totalYT;
-
-  // Longos e Curtos: contar por vídeo único (via video_uid), não por distribuição
-  const videosUnicosMap = {};
-  doMes.forEach(p=>{
-    const uid = p.video_uid || p.id;
-    if(!videosUnicosMap[uid]) videosUnicosMap[uid] = p.tipo;
-  });
-  const totalLong = Object.values(videosUnicosMap).filter(t=>t==='Longo').length;
-  const totalCurt = Object.values(videosUnicosMap).filter(t=>t==='Curto').length;
-
-  // Produzido no mês — percorre TODOS os dias do projeto no cache
-  // (cache completo garantido pelo loadAllProjectDays no startApp)
-  let produzidoMes = 0;
-  const psStr = dateKey(PROJECT_START);
-  const peStr = dateKey(PROJECT_END);
-  Object.values(cache).forEach(d => {
-    if(!d.day_key) return;
-    if(d.day_key < psStr || d.day_key > peStr) return;
-    const dp = new Date(d.day_key+'T12:00:00');
-    if(dp.getMonth()!==mesAtual||dp.getFullYear()!==anoAtual) return;
-    if(d.long_link)  produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
-    if(d.viral_link) produzidoMes += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
-  });
-
-  const mesRefDate = new Date(anoAtual, mesAtual, 1);
-  const mesLabel = mesRefDate.toLocaleString('pt-BR',{month:'long',year:'numeric'});
-
-  // ── Seletor de mês ──────────────────────────────────────────────────
-  // Gerar opções: 12 meses anteriores + mês atual
-  // Meses fixos: agosto/2026 até dezembro/2026
-  const mesesFixos = [
-    {m:7, a:2026, label:'Agosto de 2026'},
-    {m:8, a:2026, label:'Setembro de 2026'},
-    {m:9, a:2026, label:'Outubro de 2026'},
-    {m:10,a:2026, label:'Novembro de 2026'},
-    {m:11,a:2026, label:'Dezembro de 2026'},
-  ];
-  const mesesOpts = mesesFixos.map(({m,a,label})=>{
-    const sel = (m===mesAtual && a===anoAtual) ? 'selected' : '';
+  // ── Seletor de período ────────────────────────────────────────────────
+  const mesesOpts = opcoesMesesPost().map(({m,a,label})=>{
+    const sel = (!per.custom && m===selectedMesPost && a===selectedAnoPost) ? 'selected' : '';
     return `<option value="${m}_${a}" ${sel}>${label}</option>`;
-  });
+  }).join('') + `<option value="custom" ${per.custom||postPeriodo.modo==='custom'?'selected':''}>Período personalizado…</option>`;
 
   const mesSelectorHtml = `
   <div style="background:var(--bg2);border:1px solid var(--glass-b);border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
     <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:6px;">
-      <i class="ti ti-calendar" style="color:var(--gold);font-size:14px;"></i>Mês de referência
+      <i class="ti ti-calendar" style="color:var(--gold);font-size:14px;"></i>Período de referência
     </div>
     <select id="mes-selector" style="background:rgba(255,255,255,0.05);border:1px solid var(--glass-gold-b);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;cursor:pointer;flex:1;min-width:180px;" onchange="trocarMesPost(this.value)">
-      ${mesesOpts.join('')}
+      ${mesesOpts}
     </select>
     <button onclick="recarregarPostagens()" style="background:linear-gradient(135deg,rgba(201,169,110,0.18),rgba(201,169,110,0.06));border:1px solid var(--glass-gold-b);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--gold);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap;">
       <i class="ti ti-refresh"></i> Carregar dados
     </button>
+    ${postPeriodo.modo==='custom' ? `
+    <div class="periodo-custom">
+      <div class="ff-post"><label>De</label><input type="date" id="per-de" value="${postPeriodo.de||''}"/></div>
+      <div class="ff-post"><label>Até</label><input type="date" id="per-ate" value="${postPeriodo.ate||''}"/></div>
+      <button class="add-post-btn" style="margin-top:0;" onclick="aplicarPeriodoCustom()"><i class="ti ti-check"></i> Aplicar</button>
+      <div style="font-size:11px;color:var(--text3);width:100%;">Mostrando: <b style="color:var(--gold)">${per.label}</b></div>
+    </div>` : ''}
   </div>`;
 
-  // ── Form de registro multi-link ────────────────────────────────────
-  const dataAtual = document.getElementById('pf-data')?.value || new Date().toISOString().slice(0,10);
-  const semLabel  = getLabelSemanaData(dataAtual);
-  const formHtml = isAdmin && !editingPostId ? `
-  <div class="post-form-card">
-    <div class="post-form-title"><i class="ti ti-plus"></i>Registrar vídeos do dia</div>
-    <div style="display:grid;grid-template-columns:1fr;gap:10px;">
-      <div class="ff-post">
-        <label>Data</label>
-        <input type="date" id="pf-data" value="${dataAtual}" onchange="sincronizarMesComData(this.value)"/>
-        <div id="data-semana-label" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.3px;min-height:16px;">${semLabel}</div>
-      </div>
-      <div>
-        <div class="link-date-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Vídeos únicos <span class="batch-count" id="batch-count"></span></span>
-          <span style="font-size:10px;color:var(--text3);font-weight:400;">Selecione as plataformas de cada vídeo</span>
+  // ── Formulário: registrar vídeos OU editar um vídeo existente ─────────
+  const dataAtual = document.getElementById('pf-data')?.value || dateKey(new Date());
+  let formHtml = '';
+  if(isAdmin && editingVideo){
+    const ev = editingVideo;
+    const platBtns = PLAT_ORDER.map(p=>`<button type="button" class="plat-check-btn ${PLAT_CODE[p]} ${ev.plats.includes(p)?'ativo':''}" onclick="evTogglePlat('${p}')">${p}</button>`).join('');
+    const linkInputs = PLAT_ORDER.filter(p=>ev.plats.includes(p)).map(p=>`
+      <div class="video-link-row">
+        <span class="video-link-label ${PLAT_CODE[p]}">${p}</span>
+        <input class="video-link-input" type="text" placeholder="Cole o link do vídeo no ${p}..." value="${escHTML(ev.links[p]||'')}" oninput="evLink('${p}',this.value)"/>
+      </div>`).join('');
+    formHtml = `
+    <div class="post-form-card" id="edit-video-card">
+      <div class="post-form-title"><i class="ti ti-edit"></i>Editar vídeo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="ff-post">
+          <label>Data do vídeo</label>
+          <input type="date" id="ev-data" value="${ev.data}" onchange="editingVideo.data=this.value;document.getElementById('ev-semana').innerHTML=getLabelSemanaData(this.value);"/>
+          <div id="ev-semana" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);">${getLabelSemanaData(ev.data)}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;" id="video-batch-area"></div>
-        <button class="add-link-row-btn" onclick="addVideoRow()"><i class="ti ti-plus"></i> Adicionar vídeo</button>
+        <div class="ff-post">
+          <label>Tipo</label>
+          <select id="ev-tipo" onchange="editingVideo.tipo=this.value">
+            ${POST_TIPO.map(t=>`<option value="${t}" ${ev.tipo===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
       </div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;">
-      <button class="add-post-btn" onclick="submitBatch()"><i class="ti ti-device-floppy"></i> Salvar todos</button>
-      <span id="batch-status" style="font-size:11px;color:var(--text3);"></span>
-    </div>
-  </div>` : (isAdmin && editingPostId ? `
-  <div class="post-form-card">
-    <div class="post-form-title"><i class="ti ti-edit"></i>Editar postagem</div>
-    <input type="hidden" id="pf-id" value="${editingPostId||''}"/>
-    <div class="post-form-grid">
-      <div class="ff-post" style="grid-column:1/-1;">
-        <label>Link</label>
-        <input type="text" id="pf-link" placeholder="https://..."/>
+      <div style="margin-top:12px;">
+        <div class="link-date-header"><span>Plataformas e links</span></div>
+        <div class="plat-checks" style="margin-bottom:8px;">${platBtns}</div>
+        <div class="video-links" style="padding-left:0;">${linkInputs||'<div style="font-size:11px;color:var(--text3);">Selecione ao menos uma plataforma.</div>'}</div>
       </div>
-      <div class="ff-post"><label>Plataforma</label>
-        <select id="pf-plat">${POST_PLAT.map(p=>`<option value="${p}">${p}</option>`).join('')}</select>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button class="add-post-btn" onclick="salvarEdicaoVideo()"><i class="ti ti-check"></i>Salvar alterações</button>
+        <button onclick="cancelarEdicaoVideo()" style="background:var(--glass);border:1px solid var(--glass-b);border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;">Cancelar</button>
       </div>
-      <div class="ff-post"><label>Tipo</label>
-        <select id="pf-tipo">${POST_TIPO.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+    </div>`;
+  } else if(isAdmin){
+    const semLabel = getLabelSemanaData(dataAtual);
+    formHtml = `
+    <div class="post-form-card">
+      <div class="post-form-title"><i class="ti ti-plus"></i>Registrar vídeos postados</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+        <div class="ff-post">
+          <label>Data padrão</label>
+          <input type="date" id="pf-data" value="${dataAtual}" onchange="sincronizarMesComData(this.value)"/>
+          <div id="data-semana-label" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.3px;min-height:16px;">${semLabel}</div>
+          <div style="font-size:10px;color:var(--text3);">Cada vídeo pode ter uma data própria no campo "Data" da linha.</div>
+        </div>
+        <div>
+          <div class="link-date-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Vídeos únicos <span class="batch-count" id="batch-count"></span></span>
+            <span style="font-size:10px;color:var(--text3);font-weight:400;">Selecione as plataformas e cole o link de cada uma</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;" id="video-batch-area"></div>
+          <button class="add-link-row-btn" onclick="addVideoRow()"><i class="ti ti-plus"></i> Adicionar vídeo</button>
+        </div>
       </div>
-      <div class="ff-post"><label>Data</label>
-        <input type="date" id="pf-data" value="${dataAtual}"/>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;">
+        <button class="add-post-btn" onclick="submitBatch()"><i class="ti ti-device-floppy"></i> Salvar todos</button>
+        <span id="batch-status" style="font-size:11px;color:var(--text3);"></span>
       </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px;">
-      <button class="add-post-btn" onclick="submitPostagem()"><i class="ti ti-check"></i>Salvar alteração</button>
-      <button onclick="cancelEditPost()" style="background:var(--glass);border:1px solid var(--glass-b);border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;">Cancelar</button>
-    </div>
-  </div>` : '');
+    </div>`;
+  }
 
-  // ── Stats ────────────────────────────────────────────────────────────
-  // Calcular vídeos únicos: agrupar por video_uid (ou por data+tipo se não tiver uid)
-  // Um vídeo único = 1 video_uid = pode ter N distribuições (plataformas)
-  const videosUnicos = new Set();
-  doMes.forEach(p=>{
-    if(p.video_uid) videosUnicos.add(p.video_uid);
-    else videosUnicos.add(p.id); // fallback: sem uid = cada registro = 1 vídeo
-  });
-  const totalVideosUnicos = videosUnicos.size;
+  // ── Stats ─────────────────────────────────────────────────────────────
+  const avisoHtml = pr.semLink ? `
+  <div class="post-aviso"><i class="ti ti-alert-triangle"></i>
+    <span><b>${pr.semLink}</b> distribuiç${pr.semLink>1?'ões':'ão'} registrada${pr.semLink>1?'s':''} sem link neste período (${pr.videosSemLink} vídeo${pr.videosSemLink!==1?'s':''}). Elas não entram na contagem nem no relatório até o link ser colado — use o <i class="ti ti-pencil" style="color:var(--gold)"></i> na lista.</span>
+  </div>` : '';
 
   const statsHtml = `
   <div class="post-stats-row">
     <div class="post-stat stat-producao">
       <div class="post-stat-label">Vídeos únicos postados</div>
-      <div class="post-stat-val gold">${totalVideosUnicos}</div>
-      <div class="post-stat-sub">conteúdos distintos no mês</div>
+      <div class="post-stat-val gold">${pr.unicos}</div>
+      <div class="post-stat-sub">conteúdos distintos com link</div>
     </div>
     <div class="post-stat stat-producao">
-      <div class="post-stat-label">Produzidos no mês</div>
-      <div class="post-stat-val">${produzidoMes}</div>
-      <div class="post-stat-sub">contabilizado via links dos editores</div>
+      <div class="post-stat-label">Produzidos no período</div>
+      <div class="post-stat-val">${prod.total}</div>
+      <div class="post-stat-sub">links aprovados dos editores${prod.pend?` · ${prod.pend} aguardando aprovação`:''}</div>
     </div>
     <div class="post-stat">
       <div class="post-stat-label">YouTube Shorts</div>
-      <div class="post-stat-val">${totalYT}</div>
-      <div class="post-stat-sub">postagens registradas</div>
+      <div class="post-stat-val">${pr.yt}</div>
+      <div class="post-stat-sub">postagens com link</div>
     </div>
     <div class="post-stat">
       <div class="post-stat-label">TikTok</div>
-      <div class="post-stat-val">${totalTK}</div>
-      <div class="post-stat-sub">postagens registradas</div>
+      <div class="post-stat-val">${pr.tk}</div>
+      <div class="post-stat-sub">postagens com link</div>
     </div>
     <div class="post-stat">
       <div class="post-stat-label">Instagram</div>
-      <div class="post-stat-val">${totalIG}</div>
-      <div class="post-stat-sub">postagens registradas</div>
+      <div class="post-stat-val">${pr.ig}</div>
+      <div class="post-stat-sub">postagens com link</div>
     </div>
     <div class="post-stat">
       <div class="post-stat-label">Longos / Curtos</div>
-      <div class="post-stat-val">${totalLong} <span style="font-size:14px;color:var(--text3);">/</span> ${totalCurt}</div>
+      <div class="post-stat-val">${pr.longos} <span style="font-size:14px;color:var(--text3);">/</span> ${pr.curtos}</div>
       <div class="post-stat-sub">vídeos únicos por tipo</div>
     </div>
   </div>`;
 
-  // ── Tabela de postagens ──────────────────────────────────────────────
+  // ── Lista agrupada por dia ────────────────────────────────────────────
   const platCode = {Instagram:'IG', TikTok:'TK', YouTube:'YT'};
-
-  // Agrupar por data
-  const grupos = {};
-  const doMesOrdenado = [...doMes].sort((a,b)=>a.data_post.localeCompare(b.data_post));
-  doMesOrdenado.forEach(p=>{
-    if(!grupos[p.data_post]) grupos[p.data_post]=[];
-    grupos[p.data_post].push(p);
+  const videosMap = {};
+  [...doPer].sort((a,b)=>String(a.data_post).localeCompare(String(b.data_post))).forEach(p=>{
+    const uid = String(p.video_uid || p.id);
+    // Mesmo video_uid em datas diferentes = vídeos separados na lista
+    const chave = uid + '@' + p.data_post;
+    if(!videosMap[chave]) videosMap[chave] = {uid, chave, data:p.data_post, tipo:p.tipo, plats:[], links:{}, ids:[]};
+    videosMap[chave].plats.push(p.plataforma);
+    if(postTemLink(p)) videosMap[chave].links[p.plataforma] = p.link_post.trim();
+    videosMap[chave].ids.push(p.id);
   });
+  const gruposDia = {};
+  Object.values(videosMap).forEach(v=>{ (gruposDia[v.data] = gruposDia[v.data] || []).push(v); });
 
-  // Agrupar por video_uid para mostrar vídeos únicos consolidados
-  const videosMap = {}; // video_uid -> {tipo, plats:[...], links:{}, data, id_apagar:[]}
-  doMesOrdenado.forEach(p=>{
-    const uid = p.video_uid || p.id;
-    if(!videosMap[p.data_post]) ;
-    if(!videosMap[uid]){
-      videosMap[uid]={uid,data:p.data_post,tipo:p.tipo,plats:[],links:{},ids:[],dataKey:p.data_post};
-    }
-    videosMap[uid].plats.push(p.plataforma);
-    if(p.link_post) videosMap[uid].links[p.plataforma]=p.link_post;
-    videosMap[uid].ids.push(p.id);
-  });
-
-  // Re-agrupar por data
-  const gruposDia={};
-  Object.values(videosMap).forEach(v=>{
-    if(!gruposDia[v.dataKey]) gruposDia[v.dataKey]=[];
-    gruposDia[v.dataKey].push(v);
-  });
-
+  window.gruposCollapsed = window.gruposCollapsed || {};
   let rows='';
-  // Contagem de grupos abertos/fechados (persistida em memória)
-  window.gruposCollapsed = window.gruposCollapsed||{};
-
-  if(doMes.length===0){
-    rows=`<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem;">Nenhuma postagem registrada para este mês.</td></tr>`;
+  if(doPer.length===0){
+    rows=`<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1.5rem;">Nenhuma postagem registrada neste período.</td></tr>`;
   } else {
     Object.keys(gruposDia).sort().forEach(dataKey=>{
-      const videos=gruposDia[dataKey];
-      const d=new Date(dataKey+'T12:00:00');
-      const diaSem=d.toLocaleDateString('pt-BR',{weekday:'long'});
-      const diaFmt=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-      const collapsed=window.gruposCollapsed[dataKey]?'collapsed':'';
-      const iconRot=collapsed?'':'open';
-      const nVideos=videos.length;
-      const nDist=videos.reduce((a,v)=>a+v.plats.length,0);
+      const videos = gruposDia[dataKey];
+      const d = new Date(dataKey+'T12:00:00');
+      const diaSem = d.toLocaleDateString('pt-BR',{weekday:'long'});
+      const diaFmt = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      const collapsed = window.gruposCollapsed[dataKey];
+      const nVideos = videos.length;
+      const nDist = videos.reduce((a,v)=>a+v.plats.length,0);
+      const nSem = videos.reduce((a,v)=>a+v.plats.filter(p=>!v.links[p]).length,0);
       rows+=`<tr><td colspan="5" class="post-group-label">
         <div class="group-toggle" onclick="toggleGrupo('${dataKey}')">
-          <i class="ti ti-chevron-right group-toggle-icon ${iconRot}" id="gi-${dataKey}"></i>
+          <i class="ti ti-chevron-right group-toggle-icon ${collapsed?'':'open'}" id="gi-${dataKey}"></i>
           <span style="color:var(--gold);">${diaSem.charAt(0).toUpperCase()+diaSem.slice(1)}, ${diaFmt}</span>
-          <span style="color:var(--text3);font-weight:400;font-size:10px;margin-left:6px;">${getLabelSemanaData(dataKey).split('·')[0].trim()}</span>
-          <span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:400;">${nVideos} vídeo${nVideos>1?'s':''} · ${nDist} distribuiç${nDist>1?'ões':'ão'}</span>
+          <span style="color:var(--text3);font-weight:400;font-size:10px;margin-left:6px;">${getLabelSemanaData(dataKey).split('·')[0].replace('&nbsp;','').trim()}</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:400;">${nVideos} vídeo${nVideos>1?'s':''} · ${nDist} distribuiç${nDist>1?'ões':'ão'}${nSem?` · <span style="color:var(--danger2);font-weight:700;">${nSem} sem link</span>`:''}</span>
         </div>
       </td></tr>
       <tr class="group-body-row" id="gb-${dataKey}" style="${collapsed?'display:none':''}">
         <td colspan="5" style="padding:0;">
           <table style="width:100%;border-collapse:collapse;">
             ${videos.map((v,vi)=>{
-              const platsHtml=v.plats.map(p=>{
-                const pc=platCode[p]||'desconhecido';
-                const link=v.links[p];
-                return `<span class="plat-badge ${pc}" style="margin-right:3px;">${p}</span>${link?`<a href="${link}" target="_blank" style="color:var(--gold);font-size:11px;margin-right:6px;"><i class="ti ti-external-link"></i></a>`:''}`;
+              const platsHtml = v.plats.map(p=>{
+                const pc = platCode[p]||'';
+                const link = v.links[p];
+                return `<span class="plat-badge ${pc}" style="margin-right:3px;">${p}</span>${link
+                  ? `<a href="${escHTML(link)}" target="_blank" rel="noopener" style="color:var(--gold);font-size:11px;margin-right:6px;"><i class="ti ti-external-link"></i></a>`
+                  : `<span class="sem-link">sem link</span>`}`;
               }).join('');
               return `<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
                 <td style="padding:8px 14px 8px 28px;width:20px;color:var(--text3);font-size:11px;">${vi+1}</td>
                 <td style="padding:8px 4px;">${platsHtml}</td>
-                <td style="padding:8px 4px;"><span class="tipo-badge ${v.tipo?.toLowerCase()}">${v.tipo||'—'}</span></td>
+                <td style="padding:8px 4px;"><span class="tipo-badge ${(v.tipo||'').toLowerCase()}">${v.tipo||'—'}</span></td>
                 <td></td>
                 ${isAdmin?`<td style="padding:8px 14px;white-space:nowrap;">
+                  <button class="edit-post-btn" onclick="editarVideo('${escHTML(v.chave)}')" title="Editar data, tipo e links"><i class="ti ti-pencil"></i></button>
                   <button class="del-post-btn" onclick="deleteVideoUnico(this)" data-ids="${v.ids.join(',')}" title="Apagar"><i class="ti ti-trash"></i></button>
                 </td>`:'<td></td>'}
               </tr>`;
@@ -3438,82 +3554,118 @@ function renderPostagens(){
   const tableHtml = `
   <div class="post-list-card">
     <div class="post-list-header">
-      <div class="post-list-title"><i class="ti ti-list"></i>Todas as postagens</div>
+      <div class="post-list-title"><i class="ti ti-list"></i>Postagens · ${per.label}</div>
       ${isAdmin?`<button class="pdf-btn" onclick="gerarRelatorioPDF()"><i class="ti ti-file-text"></i> Gerar relatório PDF</button>`:''}
     </div>
     <div style="overflow-x:auto;">
       <table class="post-table">
-        <thead>
-          <tr>
-            <th></th><th>Plataforma</th><th>Tipo</th><th>Link</th><th></th>
-          </tr>
-        </thead>
+        <thead><tr><th></th><th>Plataforma</th><th>Tipo</th><th></th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
   </div>`;
 
-  el.innerHTML = mesSelectorHtml + formHtml + statsHtml + tableHtml;
+  el.innerHTML = mesSelectorHtml + formHtml + statsHtml + avisoHtml + tableHtml;
 
-  // Inicializar batch area no form de novo registro
-  if(!editingPostId && document.getElementById('link-batch-area')){
-    if(linkRows.length===0) linkRows = [{link:'',plataforma:'desconhecido',tipo:'Longo'}];
-    renderLinkRows();
-  }
+  // v3.8: sempre desenha as linhas de vídeo do formulário (antes ficava vazio)
+  if(isAdmin && !editingVideo) renderVideoRows();
+}
 
-  // Restaurar valores do form se estava editando
-  if(editingPostId){
-    const p = postagens.find(x=>x.id===editingPostId);
-    if(p){
-      const pfData = document.getElementById('pf-data');
-      const pfPlat = document.getElementById('pf-plat');
-      const pfTipo = document.getElementById('pf-tipo');
+// ── Edição de vídeo já registrado (data personalizada, tipo, links) ─────
+function editarVideo(chave){
+  const [uid, data] = String(chave).split('@');
+  const rows = postagens.filter(p => String(p.video_uid || p.id) === uid && p.data_post === data);
+  if(!rows.length){ alert('Vídeo não encontrado. Clique em "Carregar dados".'); return; }
+  const rowsByPlat = {}, links = {};
+  rows.forEach(p=>{
+    (rowsByPlat[p.plataforma] = rowsByPlat[p.plataforma] || []).push(p.id);
+    if(postTemLink(p) && !links[p.plataforma]) links[p.plataforma] = p.link_post.trim();
+  });
+  editingVideo = {
+    chave, uid, data, tipo: rows[0].tipo || 'Longo',
+    temUid: !!rows[0].video_uid,
+    plats: Object.keys(rowsByPlat), links, rowsByPlat
+  };
+  renderPostagens();
+  document.getElementById('edit-video-card')?.scrollIntoView({behavior:'smooth', block:'start'});
+}
 
-      const pfLink = document.getElementById('pf-link');
-      if(pfData) pfData.value = p.data_post||'';
-      if(pfPlat) pfPlat.value = p.plataforma||'Instagram';
-      if(pfTipo) pfTipo.value = p.tipo||'Longo';
+function evTogglePlat(p){
+  if(!editingVideo) return;
+  const ev = editingVideo;
+  ev.plats = ev.plats.includes(p) ? ev.plats.filter(x=>x!==p) : ev.plats.concat(p);
+  renderPostagens();
+}
 
-      if(pfLink) pfLink.value = p.link_post||'';
+function evLink(p, val){
+  if(!editingVideo) return;
+  editingVideo.links[p] = val;
+  const tipo = detectarTipo(val);
+  if(val && tipo){ editingVideo.tipo = tipo; const s=document.getElementById('ev-tipo'); if(s) s.value=tipo; }
+}
+
+function cancelarEdicaoVideo(){
+  editingVideo = null;
+  renderPostagens();
+}
+
+async function salvarEdicaoVideo(){
+  const ev = editingVideo;
+  if(!ev) return;
+  const data = document.getElementById('ev-data')?.value || ev.data;
+  if(!data){ alert('Informe a data do vídeo.'); return; }
+  if(ev.plats.length === 0){ alert('Selecione pelo menos uma plataforma (para apagar o vídeo use a lixeira).'); return; }
+  const now = new Date().toISOString();
+  const precisaUid = !ev.temUid && (ev.plats.length > 1 || Object.values(ev.rowsByPlat).flat().length > 1);
+  const novoUid = ev.temUid ? ev.uid : String(Date.now());
+
+  const executar = async (comUid)=>{
+    const ops = [];
+    for(const [plat, ids] of Object.entries(ev.rowsByPlat)){
+      for(const id of ids){
+        if(ev.plats.includes(plat)){
+          const upd = {data_post:data, tipo:ev.tipo, link_post:(ev.links[plat]||'').trim()||null, updated_at:now};
+          if(comUid && precisaUid) upd.video_uid = novoUid;
+          ops.push(sb.from('tony_postagens').update(upd).eq('id', id));
+        } else {
+          ops.push(sb.from('tony_postagens').delete().eq('id', id));
+        }
+      }
     }
+    const novas = ev.plats.filter(p => !ev.rowsByPlat[p]);
+    if(novas.length){
+      ops.push(sb.from('tony_postagens').insert(novas.map(p=>{
+        const row = {data_post:data, plataforma:p, tipo:ev.tipo, quantidade:1, hora_post:null, link_post:(ev.links[p]||'').trim()||null, updated_at:now};
+        if(comUid) row.video_uid = novoUid;
+        return row;
+      })));
+    }
+    const res = await Promise.all(ops);
+    return res.find(r => r && r.error);
+  };
+
+  let falha = await executar(true);
+  if(falha && /video_uid/i.test(falha.error.message||'')) falha = await executar(false);
+  if(falha){ alert('Erro ao salvar: '+falha.error.message); return; }
+
+  editingVideo = null;
+  await loadPostagens();
+  if(postPeriodo.modo !== 'custom'){
+    const d = new Date(data+'T12:00:00');
+    selectedMesPost = d.getMonth(); selectedAnoPost = d.getFullYear();
   }
+  renderPostagens();
+  playConfirm();
+  showToast('ti-check','Vídeo atualizado','Data '+fmtBR(data)+' · '+ev.plats.join(', '));
 }
 
-async function submitPostagem(){
-  const id    = document.getElementById('pf-id')?.value;
-  const data  = document.getElementById('pf-data')?.value;
-  const plat  = document.getElementById('pf-plat')?.value;
-  const tipo  = document.getElementById('pf-tipo')?.value;
-  const link  = document.getElementById('pf-link')?.value;
-  if(!data||!plat||!tipo){alert('Preencha data, plataforma e tipo.');return;}
-  // A data define automaticamente o mês — sem campo de quantidade ou horário
-  const payload = {data_post:data,plataforma:plat,tipo,quantidade:1,hora_post:null,link_post:link||null,updated_at:new Date().toISOString()};
-  let error;
-  if(id){
-    ({error}=await sb.from('tony_postagens').update(payload).eq('id',id));
-  } else {
-    ({error}=await sb.from('tony_postagens').insert(payload));
-  }
-  if(!error){
-    editingPostId = null;
-    await loadPostagens();
-    renderPostagens();
-    playConfirm();
-  } else {
-    alert('Erro ao salvar: '+error.message);
-  }
-}
-
+// Compatibilidade com chamadas antigas
 function editPost(id){
-  editingPostId = id;
-  renderPostagens();
-  document.getElementById('postagens-content')?.scrollIntoView({behavior:'smooth',block:'start'});
+  const p = postagens.find(x => String(x.id) === String(id));
+  if(p) editarVideo(String(p.video_uid || p.id)+'@'+p.data_post);
 }
-
-function cancelEditPost(){
-  editingPostId = null;
-  renderPostagens();
-}
+function cancelEditPost(){ cancelarEdicaoVideo(); }
+async function submitPostagem(){ await salvarEdicaoVideo(); }
 
 function toggleGrupo(dataKey){
   const row=document.getElementById('gb-'+dataKey);
@@ -3533,7 +3685,8 @@ async function deleteVideoUnico(btn){
   if(!ids.length) return;
   if(!confirm('Apagar este vídeo e todas as suas distribuições?')) return;
   for(const id of ids){
-    await sb.from('tony_postagens').delete().eq('id',id);
+    const {error} = await sb.from('tony_postagens').delete().eq('id',id);
+    if(error){ alert('Erro ao apagar: '+error.message); break; }
   }
   await loadPostagens();
   renderPostagens();
@@ -3550,119 +3703,81 @@ async function deletePost(id){
 
 // ── RELATÓRIO PDF ─────────────────────────────────────────────────────────
 function gerarRelatorioPDF(){
-  const mesAtual = selectedMesPost;
-  const anoAtual = selectedAnoPost;
-  const mesRefDate2 = new Date(anoAtual, mesAtual, 1);
-  const mesLabel = mesRefDate2.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  const per = periodoPost();
+  const doPer = postagensDoPeriodo();
+  const pr = contarPostagens(doPer);
+  const prod = contarProduzidos(per.de, per.ate);
+  const esc = s => escHTML(String(s==null?'':s));
 
-  const doMes = postagens.filter(p => {
-    const d = new Date(p.data_post+'T12:00:00');
-    return d.getMonth()===mesAtual && d.getFullYear()===anoAtual;
+  // 1 linha por vídeo, com as plataformas e os links
+  const vids = {};
+  [...doPer].sort((a,b)=>String(a.data_post).localeCompare(String(b.data_post))).forEach(p=>{
+    const chave = String(p.video_uid||p.id)+'@'+p.data_post;
+    if(!vids[chave]) vids[chave] = {data:p.data_post, tipo:p.tipo, plats:[], links:{}};
+    vids[chave].plats.push(p.plataforma);
+    if(postTemLink(p)) vids[chave].links[p.plataforma] = p.link_post.trim();
   });
-
-  // Vídeos únicos por uid
-  const vMapPDF = {};
-  doMes.forEach(p=>{ const uid=p.video_uid||p.id; if(!vMapPDF[uid]) vMapPDF[uid]=p.tipo; });
-  const totalLong = Object.values(vMapPDF).filter(t=>t==='Longo').length;
-  const totalCurt = Object.values(vMapPDF).filter(t=>t==='Curto').length;
-  const totalVideosUnicos = totalLong + totalCurt;
-
-  // Produzidos no mês via cache completo
-  let produzidoMes = 0;
-  const psStrPDF = dateKey(PROJECT_START);
-  const peStrPDF = dateKey(PROJECT_END);
-  Object.values(cache).forEach(d => {
-    if(!d.day_key) return;
-    if(d.day_key < psStrPDF || d.day_key > peStrPDF) return;
-    const dp = new Date(d.day_key+'T12:00:00');
-    if(dp.getMonth()!==mesAtual||dp.getFullYear()!==anoAtual) return;
-    if(d.long_link)  produzidoMes += (d.prod_longos!==undefined&&d.prod_longos!==null)?Number(d.prod_longos):META_LONG_DIA;
-    if(d.viral_link) produzidoMes += (d.prod_virais!==undefined&&d.prod_virais!==null)?Number(d.prod_virais):META_VIRAL_DIA;
-  });
-
-  // Agrupar por vídeo único para o detalhamento — 1 linha por vídeo, com plataformas
-  const videosAgrupados = {};
-  doMes.sort((a,b)=>a.data_post.localeCompare(b.data_post)).forEach(p=>{
-    const uid = p.video_uid||p.id;
-    if(!videosAgrupados[uid]){
-      videosAgrupados[uid]={data:p.data_post, tipo:p.tipo, plats:[], links:{}};
-    }
-    videosAgrupados[uid].plats.push(p.plataforma);
-    if(p.link_post) videosAgrupados[uid].links[p.plataforma]=p.link_post;
-  });
-
-  const rows = Object.values(videosAgrupados).map((v,i)=>{
+  // Só vídeos com pelo menos um link entram no relatório
+  const lista = Object.values(vids).filter(v => Object.keys(v.links).length > 0);
+  const rows = lista.map((v,i)=>{
     const d = new Date(v.data+'T12:00:00');
     const dataFmt = d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
-    const platsStr = v.plats.join(', ');
-    // Links clicáveis por plataforma
-    const linksHtml = v.plats.map(plat=>{
-      const link = v.links[plat];
-      return link
-        ? `<a href="${link}" style="color:#c9a96e;font-size:10px;margin-right:8px;word-break:break-all;">${plat}</a>`
-        : `<span style="color:#aaa;font-size:10px;margin-right:8px;">${plat}</span>`;
-    }).join('');
+    const linksHtml = v.plats.filter(p=>v.links[p]).map(p=>
+      `<a href="${esc(v.links[p])}" style="color:#9a7030;font-size:10px;margin-right:10px;word-break:break-all;">${esc(p)}</a>`).join('');
     return `<tr style="${i%2===0?'':'background:#fafafa'}">
-      <td>${dataFmt}</td>
-      <td>${v.tipo}</td>
-      <td>${platsStr}</td>
-      <td>${linksHtml}</td>
+      <td>${esc(dataFmt)}</td><td>${esc(v.tipo)}</td><td>${esc(v.plats.filter(p=>v.links[p]).join(', '))}</td><td>${linksHtml}</td>
     </tr>`;
   }).join('');
+  const dif = prod.total - pr.unicos;
 
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-<title>Relatório de Postagens — ${mesLabel}</title>
+<title>Relatório de Postagens — ${esc(per.label)}</title>
 <style>
   body{font-family:system-ui,sans-serif;color:#111;margin:0;padding:2rem;background:#fff;}
   h1{font-size:22px;font-weight:900;color:#111;margin-bottom:4px;}
   .sub{font-size:13px;color:#666;margin-bottom:2rem;}
-  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:2rem;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;}
   .kpi{background:#f5f5f5;border-radius:10px;padding:14px;border-left:3px solid #c9a96e;}
   .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;}
   .kpi-val{font-size:24px;font-weight:900;color:#111;}
-  .kpi-val.gold{color:#c9a96e;}
+  .kpi-val.gold{color:#9a7030;}
   .kpi-sub{font-size:10px;color:#888;margin-top:2px;}
   h2{font-size:14px;font-weight:800;color:#111;margin:1.5rem 0 .5rem;text-transform:uppercase;letter-spacing:.5px;}
   table{width:100%;border-collapse:collapse;font-size:12px;}
   th{text-align:left;padding:8px 10px;background:#f0f0f0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;border-bottom:2px solid #ddd;}
   td{padding:8px 10px;border-bottom:1px solid #eee;color:#333;vertical-align:top;}
   .footer{margin-top:2rem;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:1rem;}
-  @media print{body{padding:1rem;} a{color:#c9a96e !important;}}
+  @media print{body{padding:1rem;} a{color:#9a7030 !important;} tr{page-break-inside:avoid;}}
 </style></head><body>
 <h1>Relatório de Postagens</h1>
-<div class="sub">Projeto Tony Cozendey · Roity · ${mesLabel}</div>
+<div class="sub">Projeto Tony Cozendey · Roity · ${esc(per.label)}</div>
 
 <div class="kpi-grid">
-  <div class="kpi">
-    <div class="kpi-label">Vídeos únicos postados</div>
-    <div class="kpi-val gold">${totalVideosUnicos}</div>
-    <div class="kpi-sub">${totalLong} longos + ${totalCurt} curtos</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-label">Produzidos no mês</div>
-    <div class="kpi-val">${produzidoMes}</div>
-    <div class="kpi-sub">registrado via links dos editores</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-label">Diferença</div>
-    <div class="kpi-val" style="color:${produzidoMes-totalVideosUnicos>=0?'#27ae60':'#e74c3c'};">${produzidoMes-totalVideosUnicos>=0?'+':''}${produzidoMes-totalVideosUnicos}</div>
-    <div class="kpi-sub">produzido − postado</div>
-  </div>
+  <div class="kpi"><div class="kpi-label">Vídeos únicos postados</div><div class="kpi-val gold">${pr.unicos}</div><div class="kpi-sub">${pr.longos} longos + ${pr.curtos} curtos</div></div>
+  <div class="kpi"><div class="kpi-label">Produzidos no período</div><div class="kpi-val">${prod.total}</div><div class="kpi-sub">${prod.long} longos + ${prod.viral} virais</div></div>
+  <div class="kpi"><div class="kpi-label">Diferença</div><div class="kpi-val" style="color:${dif>=0?'#27ae60':'#e74c3c'};">${dif>=0?'+':''}${dif}</div><div class="kpi-sub">produzido − postado</div></div>
+</div>
+<div class="kpi-grid" style="margin-bottom:2rem;">
+  <div class="kpi"><div class="kpi-label">YouTube Shorts</div><div class="kpi-val">${pr.yt}</div><div class="kpi-sub">postagens</div></div>
+  <div class="kpi"><div class="kpi-label">TikTok</div><div class="kpi-val">${pr.tk}</div><div class="kpi-sub">postagens</div></div>
+  <div class="kpi"><div class="kpi-label">Instagram</div><div class="kpi-val">${pr.ig}</div><div class="kpi-sub">postagens</div></div>
 </div>
 
 <h2>Detalhamento por dia</h2>
 <table>
   <thead><tr><th>Data</th><th>Tipo</th><th>Plataformas</th><th>Links</th></tr></thead>
-  <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:#aaa;">Sem postagens registradas.</td></tr>'}</tbody>
+  <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:#aaa;">Sem postagens com link neste período.</td></tr>'}</tbody>
 </table>
 
-<div class="footer">Gerado em ${new Date().toLocaleString('pt-BR',{timeZone:'America/Cuiaba'})} · Roity © 2026</div>
+<div class="footer">${pr.distrib} postagens em ${pr.unicos} vídeos únicos · Gerado em ${new Date().toLocaleString('pt-BR',{timeZone:'America/Cuiaba'})} · Roity © 2026</div>
 </body></html>`;
 
+  if(pr.semLink && !confirm(pr.semLink+' distribuição(ões) deste período estão sem link e NÃO vão aparecer no relatório.\n\nGerar mesmo assim?')) return;
   const blob = new Blob([html],{type:'text/html'});
   const url = URL.createObjectURL(blob);
   const w = window.open(url,'_blank');
   if(w) setTimeout(()=>{ w.print(); },600);
+  else alert('O navegador bloqueou a janela do relatório. Permita pop-ups para este site e tente de novo.');
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
@@ -3686,33 +3801,10 @@ window.addEventListener('DOMContentLoaded',async()=>{
         }
 
         // editor / admin → app principal
-        document.getElementById('user-label').textContent = currentUser.name+(role==='admin'?' (Admin)':'');
-        currentWeekStart = getWeekStart(new Date());
-        await loadWeek(currentWeekStart);
-        await loadExtraForDash();
-        await loadReposicoes();
-        await loadPostagens();
-        document.getElementById('loading').style.display='none';
-        document.getElementById('app').style.display='flex';
-
-        // Mostrar tabs para todos
-        document.getElementById('nav-tabs').style.display='flex';
-
-        // Esconder dashboard tab para editores
-        const tabDash=document.getElementById('tab-dash');
-        if(tabDash) tabDash.style.display=role==='admin'?'flex':'none';
-
-        // CRM tab só admin
-        const tabCRM=document.getElementById('tab-crm');
-        if(tabCRM) tabCRM.style.display=role==='admin'?'flex':'none';
-
-        // Definir aba inicial
-        const startTab=(role==='editor'&&savedTab==='dashboard')?'kanban':savedTab;
-        switchTab(startTab);
-        updateScheduleBanner();
-        subscribeRealtime();
-        // Forçar render da aba ativa
-        if(startTab==='reposicoes') setTimeout(()=>renderReposicoes(),100);
+        // v3.8: mesmo fluxo do login. Antes o F5 não carregava os links individuais
+        // (setembro+) nem a configuração, então os cards apareciam vazios.
+        if(!sessionStorage.getItem('roity_tab')) sessionStorage.setItem('roity_tab', savedTab);
+        await startApp({restaurado:true});
         return;
       }
     }catch(e){}
