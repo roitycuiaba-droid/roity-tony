@@ -788,7 +788,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v3.8 · Roity © 2026</div>
+      <div class="legend-version">v3.8.1 · Roity © 2026</div>
     </div>
 
     <!-- SEÇÃO DE DÉBITOS — visível para todos abaixo das semanas -->
@@ -2776,7 +2776,6 @@ function renderVideoRows(){
   const area=document.getElementById('video-batch-area');
   if(!area) return;
   if(videoRows.length===0) videoRows=[novoVideoRow()];
-  const padrao = dataPadraoForm();
   area.innerHTML=videoRows.map((row,i)=>{
     const platsHtml=PLAT_ORDER.map(p=>{
       const ativo=row.plats.includes(p)?'ativo':'';
@@ -2792,7 +2791,6 @@ function renderVideoRows(){
       </div>`;
     }).join('');
 
-    const dataVideo = row.data || padrao;
     return `<div class="video-row" id="vr-${i}">
       <div class="video-row-top">
         <span class="video-num">${i+1}</span>
@@ -2804,11 +2802,6 @@ function renderVideoRows(){
           </select>
           <button type="button" class="link-remove-btn" onclick="removeVideoRow(${i})"><i class="ti ti-x"></i></button>
         </div>
-      </div>
-      <div class="video-row-date">
-        <i class="ti ti-calendar"></i>Data
-        <input type="date" value="${dataVideo}" onchange="onVideoDataChange(${i},this.value)"/>
-        ${row.data?'<span class="tag-custom">personalizada</span>':'<span style="font-weight:400;text-transform:none;letter-spacing:0;">(padrão do formulário)</span>'}
       </div>
       ${linksHtml?`<div class="video-links">${linksHtml}</div>`:''}
     </div>`;
@@ -2911,10 +2904,10 @@ function trocarMesPost(val){
   renderPostagens();
 }
 
-function aplicarPeriodoCustom(){
+function aplicarPeriodoCustom(auto){
   const de  = document.getElementById('per-de')?.value;
   const ate = document.getElementById('per-ate')?.value;
-  if(!de || !ate){ alert('Preencha as duas datas do período.'); return; }
+  if(!de || !ate){ if(!auto) alert('Preencha as duas datas do período.'); return; }
   postPeriodo = {modo:'custom', de: de <= ate ? de : ate, ate: de <= ate ? ate : de};
   renderPostagens();
 }
@@ -3372,13 +3365,11 @@ function renderPostagens(){
     <button onclick="recarregarPostagens()" style="background:linear-gradient(135deg,rgba(201,169,110,0.18),rgba(201,169,110,0.06));border:1px solid var(--glass-gold-b);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--gold);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap;">
       <i class="ti ti-refresh"></i> Carregar dados
     </button>
-    ${postPeriodo.modo==='custom' ? `
     <div class="periodo-custom">
-      <div class="ff-post"><label>De</label><input type="date" id="per-de" value="${postPeriodo.de||''}"/></div>
-      <div class="ff-post"><label>Até</label><input type="date" id="per-ate" value="${postPeriodo.ate||''}"/></div>
-      <button class="add-post-btn" style="margin-top:0;" onclick="aplicarPeriodoCustom()"><i class="ti ti-check"></i> Aplicar</button>
-      <div style="font-size:11px;color:var(--text3);width:100%;">Mostrando: <b style="color:var(--gold)">${per.label}</b></div>
-    </div>` : ''}
+      <div class="ff-post"><label>De</label><input type="date" id="per-de" value="${per.de}" onchange="aplicarPeriodoCustom(true)"/></div>
+      <div class="ff-post"><label>Até</label><input type="date" id="per-ate" value="${per.ate}" onchange="aplicarPeriodoCustom(true)"/></div>
+      <div style="font-size:11px;color:var(--text3);flex:2;min-width:180px;padding-bottom:10px;">${per.custom?`Período personalizado: <b style="color:var(--gold)">${per.label}</b>`:`Mês completo: <b style="color:var(--gold)">${per.label}</b> · altere as datas para um período personalizado`}</div>
+    </div>
   </div>`;
 
   // ── Formulário: registrar vídeos OU editar um vídeo existente ─────────
@@ -3425,10 +3416,9 @@ function renderPostagens(){
       <div class="post-form-title"><i class="ti ti-plus"></i>Registrar vídeos postados</div>
       <div style="display:grid;grid-template-columns:1fr;gap:10px;">
         <div class="ff-post">
-          <label>Data padrão</label>
+          <label>Data</label>
           <input type="date" id="pf-data" value="${dataAtual}" onchange="sincronizarMesComData(this.value)"/>
           <div id="data-semana-label" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.3px;min-height:16px;">${semLabel}</div>
-          <div style="font-size:10px;color:var(--text3);">Cada vídeo pode ter uma data própria no campo "Data" da linha.</div>
         </div>
         <div>
           <div class="link-date-header" style="display:flex;align-items:center;justify-content:space-between;">
