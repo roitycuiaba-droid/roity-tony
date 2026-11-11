@@ -526,6 +526,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .post-stat-sub{font-size:10px;color:var(--text3);margin-top:3px;}
 .del-post-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px 5px;transition:color .1s;}
 .del-post-btn:hover{color:var(--danger2);}
+.pdf-opcoes{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--glass-b);font-size:11px;color:var(--text3);}
+.pdf-opcoes .po-lbl{font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-right:4px;}
+.pdf-opcoes label{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--glass-b);background:rgba(255,255,255,0.03);color:var(--text2);font-size:12px;cursor:pointer;user-select:none;transition:all .12s;}
+.pdf-opcoes label:has(input:checked){border-color:var(--glass-gold-b);background:rgba(201,169,110,0.12);color:var(--text);}
+.pdf-opcoes label.fixo{cursor:default;opacity:.85;}
+.pdf-opcoes input{accent-color:var(--gold);margin:0;cursor:pointer;}
+.pdf-opcoes .tag-obr{font-size:9px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
 .edit-post-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px 5px;transition:color .1s;}
 .edit-post-btn:hover{color:var(--gold);}
 .video-row-date{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-left:28px;font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;}
@@ -788,7 +795,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="leg"><span class="sdot sdot-o"></span> Parcial</div>
       <div class="leg"><span class="sdot sdot-gray"></span> Pendente</div>
       <div class="leg"><i class="ti ti-alert-triangle" style="font-size:12px;color:var(--danger2);"></i> Agendamento atrasado</div>
-      <div class="legend-version">v3.8.1 · Roity © 2026</div>
+      <div class="legend-version">v3.8.2 · Roity © 2026</div>
     </div>
 
     <!-- SEÇÃO DE DÉBITOS — visível para todos abaixo das semanas -->
@@ -2644,6 +2651,23 @@ let selectedAnoPost = new Date().getFullYear();
 let postPeriodo = {modo:'mes', de:'', ate:''};
 let editingVideo = null;   // vídeo em edição (data, tipo, plataformas, links)
 let salvandoBatch = false;
+// v3.8.2: o que entra no relatório PDF ("Vídeos únicos postados" é sempre incluído)
+const PDF_OPCOES = [
+  {k:'prod', l:'Produzidos no período'},
+  {k:'dif',  l:'Diferença'},
+  {k:'yt',   l:'YouTube Shorts'},
+  {k:'tk',   l:'TikTok'},
+  {k:'ig',   l:'Instagram'}
+];
+let pdfIncluir = (()=>{
+  const padrao = {prod:true, dif:true, yt:true, tk:true, ig:true};
+  try{ const v = JSON.parse(localStorage.getItem('roity_pdf_incluir')||'null'); return v ? Object.assign(padrao, v) : padrao; }
+  catch(e){ return padrao; }
+})();
+function togglePdfOpcao(k, on){
+  pdfIncluir[k] = !!on;
+  try{ localStorage.setItem('roity_pdf_incluir', JSON.stringify(pdfIncluir)); }catch(e){}
+}
 
 const POST_PLAT = ['Instagram','TikTok','YouTube'];
 const POST_TIPO = ['Longo','Curto'];
@@ -3547,6 +3571,11 @@ function renderPostagens(){
       <div class="post-list-title"><i class="ti ti-list"></i>Postagens · ${per.label}</div>
       ${isAdmin?`<button class="pdf-btn" onclick="gerarRelatorioPDF()"><i class="ti ti-file-text"></i> Gerar relatório PDF</button>`:''}
     </div>
+    ${isAdmin?`<div class="pdf-opcoes">
+      <span class="po-lbl">No relatório:</span>
+      <label class="fixo" title="Sempre incluído"><input type="checkbox" checked disabled/>Vídeos únicos postados <span class="tag-obr">obrigatório</span></label>
+      ${PDF_OPCOES.map(o=>`<label><input type="checkbox" ${pdfIncluir[o.k]?'checked':''} onchange="togglePdfOpcao('${o.k}',this.checked)"/>${o.l}</label>`).join('')}
+    </div>`:''}
     <div style="overflow-x:auto;">
       <table class="post-table">
         <thead><tr><th></th><th>Plataforma</th><th>Tipo</th><th></th><th></th></tr></thead>
@@ -3719,6 +3748,15 @@ function gerarRelatorioPDF(){
     </tr>`;
   }).join('');
   const dif = prod.total - pr.unicos;
+  // v3.8.2: só os indicadores marcados em "No relatório" (vídeos únicos é obrigatório)
+  const kpi = (label, val, sub, estilo) => `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-val"${estilo||''}>${val}</div><div class="kpi-sub">${sub}</div></div>`;
+  const cards = [kpi('Vídeos únicos postados', pr.unicos, `${pr.longos} longos + ${pr.curtos} curtos`, ' style="color:#9a7030;"')];
+  if(pdfIncluir.prod) cards.push(kpi('Produzidos no período', prod.total, `${prod.long} longos + ${prod.viral} virais`));
+  if(pdfIncluir.dif)  cards.push(kpi('Diferença', `${dif>=0?'+':''}${dif}`, 'produzido − postado', ` style="color:${dif>=0?'#27ae60':'#e74c3c'};"`));
+  if(pdfIncluir.yt)   cards.push(kpi('YouTube Shorts', pr.yt, 'postagens'));
+  if(pdfIncluir.tk)   cards.push(kpi('TikTok', pr.tk, 'postagens'));
+  if(pdfIncluir.ig)   cards.push(kpi('Instagram', pr.ig, 'postagens'));
+  const kpisHtml = cards.join('');
 
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
 <title>Relatório de Postagens — ${esc(per.label)}</title>
@@ -3742,15 +3780,8 @@ function gerarRelatorioPDF(){
 <h1>Relatório de Postagens</h1>
 <div class="sub">Projeto Tony Cozendey · Roity · ${esc(per.label)}</div>
 
-<div class="kpi-grid">
-  <div class="kpi"><div class="kpi-label">Vídeos únicos postados</div><div class="kpi-val gold">${pr.unicos}</div><div class="kpi-sub">${pr.longos} longos + ${pr.curtos} curtos</div></div>
-  <div class="kpi"><div class="kpi-label">Produzidos no período</div><div class="kpi-val">${prod.total}</div><div class="kpi-sub">${prod.long} longos + ${prod.viral} virais</div></div>
-  <div class="kpi"><div class="kpi-label">Diferença</div><div class="kpi-val" style="color:${dif>=0?'#27ae60':'#e74c3c'};">${dif>=0?'+':''}${dif}</div><div class="kpi-sub">produzido − postado</div></div>
-</div>
 <div class="kpi-grid" style="margin-bottom:2rem;">
-  <div class="kpi"><div class="kpi-label">YouTube Shorts</div><div class="kpi-val">${pr.yt}</div><div class="kpi-sub">postagens</div></div>
-  <div class="kpi"><div class="kpi-label">TikTok</div><div class="kpi-val">${pr.tk}</div><div class="kpi-sub">postagens</div></div>
-  <div class="kpi"><div class="kpi-label">Instagram</div><div class="kpi-val">${pr.ig}</div><div class="kpi-sub">postagens</div></div>
+  ${kpisHtml}
 </div>
 
 <h2>Detalhamento por dia</h2>
